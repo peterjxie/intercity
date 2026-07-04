@@ -517,7 +517,7 @@ function growBounds(){
  return{bw:maxX-minX+2*m,bh:maxY-minY+2*m,cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function minZoom(){
  const b=growBounds();
- return Math.max(0.78*Math.min(W/b.bw,H/b.bh),0.7*Math.min(W,H)/112)}
+ return Math.max(0.62*Math.min(W/b.bw,H/b.bh),0.6*Math.min(W,H)/112)}
 function frameTarget(){
  const b=growBounds();
  const s=clamp(Math.min(W/b.bw,H/b.bh),minZoom(),30);
@@ -526,11 +526,10 @@ function fitView(){const t=frameTarget();
  view.s=t.s;view.x=t.x;view.y=t.y;baseS=view.s;userCam=false}
 function s2w(p){return{x:p.x/view.s+view.x,y:p.y/view.s+view.y}}
 function symF(){
- const spanKm=kms(Math.min(W,H)/view.s);
- const kmF=clamp(Math.pow(55/Math.max(55,spanKm),0.6),0.45,1);
- const pxNN=nnWorld*view.s;
- const densF=clamp(Math.pow(pxNN/34,0.8),0.5,1);
- return Math.min(kmF,densF)*((city&&city.symScale)||1)}
+ // symbols are world objects with a pixel ceiling: constant when zoomed in
+ // past the planning zoom (neighbours 34px apart), strictly proportional below it
+ const sRef=34/Math.max(nnWorld,1.5);
+ return clamp(view.s/sRef,0.3,1)*((city&&city.symScale)||1)}
 function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
 function pxr(v){return v/view.s}
 
