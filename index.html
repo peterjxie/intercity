@@ -375,7 +375,7 @@ gba:{
  ],
  cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
  core:{x:44,y:13},
- pop:72,popUnit:"M",kmScale:2.0,symScale:0.8,
+ pop:72,popUnit:"M",kmScale:2.0,
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
   {x:41,y:30,name:"GUANGZHOU SOUTH",kind:"hub",when:.14},
@@ -455,7 +455,9 @@ function frameTarget(){
 function fitView(){const t=frameTarget();
  view.s=t.s;view.x=t.x;view.y=t.y;baseS=view.s;userCam=false}
 function s2w(p){return{x:p.x/view.s+view.x,y:p.y/view.s+view.y}}
-function symF(){return clamp(Math.pow(view.s/baseS,0.6),0.5,1)}
+function symF(){
+ const spanKm=kms(Math.min(W,H)/view.s);
+ return clamp(Math.pow(55/Math.max(55,spanKm),0.6),0.45,1)}
 function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
 function pxr(v){return v/view.s}
 
