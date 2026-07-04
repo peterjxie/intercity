@@ -402,7 +402,7 @@ berlin:{
  maxExpress:3,maxMetro:7,
  classNames:{metro:"U-BAHN",express:"S-BAHN"},
  features:["terrain","air","sbahn"],
- pop:4,popUnit:"M",kmScale:0.45,
+ pop:4,popUnit:"M",kmScale:0.45,spacing:{min:4.2,max:7},jitter:6,
  seas:[
   [[84,56],[96,54],[100,60],[95,68],[85,66],[81,60]],
   [[20,15],[28,13],[31,19],[26,25],[19,22]],
@@ -443,7 +443,7 @@ berlin:{
   {x:42,y:40,name:"HAUPTBAHNHOF",kind:"hub",when:.12},
   {x:60,y:74,name:"BER",kind:"air",when:.4}
  ],
- count:70
+ count:86
 }};
 
 /* ================= constants ================= */
@@ -527,7 +527,10 @@ function fitView(){const t=frameTarget();
 function s2w(p){return{x:p.x/view.s+view.x,y:p.y/view.s+view.y}}
 function symF(){
  const spanKm=kms(Math.min(W,H)/view.s);
- return clamp(Math.pow(55/Math.max(55,spanKm),0.6),0.45,1)}
+ const kmF=clamp(Math.pow(55/Math.max(55,spanKm),0.6),0.45,1);
+ const pxNN=nnWorld*view.s;
+ const densF=clamp(Math.pow(pxNN/34,0.8),0.5,1);
+ return Math.min(kmF,densF)*((city&&city.symScale)||1)}
 function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
 function pxr(v){return v/view.s}
 
@@ -585,6 +588,9 @@ function genStations(){
   emerged:false,inter:false,q:[],acc:0,order:0,name:lm.name,strainT:0,emergeAt:0});
  const cand=[];
  let attempts=0;
+ const spMin=(city.spacing&&city.spacing.min)||4.8;
+ const spMax=(city.spacing&&city.spacing.max)||10;
+ const jt=(city.jitter!=null)?city.jitter:9;
  while(cand.length<city.count-1&&attempts<city.count*90){
   attempts++;
   let cw=0;for(const c of city.corridors)cw+=c.w;
@@ -592,11 +598,11 @@ function genStations(){
   for(const c of city.corridors){if(pick<c.w){cor=c;break}pick-=c.w}
   const t=Math.min(1,rng()*rng()+rng()*.9);
   const base=pointAlongPoly(cor.pts,t);
-  const p={x:base.x+(rng()-0.5)*9,y:base.y+(rng()-0.5)*9};
+  const p={x:base.x+(rng()-0.5)*jt,y:base.y+(rng()-0.5)*jt};
   if(p.x<3||p.x>97||p.y<3||p.y>97)continue;
   if(inWater(p,1.2)||inNoBuild(p))continue;
   const dCore=dCores(p);
-  const minD=lerp(4.8,10,clamp(dCore/60,0,1));
+  const minD=lerp(spMin,spMax,clamp(dCore/60,0,1));
   let ok=dist(p,lm)>minD;
   if(ok)for(const c of cand){if(dist(p,c)<minD){ok=false;break}}
   if(!ok)continue;
@@ -613,7 +619,7 @@ function genStations(){
   guard++;
   const parent=cand.length?cand[(rng()*cand.length)|0]:coreList[(rng()*coreList.length)|0];
   const dCoreP=dCores(parent);
-  const minDp=lerp(4.8,10,clamp(dCoreP/60,0,1));
+  const minDp=lerp(spMin,spMax,clamp(dCoreP/60,0,1));
   const ang=rng()*TAU,rr=minDp*(1.05+rng()*0.9);
   const p={x:parent.x+Math.cos(ang)*rr,y:parent.y+Math.sin(ang)*rr};
   if(p.x<3||p.x>97||p.y<3||p.y>97)continue;
@@ -623,7 +629,7 @@ function genStations(){
   if(nearIC(p))continue;
   if(cand.length&&regOf(p)!==regOf(parent))continue;
   const dCore=dCores(p);
-  const minD=lerp(4.8,10,clamp(dCore/60,0,1));
+  const minD=lerp(spMin,spMax,clamp(dCore/60,0,1));
   let ok=dist(p,lm)>minD;
   if(ok)for(const c of cand){if(dist(p,c)<minD){ok=false;break}}
   if(!ok)continue;
@@ -775,7 +781,7 @@ function computeCrossings(){
    metroClash:!lines[over.li].express&&!lines[under.li].express})}}
 
 /* ================= routing ================= */
-let adj=new Map(),distByShape={};
+let adj=new Map(),distByShape={},nnWorld=6;
 function rebuildRouting(){
  rebuildGeometry();
  adj=new Map();
@@ -788,7 +794,16 @@ function rebuildRouting(){
   for(const s of stations)if(s.emerged&&s.shape===sh){d[s.id]=0;q.push(s.id)}
   while(q.length){const u=q.shift();const ns=adj.get(u)||[];
    for(const v of ns)if(d[v]===Infinity){d[v]=d[u]+1;q.push(v)}}
-  distByShape[sh]=d}}
+  distByShape[sh]=d}
+ // 25th-percentile nearest-neighbour spacing among emerged stations (world units)
+ const em=stations.filter(s=>s.emerged);
+ if(em.length>3){
+  const ds=[];
+  for(const a of em){let m=1e9;
+   for(const b of em){if(a===b)continue;const d2=dist(a,b);if(d2<m)m=d2}
+   ds.push(m)}
+  ds.sort((a,b)=>a-b);
+  nnWorld=ds[Math.floor(ds.length*0.25)]}}
 
 /* ================= demand ================= */
 function minOfDay(){return Math.floor(simS*GM_PER_S)%1440}
@@ -1409,16 +1424,16 @@ function draw(){
    ctx.fillStyle="rgba(168,186,214,0.85)";
    ctx.font=px(6.5)+"px ui-monospace,monospace";
    ctx.fillText(s.name,s.x+px(9),s.y+px(10))}
-  if(!poster&&s.q.length){
-   const show=Math.min(s.q.length,10);
+  if(!poster&&s.q.length&&symF()>0.62){
+   const show=Math.min(s.q.length,8);
    ctx.fillStyle="rgba(196,210,230,0.85)";
    for(let i=0;i<show;i++){
-    const col=i%5,row=Math.floor(i/5);
-    const gx=s.x+px(10)+col*px(5.8),gy=row?s.y-px(6):s.y;
-    shapePath(ctx,gx,gy,px(2.3),s.q[i].shape);ctx.fill()}
+    const col=i%4,row=Math.floor(i/4);
+    const gx=s.x+px(9.5)+col*px(5.2),gy=row?s.y-px(5.6):s.y;
+    shapePath(ctx,gx,gy,px(2),s.q[i].shape);ctx.fill()}
    if(s.q.length>show){ctx.fillStyle="rgba(160,176,200,.8)";
     ctx.font=px(8)+"px ui-monospace,monospace";
-    ctx.fillText("+"+(s.q.length-show),s.x+px(10)+5*px(5.8),s.y+px(2.5))}}}
+    ctx.fillText("+"+(s.q.length-show),s.x+px(9.5)+4*px(5.2),s.y+px(2.5))}}}
  // trains
  if(!poster||posterTrains){
   const carL=px(13),carW=px(5.5),gapL=px(2.5);
