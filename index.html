@@ -131,6 +131,7 @@ body.poster #posterBar{display:flex}
 </div>
 
 <div class="hud" id="posterBar">
+ <button id="pLabels">LABELS · ON</button>
  <button id="pTrains">TRAINS · ON</button>
  <button id="pPng">EXPORT PNG</button>
  <button id="pExit">RETURN</button>
@@ -332,7 +333,7 @@ chongqing:{
 gba:{
  name:"GREATER BAY",blurb:"Guangzhou, Shenzhen, Hong Kong around the Pearl estuary. Locals serve the cores; up to three intercity expresses stitch the delta.",
  palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2","#6ee0b0","#e07a9a","#b0c85a","#8a7ae0"],
- maxExpress:3,maxMetro:12,
+ maxExpress:3,maxMetro:14,
  features:["tunnel","islands","air","ic","towns"],
  regions:[
   {x:31,y:7,t:"GUANGZHOU"},
@@ -377,7 +378,7 @@ gba:{
  ],
  cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
  core:{x:44,y:13},
- pop:72,popUnit:"M",kmScale:2.0,
+ pop:72,popUnit:"M",kmScale:2.0,symScale:0.85,crossPairs:[[1,2]],
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
   {x:41,y:30,name:"GUANGZHOU SOUTH",kind:"hub",when:.14},
@@ -393,12 +394,12 @@ gba:{
   {x:31,y:73,name:"ZHUHAI",kind:"ic",when:.6},
   {x:31,y:81,name:"MACAU",kind:"ic",when:.7}
  ],
- count:72
+ count:84
 },
 berlin:{
  name:"BERLIN",blurb:"U-Bahn weaves the core; the S-Bahn ring and radials stitch the sprawl. Forests and lakes carve the grid.",
  palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
- maxExpress:3,maxMetro:9,
+ maxExpress:3,maxMetro:7,
  classNames:{metro:"U-BAHN",express:"S-BAHN"},
  features:["terrain","air","sbahn"],
  pop:4,popUnit:"M",kmScale:0.45,
@@ -471,7 +472,7 @@ function computeMetroCap(){
   for(const s of regs[k]){minX=Math.min(minX,s.x);maxX=Math.max(maxX,s.x);
    minY=Math.min(minY,s.y);maxY=Math.max(maxY,s.y)}
   best=Math.max(best,Math.hypot(maxX-minX,maxY-minY))}
- metroCapKm=Math.max(80,Math.round(kms(best)*1.4))}
+ metroCapKm=Math.max(80,Math.round(kms(best)*1.6))}
 function capM(){return(city&&city.maxMetro)||6}
 function clsM(){return(city&&city.classNames&&city.classNames.metro)||"METRO"}
 function clsX(){return(city&&city.classNames&&city.classNames.express)||"INTERCITY"}
@@ -490,7 +491,7 @@ let effAvg=0.6;
 let emergePtr=0, nextEmergeAt=0, weekPaid=0, passengers=0;
 let tool=null;                    // null | 'station' | 'inter' | 'detach'
 let crossings=[];
-let showDensity=false, posterTrains=true, running=false, seenHelp=false;
+let showDensity=false, posterTrains=true, posterLabels=true, running=false, seenHelp=false;
 let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
 function growthG(){
  const sf=stations.length?emergePtr/stations.length:0;
@@ -602,6 +603,10 @@ function genStations(){
   const district=districtAt(p);
   cand.push({x:p.x,y:p.y,shape:shapeFor(district,rng),district,dens:densityAt(p),
    emerged:false,inter:false,q:[],acc:0,order:dCore+(rng()-0.5)*16,name:null,strainT:0,emergeAt:0})}
+ const icPts=(city.specials||[]).filter(sp=>sp.kind==="ic");
+ const nearIC=p2=>{for(const q of icPts)if(dist(p2,q)<9)return true;return false};
+ const regOf=p2=>{let bi=0,bd=1e9;coreList.forEach((c2,ci)=>{const d2=dist(p2,c2);if(d2<bd){bd=d2;bi=ci}});return bi};
+ for(let ci=cand.length-1;ci>=0;ci--)if(nearIC(cand[ci]))cand.splice(ci,1);
  // accretion: sprawl off existing candidates until the roster is full
  let guard=0;
  while(cand.length<city.count-1&&guard<city.count*80){
@@ -615,6 +620,8 @@ function genStations(){
   if(inWater(p,1.2)||inNoBuild(p))continue;
   const d=densityAt(p);
   if(d<0.1&&rng()>0.35)continue;
+  if(nearIC(p))continue;
+  if(cand.length&&regOf(p)!==regOf(parent))continue;
   const dCore=dCores(p);
   const minD=lerp(4.8,10,clamp(dCore/60,0,1));
   let ok=dist(p,lm)>minD;
@@ -880,7 +887,16 @@ function appendAt(L,endName,X){
  rebuildRouting();refreshUI();return true}
 function canServe(L,id){return !stations[id].icOnly||L.express}
 function regionOK(L,id){
- return L.express||L.homeRegion==null||stations[id].region===L.homeRegion}
+ if(L.express||L.homeRegion==null)return true;
+ const r=stations[id].region;
+ if(r===L.homeRegion)return true;
+ const cp=(city&&city.crossPairs)||[];
+ let ok=false;
+ for(const p of cp)if((p[0]===L.homeRegion&&p[1]===r)||(p[1]===L.homeRegion&&p[0]===r)){ok=true;break}
+ if(!ok)return false;
+ let foreign=0;for(const s of L.stops)if(stations[s].region!==L.homeRegion)foreign++;
+ if(foreign>=1){toast("ONE BORDER STATION MAX · LO WU RULE");return false}
+ return true}
 function doConnect(A,B){
  const L=lines[selLine];if(!L)return;
  if(L.loop){toast("LINE IS A LOOP · UNDO TO REOPEN");return}
@@ -888,7 +904,10 @@ function doConnect(A,B){
  if(!L.stops.length){
   if(!canServe(L,A)||!canServe(L,B)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
   if(!L.express&&stations[A].region!==stations[B].region){
-   toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
+   const cp=(city&&city.crossPairs)||[];let ok=false;
+   const rA=stations[A].region,rB=stations[B].region;
+   for(const p of cp)if((p[0]===rA&&p[1]===rB)||(p[1]===rA&&p[0]===rB)){ok=true;break}
+   if(!ok){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}}
   if(kms(dist(stations[A],stations[B]))>(L.express?IC_KM:metroCapKm)){
    toast("TOO LONG FOR ONE LINE");return}
   const tc=Math.round(COST.train*(L.express?1.8:1));
@@ -1250,6 +1269,7 @@ function drawRidges(){
   ctx.strokeStyle="rgba(190,212,255,0.07)";ctx.lineWidth=px(1);ctx.stroke()}}
 function drawRegions(){
  if(!city.regions)return;
+ if(document.body.classList.contains("poster")&&!posterLabels)return;
  ctx.fillStyle="rgba(150,178,215,0.22)";
  ctx.font=px(12)+"px ui-monospace,monospace";
  try{ctx.letterSpacing=px(4)+"px"}catch(e){}
@@ -1385,7 +1405,7 @@ function draw(){
   shapePath(ctx,s.x,s.y,px(s.shape==="plane"?5:4.4),s.shape);ctx.fill();ctx.stroke();
   if(s.icOnly){ctx.lineWidth=px(0.9);
    ctx.beginPath();ctx.arc(s.x,s.y,px(6.6),0,TAU);ctx.stroke()}
-  if(s.name){
+  if(s.name&&(!poster||posterLabels)){
    ctx.fillStyle="rgba(168,186,214,0.85)";
    ctx.font=px(6.5)+"px ui-monospace,monospace";
    ctx.fillText(s.name,s.x+px(9),s.y+px(10))}
@@ -1664,6 +1684,8 @@ $("mQuit").onclick=()=>{$("menuPop").style.display="none";running=false;
  buildOverlay();$("overlay").style.display="flex"};
 $("bPoster").onclick=()=>{document.body.classList.add("poster");$("menuPop").style.display="none"};
 $("pExit").onclick=()=>document.body.classList.remove("poster");
+$("pLabels").onclick=()=>{posterLabels=!posterLabels;
+ $("pLabels").textContent="LABELS · "+(posterLabels?"ON":"OFF")};
 $("pTrains").onclick=()=>{posterTrains=!posterTrains;
  $("pTrains").textContent="TRAINS · "+(posterTrains?"ON":"OFF")};
 $("pPng").onclick=()=>{
