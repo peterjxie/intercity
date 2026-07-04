@@ -116,6 +116,7 @@ body.poster #posterBar{display:flex}
 </div>
 
 <div class="hud" id="menuPop">
+ <button disabled style="opacity:.5" id="mBuild">INTERCITY</button>
  <button id="mSave">SAVE · JSON</button>
  <button id="mLoad">LOAD · JSON</button>
  <button id="mRestart">↺ RESTART CITY</button>
@@ -163,7 +164,7 @@ body.poster #posterBar{display:flex}
 <div id="overlay">
  <div class="inner">
   <h1>INTERCITY</h1>
-  <div class="tag">A TRANSIT LAYOUT GARDEN</div>
+  <div class="tag">A TRANSIT LAYOUT GARDEN · <span id="bldTag"></span></div>
   <div class="lbl">CITY</div>
   <div class="ccards" id="cityCards"></div>
   <div class="blurb" id="blurbCity"></div>
@@ -186,6 +187,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
+const BUILD="B15";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -392,6 +394,55 @@ gba:{
   {x:31,y:81,name:"MACAU",kind:"ic",when:.7}
  ],
  count:72
+},
+berlin:{
+ name:"BERLIN",blurb:"U-Bahn weaves the core; the S-Bahn ring and radials stitch the sprawl. Forests and lakes carve the grid.",
+ palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
+ maxExpress:3,maxMetro:9,
+ classNames:{metro:"U-BAHN",express:"S-BAHN"},
+ features:["terrain","air","sbahn"],
+ pop:4,popUnit:"M",kmScale:0.45,
+ seas:[
+  [[84,56],[96,54],[100,60],[95,68],[85,66],[81,60]],
+  [[20,15],[28,13],[31,19],[26,25],[19,22]],
+  [[9,52],[16,54],[18,60],[14,66],[8,64],[7,57]]
+ ],
+ rivers:[
+  {pts:[[84,60],[72,60],[64,52],[56,52],[50,46],[46,46],[43,43],[40,43],[37,46],[30,46],[24,40],[19,35]],hw:1.6},
+  {pts:[[58,52],[55,55],[44,55],[38,49],[31,49],[29,47]],hw:0.8},
+  {pts:[[51,47],[48,49],[45,49],[43,47]],hw:0.6},
+  {pts:[[19,4],[19,14],[16,17],[16,29],[19,32],[19,36],[16,39],[16,50],[13,53],[13,60],[16,63],[16,72],[13,75],[13,88]],hw:2}
+ ],
+ islands:[],
+ nobuild:[
+  [[15,40],[24,42],[27,62],[17,64]],
+  [[78,66],[94,70],[92,84],[76,80]],
+  [[41,57],[48,57],[49,62],[42,63]]
+ ],
+ blobs:[
+  {x:44,y:42,r:5,w:1.0,t:"cbd"},{x:34,y:46,r:4,w:.85,t:"cbd"},
+  {x:48,y:52,r:5,w:.7,t:"res"},{x:48,y:34,r:4,w:.7,t:"res"},
+  {x:56,y:44,r:4,w:.65,t:"res"},{x:28,y:42,r:4,w:.6,t:"res"},
+  {x:20,y:34,r:4,w:.45,t:"res"},{x:34,y:62,r:5,w:.55,t:"res"},
+  {x:68,y:30,r:5,w:.5,t:"res"},{x:76,y:58,r:4,w:.45,t:"res"},
+  {x:39,y:61,r:4,w:.5,t:"res"},{x:38,y:30,r:4,w:.55,t:"res"},
+  {x:60,y:38,r:4,w:.55,t:"res"}
+ ],
+ corridors:[
+  {pts:[[26,44],[36,44],[46,43],[56,44],[66,46]],w:1.3},
+  {pts:[[44,26],[45,36],[45,48],[42,54],[41,66]],w:1.2},
+  {pts:[[40,50],[32,56],[26,62]],w:.8},
+  {pts:[[50,36],[58,30],[66,26]],w:.8},
+  {pts:[[52,48],[62,54],[72,58]],w:.9},
+  {pts:[[38,38],[30,32],[24,26]],w:.7}
+ ],
+ core:{x:44,y:43},
+ landmark:{x:47,y:41,name:"ALEXANDERPLATZ"},
+ specials:[
+  {x:42,y:40,name:"HAUPTBAHNHOF",kind:"hub",when:.12},
+  {x:60,y:74,name:"BER",kind:"air",when:.4}
+ ],
+ count:70
 }};
 
 /* ================= constants ================= */
@@ -404,6 +455,9 @@ const CAR_CAP=6, MAX_CARS=2;
 const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
 const IC_KM=250;
+function maxTrainsFor(L){
+ let u=0;for(const P of L.paths)u+=P.chord;
+ return L.express?clamp(Math.round(u/22),2,5):clamp(Math.round(u/12),2,6)}
 let metroCapKm=80;
 function kms(u){return u*((city&&city.kmScale)||1)}
 function computeMetroCap(){
@@ -419,6 +473,8 @@ function computeMetroCap(){
   best=Math.max(best,Math.hypot(maxX-minX,maxY-minY))}
  metroCapKm=Math.max(80,Math.round(kms(best)*1.4))}
 function capM(){return(city&&city.maxMetro)||6}
+function clsM(){return(city&&city.classNames&&city.classNames.metro)||"METRO"}
+function clsX(){return(city&&city.classNames&&city.classNames.express)||"INTERCITY"}
 function capX(){return(city&&city.maxExpress)||2}
 function capTotal(){return capM()+capX()}
 const FARE=2, STIPEND=30;
@@ -772,10 +828,10 @@ function createLine(express){
  if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
  if(express){
   if(lines.filter(x=>x.express).length>=capX()){
-   toast("INTERCITY AT MAX · "+capX()+" LINES");return}}
+   toast(clsX()+" AT MAX · "+capX()+" LINES");return}}
  else{
   if(lines.filter(x=>!x.express).length>=capM()){
-   toast("METRO AT MAX · "+capM()+" LINES");return}}
+   toast(clsM()+" AT MAX · "+capM()+" LINES");return}}
  if(lines.length>=lineSlots){
   const c=COST.line+30*(lineSlots-3);
   if(!pay(c))return;lineSlots++;toast("LINE SLOT PURCHASED")}
@@ -783,16 +839,17 @@ function createLine(express){
  lines.push(L);selectLine(lines.length-1);
  const used=lines.filter(x=>x.express===!!express).length;
  toast(express?
-  "INTERCITY "+used+" OF "+capX()+" · HUBS, AIRPORTS, SATELLITES":
-  "METRO LINE "+used+" OF "+capM())}
+  clsX()+" "+used+"/"+capX()+" · HUBS, AIRPORTS, SATELLITES":
+  clsM()+" "+used+"/"+capM())}
 function addLine(){
  if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
  const mLeft=capM()-lines.filter(x=>!x.express).length;
  const xLeft=capX()-lines.filter(x=>x.express).length;
  if(xLeft<=0&&mLeft>0){createLine(false);return}
  if(mLeft<=0&&xLeft>0){createLine(true);return}
- $("lkMetro").textContent="● METRO · "+mLeft+" LEFT";
- $("lkIC").textContent="▪ INTERCITY · "+xLeft+" LEFT";
+ $("lkMetro").textContent="● "+clsM()+" · "+(capM()-mLeft)+"/"+capM();
+ $("lkIC").textContent="▪ "+clsX()+" · "+(capX()-xLeft)+"/"+capX();
+ $("lkMetro").disabled=mLeft<=0;$("lkIC").disabled=xLeft<=0;
  $("lineKind").style.display="block"}
 function edgeOnLine(L,a,b){
  const k=edgeKey(a,b);
@@ -815,7 +872,7 @@ function appendAt(L,endName,X){
  const maxKm=L.express?IC_KM:metroCapKm;
  let lineU=0;for(const P of L.paths)lineU+=P.chord;
  lineU+=dist(stations[end],stations[X]);
- if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?"INTERCITY":"METRO")+")");return false}
+ if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?clsX():clsM())+")");return false}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
@@ -910,6 +967,8 @@ function detachAt(li,idx){
  rebuildRouting();refreshUI();toast("STOP DETACHED")}
 function addTrain(){
  const L=lines[selLine];if(!L||segCountOf(L)<1){toast("SELECT A LINE WITH TRACK");return}
+ if(L.trains.length>=maxTrainsFor(L)){
+  toast("LINE AT MAX TRAINS · "+maxTrainsFor(L)+" · EXTEND TO FIT MORE");return}
  if(!pay(Math.round(COST.train*(L.express?1.8:1))))return;
  const dd=L.loop&&L.trains.length%2?-1:1;
  L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0})}
@@ -1025,7 +1084,9 @@ function stepSpawns(dt){
  const t=minOfDay();
  for(const s of stations){
   if(!s.emerged)continue;
-  s.acc+=dt*SPAWN_K*(0.3+1.7*s.dens)*produceF(s.district,t);
+  const served=(adj.get(s.id)||[]).length>0;
+  if(!served&&s.q.length>=8)continue;
+  s.acc+=dt*SPAWN_K*(0.3+1.7*s.dens)*produceF(s.district,t)*(served?1:0.25);
   while(s.acc>=1){s.acc-=1;
    if(passengers>=PASS_CAP)return;
    const sh=pickTarget(s);if(!sh)continue;
@@ -1033,6 +1094,7 @@ function stepSpawns(dt){
 function stepStrain(dt){
  for(const s of stations){
   if(!s.emerged)continue;
+  if(!(adj.get(s.id)||[]).length){s.strainT=0;continue}
   const cap=s.inter?STRAIN_INTER:STRAIN_AT;
   if(s.q.length>cap){s.strainT+=dt;
    if(s.strainT>7){s.strainT=0;s.q.pop();lost++;passengers--}}
@@ -1067,8 +1129,13 @@ function applyOffer(k){
   if(lineSlots<capTotal()){lineSlots++;toast("LINE SLOT ADDED")}
   else{budget+=50;toast("+$50")}
   refreshUI();return}
- if(k==="train"){const L=busiestLine(false);
-  if(!L){budget+=40;toast("NO TRACK YET · +$40")}
+ if(k==="train"){
+  let L=null,bs=-1;
+  for(const C of lines){
+   if(segCountOf(C)<1||C.trains.length>=maxTrainsFor(C))continue;
+   let q=0;for(const id of C.stops)q+=stations[id].q.length;
+   if(q>bs){bs=q;L=C}}
+  if(!L){budget+=40;toast("ALL LINES AT MAX TRAINS · +$40")}
   else{const dd=L.loop&&L.trains.length%2?-1:1;
    L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0});
    toast("TRAIN DELIVERED · LINE "+(L.id+1))}
@@ -1087,7 +1154,15 @@ function update(dtReal){
   const gg=stations.length?emergePtr/stations.length:1;
   nextEmergeAt=simS+(isOp()?0.6:0.5)*DAY_SECONDS*(0.7+Math.random()*0.6)*(1+1.7*gg)}
  if(isOp()){const wk=Math.floor(simS/(DAY_SECONDS*7));
-  if(wk>weekPaid){weekPaid=wk;budget+=STIPEND;toast("WEEKLY SUBSIDY +$"+STIPEND);makeOffer()}}
+  if(wk>weekPaid){weekPaid=wk;
+   let tr=0,cc=0,ukm=0;
+   for(const L of lines){tr+=L.trains.length;
+    for(const t of L.trains)cc+=t.cars;
+    for(const P of L.paths)ukm+=P.chord}
+   const up=Math.round(1.5*tr+0.7*cc+0.32*kms(ukm));
+   budget+=STIPEND-up;
+   toast("WEEK "+wk+" · +$"+STIPEND+" SUBSIDY · −$"+up+" UPKEEP");
+   makeOffer()}}
  const ug=growthG();
  if(Math.abs(ug-lastUrbanG)>0.03)buildUrbanLayer(ug);
  stepSpawns(dt);
@@ -1196,7 +1271,8 @@ function draw(){
  // glow
  ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineJoin="round";ctx.lineCap="round";
  for(const pass of[[4.5,.09]]){
-  for(const L of lines){ctx.strokeStyle=L.color;ctx.globalAlpha=pass[1];
+  for(const L of lines){ctx.strokeStyle=L.color;
+   ctx.globalAlpha=pass[1]*(L.express?1.8:1);
    ctx.lineWidth=px(pass[0]);
    for(const P of L.paths)strokeElbow(ctx,P.pts,3.2)}}
  ctx.restore();
@@ -1204,6 +1280,7 @@ function draw(){
  ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
  for(const L of lines){
   ctx.strokeStyle=L.color;
+  ctx.globalAlpha=(L.express||L.id===selLine)?1:0.78;
   for(const P of L.paths){
    if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
    if(L.express){
@@ -1213,6 +1290,7 @@ function draw(){
     ctx.lineWidth=lineWidthFor(L.id);
     strokeElbow(ctx,P.pts,3.2)}}
   ctx.setLineDash([])}
+ ctx.globalAlpha=1;
  // crossing hops: break the under line, carry the over line across
  ctx.lineCap="butt";
  for(const c of crossings){
@@ -1495,7 +1573,10 @@ function refreshUI(){
  const exp=hasLine&&lines[selLine].express;
  const co=n=>isOp()?"$"+n:"";
  mk(ic('<rect x="1.5" y="4" width="11" height="6.5" rx="2.6"/><path d="M14.7 4.9v4.2M12.6 7h4.2"/>'),
-  addTrain,false,!hasLine,co(exp?Math.round(COST.train*1.8):COST.train),"Add train");
+  addTrain,false,!hasLine,
+  co(exp?Math.round(COST.train*1.8):COST.train)+
+   (hasLine&&segCountOf(lines[selLine])>0?" "+lines[selLine].trains.length+"/"+maxTrainsFor(lines[selLine]):""),
+  "Add train");
  mk(ic('<rect x="3" y="4.7" width="8" height="5.3" rx="2.2"/><path d="M13.8 4.9v4.2M11.7 7h4.2"/>'),
   addCar,false,!hasLine,co(COST.car),"Add carriage");
  mk(ic('<path d="M4.5 7a4.5 4.5 0 1 1 1.3 3.2M4.5 7V3.6M4.5 7h3.4"/>','0 0 14 14'),
@@ -1577,6 +1658,7 @@ $("bMenu").onclick=()=>{const m=$("menuPop");
 $("mFit").onclick=()=>{fitView();$("menuPop").style.display="none"};
 $("mDensity").onclick=()=>{showDensity=!showDensity;
  $("mDensity").textContent="DENSITY GLOW · "+(showDensity?"ON":"OFF")};
+$("mBuild").textContent="INTERCITY · "+BUILD;
 $("mRestart").onclick=()=>{$("menuPop").style.display="none";startGame()};
 $("mQuit").onclick=()=>{$("menuPop").style.display="none";running=false;
  buildOverlay();$("overlay").style.display="flex"};
@@ -1658,13 +1740,14 @@ function paintCityIcon(cnv,cid){
  for(const poly of (c.nobuild||[])){g.beginPath();
   poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
   g.closePath();g.fillStyle="rgba(200,220,255,0.08)";g.fill()}}
-const FEAT_CAT={tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
+const FEAT_CAT={sbahn:"VEHICLE",tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
 const FEAT={
  ferry:{t:"Ferry links",d:'<path d="M1.5 8.5c1.8-1.6 3.6-1.6 5.5 0s3.7 1.6 5.5 0"/><path d="M4 3.5v5M4 3.5l3 1.8V8"/>'},
  tunnel:{t:"Tunnel crossings",d:'<path d="M2.2 10V7.2a4.8 4.8 0 0 1 9.6 0V10"/><path d="M1 11.6h12" stroke-dasharray="2 1.7"/>'},
  terrain:{t:"Ridge terrain",d:'<path d="M1.2 11L5 4.2l2.6 4.6L9.4 6l3.4 5"/>'},
  air:{t:"Airport connections",d:'<path d="M7 1.6v8.8M2.6 6.2L7 4l4.4 2.2M4.8 11l2.2-1.2L9.2 11"/>'},
  ic:{t:"Intercity expresses",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
+ sbahn:{t:"S-Bahn network",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
  towns:{t:"Satellite towns",d:'<circle cx="7" cy="6.6" r="2"/><circle cx="7" cy="6.6" r="4.4"/>'},
  islands:{t:"Island geography",d:'<path d="M3.2 7.6c0-1.9 1.6-3.2 3.8-3.2s3.8 1.3 3.8 3.2-1.7 2.9-3.8 2.9-3.8-1-3.8-2.9Z"/><path d="M1.6 11.4h10.8" stroke-dasharray="2 1.7"/>'}};
 function featLegend(feats){
@@ -1711,7 +1794,7 @@ $("beginBtn").onclick=()=>{startGame();$("overlay").style.display="none";
 function startGame(){
  city=CITIES[cityId];
  lines=[];selLine=-1;lineSlots=3;tool=null;
- budget=140;delivered=0;lost=0;journeySum=0;transferSum=0;
+ budget=220;delivered=0;lost=0;journeySum=0;transferSum=0;
  simS=0;weekPaid=0;passengers=0;
  nextEmergeAt=DAY_SECONDS*0.7;
  genStations();computeMetroCap();buildDensityLayer();buildUrbanLayer();rebuildRouting();
@@ -1719,6 +1802,7 @@ function startGame(){
  refreshUI();fitView();running=true;
  $("offer").style.display="none";$("lineKind").style.display="none"}
 buildOverlay();
+document.getElementById("bldTag").textContent=BUILD;
 
 /* ================= main loop ================= */
 let lastT=performance.now();
