@@ -282,7 +282,7 @@ istanbul:{
   {pts:[[62,48],[63,36],[66,26]],w:.6}
  ],
  core:{x:46,y:60},
- pop:16,popUnit:"M",
+ pop:16,popUnit:"M",kmScale:0.8,
  landmark:{x:45,y:63,name:"SULTANAHMET"},
  maxExpress:2,maxMetro:6,
  features:["tunnel","ferry","air","ic"],
@@ -318,7 +318,7 @@ chongqing:{
   {pts:[[64,44],[72,42],[82,36]],w:.9}
  ],
  core:{x:50,y:51},
- pop:32,popUnit:"M",
+ pop:32,popUnit:"M",kmScale:0.6,
  landmark:{x:52,y:50,name:"CHAOTIANMEN"},
  maxExpress:2,
  features:["tunnel","terrain","air","ic"],
@@ -375,7 +375,7 @@ gba:{
  ],
  cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
  core:{x:44,y:13},
- pop:72,popUnit:"M",
+ pop:72,popUnit:"M",kmScale:2.0,symScale:0.8,
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
   {x:41,y:30,name:"GUANGZHOU SOUTH",kind:"hub",when:.14},
@@ -403,6 +403,8 @@ const TRAIN_SPEED=9;
 const CAR_CAP=6, MAX_CARS=2;
 const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
+const METRO_KM=65, IC_KM=250;
+function kms(u){return u*((city&&city.kmScale)||1)}
 function capM(){return(city&&city.maxMetro)||6}
 function capX(){return(city&&city.maxExpress)||2}
 function capTotal(){return capM()+capX()}
@@ -454,7 +456,7 @@ function fitView(){const t=frameTarget();
  view.s=t.s;view.x=t.x;view.y=t.y;baseS=view.s;userCam=false}
 function s2w(p){return{x:p.x/view.s+view.x,y:p.y/view.s+view.y}}
 function symF(){return clamp(Math.pow(view.s/baseS,0.6),0.5,1)}
-function px(v){return v*symF()/view.s}
+function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
 function pxr(v){return v/view.s}
 
 /* ================= density & districts ================= */
@@ -795,10 +797,10 @@ function appendAt(L,endName,X){
   L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
   rebuildRouting();refreshUI();toast("LOOP CLOSED");return true}
  if(L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return false}
- const maxKm=L.express?55:30;
- let lineKm=0;for(const P of L.paths)lineKm+=P.chord;
- lineKm+=dist(stations[end],stations[X]);
- if(lineKm>maxKm){toast("LINE AT MAX LENGTH · "+maxKm+" KM");return false}
+ const maxKm=L.express?IC_KM:METRO_KM;
+ let lineU=0;for(const P of L.paths)lineU+=P.chord;
+ lineU+=dist(stations[end],stations[X]);
+ if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?"INTERCITY":"METRO")+")");return false}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
@@ -815,6 +817,8 @@ function doConnect(A,B){
   if(!canServe(L,A)||!canServe(L,B)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
   if(!L.express&&stations[A].region!==stations[B].region){
    toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
+  if(kms(dist(stations[A],stations[B]))>(L.express?IC_KM:METRO_KM)){
+   toast("TOO LONG FOR ONE LINE");return}
   const tc=Math.round(COST.train*(L.express?1.8:1));
   if(!pay(segCost(A,B)*exf(L)+tc))return;
   L.stops=[A,B];L.activeEnd="tail";
@@ -857,6 +861,9 @@ function spliceAt(li,segIdx,X){
  if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
  const a=L.stops[segIdx],b=L.stops[(segIdx+1)%L.stops.length];
  if(X===a||X===b||L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return}
+ let lineU=0;for(const P of L.paths)lineU+=P.chord;
+ lineU+=dist(stations[a],stations[X])+dist(stations[X],stations[b])-dist(stations[a],stations[b]);
+ if(kms(lineU)>(L.express?IC_KM:METRO_KM)){toast("LINE AT MAX LENGTH");return}
  const dc=(segCost(a,X)+segCost(X,b)-segCost(a,b))*exf(L);
  if(!pay(Math.max(0,dc)))return;
  L.stops.splice(segIdx+1,0,X);buzz(12);
@@ -1523,6 +1530,7 @@ function hudTick(){
  const eff=Math.round(effAvg*100);
  const bud=Math.floor(budget);
  let tkm=0;for(const L of lines)for(const P of L.paths)tkm+=P.chord;
+ tkm=kms(tkm);
  const now=performance.now();
  if(now-mLastT>2000){
   if(mPrev.eff>=0){
