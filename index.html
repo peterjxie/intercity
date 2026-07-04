@@ -11,7 +11,8 @@
 :root{--bg:#06080d;--ink:#dfe7f3;--dim:#6b7a92;--panel:rgba(16,22,34,.88);--edge:rgba(120,150,200,.22)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
- font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+ font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+ user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 canvas{position:fixed;inset:0;touch-action:none;display:block}
 .hud{position:fixed;z-index:6;user-select:none;-webkit-user-select:none}
 #topL{top:10px;left:12px;font-size:10px;letter-spacing:.22em;line-height:1.7;pointer-events:none}
@@ -76,6 +77,7 @@ body.poster #offer,body.poster #lineKind{display:none!important}
 .ccard.sel{border-color:#7fd4ff;box-shadow:0 0 14px rgba(90,190,255,.22)}
 .ccard canvas{width:62px;height:62px;border-radius:9px}
 .ccard b{font-size:8.5px;letter-spacing:.2em;font-weight:400;color:#fff;text-align:center}
+.feats{display:flex;gap:5px;justify-content:center;min-height:14px}
 .micon{width:44px;height:44px;border:1.5px solid rgba(190,215,245,.5);border-radius:50%;
  display:flex;align-items:center;justify-content:center;font-size:20px;color:#d9e6f7;margin:9px 0}
 .info{position:absolute;top:5px;right:6px;width:17px;height:17px;border-radius:50%;
@@ -150,11 +152,11 @@ body.poster #posterBar{display:flex}
 
 <div id="helpCard"><div class="box">
  <h2>HOW TO BUILD</h2>
- <p><em>Connect:</em> pick a colour, tap one station, then tap another. Nothing is built on a single tap. Tap the same station, or empty ground, to deselect.</p>
- <p><em>Extend:</em> a selected line shows rings at both ends. Tap an end, then the next station. Keep tapping to chain. Or drag from an end straight to a station.</p>
- <p><em>Splice a bypassed station in:</em> drag a segment diamond onto the station. Or tap the station, then tap the diamond.</p>
- <p><em>Flip a curve:</em> tap a diamond with nothing selected. <em>Re-route:</em> tap a stop, then DETACH lifts it off the line; splice it back wherever.</p>
- <p><em>Loop:</em> connect one end to the other. <em>Intercity:</em> choose it when adding a line with + — thin double track, 2× trains, dearer, and the only lines allowed at double-ringed satellite stations. <em>Camera:</em> drag empty ground to pan, pinch to zoom.</p>
+ <p><em>Connect:</em> drag from any station to another. Grabbing a line's ringed end extends that line and selects it automatically. The ghost snaps to the nearest station.</p>
+ <p><em>Select:</em> tap any line, or tap a station to cycle the lines through it. Tap empty ground to deselect.</p>
+ <p><em>Splice:</em> drag a segment diamond onto a bypassed station. <em>Flip a curve:</em> tap a diamond. <em>Detach:</em> drag a middle stop off its line, or use the station-minus tool.</p>
+ <p><em>Megacities:</em> metro lines stay within one city; only intercity lines (choose ▪ when adding) cross between cities or reach double-ringed satellites.</p>
+ <p><em>Loop:</em> connect one end to the other. <em>Camera:</em> drag empty ground to pan, pinch to zoom.</p>
  <button id="helpOk">GOT IT</button>
 </div></div>
 
@@ -254,7 +256,7 @@ function pointAlongPoly(pl,t){
 const CITIES={
 istanbul:{
  name:"ISTANBUL",blurb:"Two continents, one strait. Every east–west line pays the Bosphorus toll.",
- palette:["#e04b4b","#37b46e","#4db8e8","#e0559f","#9a6ee0","#d8b45a","#e08a6a"],
+ palette:["#e04b4b","#37b46e","#4db8e8","#e0559f","#9a6ee0","#d8b45a","#e08a6a","#8a9bb8"],
  seas:[
   [[-5,74],[14,74],[20,68],[34,68],[40,74],[50,74],[52,72],[58,72],[62,76],[78,76],[84,70],[105,70],[105,105],[-5,105]]
  ],
@@ -280,16 +282,19 @@ istanbul:{
   {pts:[[62,48],[63,36],[66,26]],w:.6}
  ],
  core:{x:46,y:60},
+ pop:16,popUnit:"M",
  landmark:{x:45,y:63,name:"SULTANAHMET"},
- maxExpress:2,
+ maxExpress:2,maxMetro:6,
+ features:["tunnel","ferry","air","ic"],
  specials:[
   {x:28,y:14,name:"IST",kind:"air",when:.4}
  ],
- count:64
+ count:82
 },
 chongqing:{
  name:"CHONGQING",blurb:"Two rivers meet at a peninsula; ridge country hems the grid in.",
- palette:["#e05252","#3cb46e","#5a86e0","#d8b45a","#5bc8d8","#e06ab0","#9a6ee0"],
+ palette:["#e05252","#3cb46e","#5a86e0","#d8b45a","#5bc8d8","#e06ab0","#9a6ee0","#a8c85a"],
+ maxMetro:6,
  seas:[],
  rivers:[
   {pts:[[-4,88],[14,88],[32,70],[44,70],[58,56],[64,50],[80,50],[92,38],[104,38]],hw:4},
@@ -313,17 +318,20 @@ chongqing:{
   {pts:[[64,44],[72,42],[82,36]],w:.9}
  ],
  core:{x:50,y:51},
+ pop:32,popUnit:"M",
  landmark:{x:52,y:50,name:"CHAOTIANMEN"},
  maxExpress:2,
+ features:["tunnel","terrain","air","ic"],
  specials:[
   {x:60,y:12,name:"CKG",kind:"air",when:.35}
  ],
- count:60
+ count:78
 },
 gba:{
  name:"GREATER BAY",blurb:"Guangzhou, Shenzhen, Hong Kong around the Pearl estuary. Locals serve the cores; up to three intercity expresses stitch the delta.",
- palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0"],
- maxExpress:3,
+ palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2"],
+ maxExpress:3,maxMetro:8,
+ features:["tunnel","islands","air","ic","towns"],
  regions:[
   {x:31,y:7,t:"GUANGZHOU"},
   {x:73,y:61,t:"SHENZHEN"},
@@ -367,6 +375,7 @@ gba:{
  ],
  cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
  core:{x:44,y:13},
+ pop:72,popUnit:"M",
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
   {x:41,y:30,name:"GUANGZHOU SOUTH",kind:"hub",when:.14},
@@ -382,7 +391,7 @@ gba:{
   {x:31,y:73,name:"ZHUHAI",kind:"ic",when:.6},
   {x:31,y:81,name:"MACAU",kind:"ic",when:.7}
  ],
- count:60
+ count:72
 }};
 
 /* ================= constants ================= */
@@ -394,6 +403,9 @@ const TRAIN_SPEED=9;
 const CAR_CAP=6, MAX_CARS=2;
 const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
+function capM(){return(city&&city.maxMetro)||6}
+function capX(){return(city&&city.maxExpress)||2}
+function capTotal(){return capM()+capX()}
 const FARE=2, STIPEND=30;
 const SPAWN_K=0.042, PASS_CAP=340;
 const STRAIN_AT=12, STRAIN_INTER=18;
@@ -405,8 +417,7 @@ let budget=140, delivered=0, lost=0, journeySum=0, transferSum=0;
 let simS=0, speedIdx=1; const SPEEDS=[0,1,4], SPEEDLBL=["⏸ 0×","▶ 1×","▶▶ 4×"];
 let effAvg=0.6;
 let emergePtr=0, nextEmergeAt=0, weekPaid=0, passengers=0;
-let tool=null;                    // null | 'station' | 'inter'
-let pendingSt=null;               // tapped station awaiting a partner
+let tool=null;                    // null | 'station' | 'inter' | 'detach'
 let crossings=[];
 let showDensity=false, posterTrains=true, running=false, seenHelp=false;
 let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
@@ -466,13 +477,15 @@ function buildUrbanLayer(g){
  urbanCanvas=document.createElement("canvas");urbanCanvas.width=640;urbanCanvas.height=640;
  const gc=urbanCanvas.getContext("2d"),k=640/100,cell=2.5,gapc=0.45;
  const thr=lerp(0.62,0.14,g);
+ const cols=[[0.14,"rgba(80,110,170,"],[0.38,"rgba(120,155,210,"],[0.62,"rgba(170,195,235,"]];
  for(let x=0;x<100;x+=cell)for(let y=0;y<100;y+=cell){
   const c={x:x+cell/2,y:y+cell/2};
   if(inWater(c)||inNoBuild(c))continue;
   const d=densityAt(c);
   if(d<thr)continue;
-  const a=d>0.7?0.085:d>0.42?0.055:0.032;
-  gc.fillStyle="rgba(148,178,226,"+a+")";
+  let col=cols[0];for(const C of cols)if(d>=C[0])col=C;
+  const a=d>0.7?0.10:d>0.42?0.065:0.035;
+  gc.fillStyle=col[1]+a+")";
   gc.fillRect((x+gapc/2)*k,(y+gapc/2)*k,(cell-gapc)*k,(cell-gapc)*k)}}
 function buildDensityLayer(){
  densCanvas=document.createElement("canvas");densCanvas.width=520;densCanvas.height=520;
@@ -554,7 +567,10 @@ function genStations(){
    const idx=Math.min(cand.length,Math.floor(S.when*(cand.length+sp.length)));
    cand.splice(idx,0,st)}}
  stations=stations.concat(cand);
- stations.forEach((s,i)=>s.id=i);
+ stations.forEach((s,i)=>{s.id=i;
+  let bi=0,bd=1e9;
+  coreList.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
+  s.region=bi});
  emergePtr=0;
  for(let i=0;i<Math.min(8,stations.length);i++)emergeStation(false)}
 function distToNetwork(p){
@@ -603,7 +619,7 @@ function emergeStation(ping){
 /* ================= lines & geometry ================= */
 function newLineObj(i){
  const pal=(city&&city.palette)||LINE_COLORS;
- return{id:i,color:pal[i%pal.length],stops:[],express:false,
+ return{id:i,color:pal[i%pal.length],stops:[],express:false,homeRegion:null,
  flips:{},loop:false,trains:[],paths:[],activeEnd:"tail"}}
 function segCountOf(L){return L.loop?L.stops.length:Math.max(0,L.stops.length-1)}
 function edgeKey(a,b){return a<b?a+"-"+b:b+"-"+a}
@@ -656,7 +672,8 @@ function rebuildGeometry(){
    let pts=offsetElbow(raw,d);
    if(aI!==lo)pts=pts.slice().reverse();
    L.paths.push({pts,len:pathLen(pts),tunnel:pathCrossesWater(pts),
-    chord:dist(stations[aI],stations[bI]),aId:aI,bId:bI})}}
+    chord:dist(stations[aI],stations[bI]),aId:aI,bId:bI,
+    cornerS:pts.length===3?dist(pts[0],pts[1]):null})}}
  computeCrossings()}
 function computeCrossings(){
  crossings=[];
@@ -674,7 +691,8 @@ function computeCrossings(){
   if(A.li===selLine){over=A;under=B}
   else if(B.li!==selLine&&A.li>B.li){over=A;under=B}
   const dx=over.b.x-over.a.x,dy=over.b.y-over.a.y,m=Math.hypot(dx,dy)||1;
-  crossings.push({x:p.x,y:p.y,dx:dx/m,dy:dy/m,li:over.li,tunnel:over.tunnel})}}
+  crossings.push({x:p.x,y:p.y,dx:dx/m,dy:dy/m,li:over.li,liU:under.li,tunnel:over.tunnel,
+   metroClash:!lines[over.li].express&&!lines[under.li].express})}}
 
 /* ================= routing ================= */
 let adj=new Map(),distByShape={};
@@ -729,26 +747,35 @@ function segCost(a,b,pts){let c=dist(stations[a],stations[b])*COST.track;
  return c}
 
 /* ================= line editing ================= */
-function selectLine(i){selLine=i;tool=null;pendingSt=null;
+function selectLine(i){selLine=i;tool=null;
  const lk=document.getElementById("lineKind");if(lk)lk.style.display="none";
  rebuildGeometry();refreshUI()}
 function createLine(express){
  $("lineKind").style.display="none";
- if(lines.length>=MAX_LINES){toast("NETWORK AT MAX · "+MAX_LINES+" LINES");return}
+ if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
  if(express){
-  const capX=(city&&city.maxExpress)||2;
-  if(lines.filter(x=>x.express).length>=capX){
-   toast("INTERCITY AT MAX · "+capX+" LINES");return}}
+  if(lines.filter(x=>x.express).length>=capX()){
+   toast("INTERCITY AT MAX · "+capX()+" LINES");return}}
+ else{
+  if(lines.filter(x=>!x.express).length>=capM()){
+   toast("METRO AT MAX · "+capM()+" LINES");return}}
  if(lines.length>=lineSlots){
   const c=COST.line+30*(lineSlots-3);
   if(!pay(c))return;lineSlots++;toast("LINE SLOT PURCHASED")}
  const L=newLineObj(lines.length);L.express=!!express;
  lines.push(L);selectLine(lines.length-1);
- if(express)toast("INTERCITY LINE · HUBS, AIRPORTS AND SATELLITES")}
+ const used=lines.filter(x=>x.express===!!express).length;
+ toast(express?
+  "INTERCITY "+used+" OF "+capX()+" · HUBS, AIRPORTS, SATELLITES":
+  "METRO LINE "+used+" OF "+capM())}
 function addLine(){
- if(lines.length>=MAX_LINES){toast("NETWORK AT MAX · "+MAX_LINES+" LINES");return}
- const capX=(city&&city.maxExpress)||2;
- if(lines.filter(x=>x.express).length>=capX){createLine(false);return}
+ if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
+ const mLeft=capM()-lines.filter(x=>!x.express).length;
+ const xLeft=capX()-lines.filter(x=>x.express).length;
+ if(xLeft<=0&&mLeft>0){createLine(false);return}
+ if(mLeft<=0&&xLeft>0){createLine(true);return}
+ $("lkMetro").textContent="● METRO · "+mLeft+" LEFT";
+ $("lkIC").textContent="▪ INTERCITY · "+xLeft+" LEFT";
  $("lineKind").style.display="block"}
 function edgeOnLine(L,a,b){
  const k=edgeKey(a,b);
@@ -757,46 +784,56 @@ function edgeOnLine(L,a,b){
  return false}
 function appendAt(L,endName,X){
  if(!canServe(L,X)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return false}
+ if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return false}
  const end=endName==="tail"?L.stops[L.stops.length-1]:L.stops[0];
  const other=endName==="tail"?L.stops[0]:L.stops[L.stops.length-1];
  if(X===end)return false;
  if(edgeOnLine(L,end,X)){toast("EDGE ALREADY ON THIS LINE");return false}
  if(X===other&&L.stops.length>=3){
   if(!pay(segCost(end,X)*exf(L)))return false;
-  L.loop=true;pendingSt=null;buzz(14);
+  L.loop=true;buzz(14);
+  L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
   rebuildRouting();refreshUI();toast("LOOP CLOSED");return true}
  if(L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return false}
- if(L.stops.length>=16){toast("LINE AT MAX LENGTH");return false}
+ const maxKm=L.express?55:30;
+ let lineKm=0;for(const P of L.paths)lineKm+=P.chord;
+ lineKm+=dist(stations[end],stations[X]);
+ if(lineKm>maxKm){toast("LINE AT MAX LENGTH · "+maxKm+" KM");return false}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
  L.activeEnd=endName;buzz(12);
  rebuildRouting();refreshUI();return true}
 function canServe(L,id){return !stations[id].icOnly||L.express}
+function regionOK(L,id){
+ return L.express||L.homeRegion==null||stations[id].region===L.homeRegion}
 function doConnect(A,B){
  const L=lines[selLine];if(!L)return;
  if(L.loop){toast("LINE IS A LOOP · UNDO TO REOPEN");return}
  if(A===B)return;
  if(!L.stops.length){
   if(!canServe(L,A)||!canServe(L,B)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
+  if(!L.express&&stations[A].region!==stations[B].region){
+   toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
   const tc=Math.round(COST.train*(L.express?1.8:1));
   if(!pay(segCost(A,B)*exf(L)+tc))return;
-  L.stops=[A,B];L.activeEnd="tail";pendingSt=B;buzz(12);
-  L.trains.push({li:L.id,seg:0,f:0,dir:1,dwell:.4,cars:0,riders:[]});
+  L.stops=[A,B];L.activeEnd="tail";
+  L.homeRegion=L.express?null:stations[A].region;
+  buzz(12);
+  L.trains.push({li:L.id,seg:0,f:0,dir:1,dwell:.4,cars:0,riders:[],v:0});
   toast("LINE OPENED · FIRST TRAIN INCLUDED");
   rebuildRouting();refreshUI();return}
  if(isEndOf(L,A)){
   const endName=A===L.stops[L.stops.length-1]?"tail":"head";
-  if(appendAt(L,endName,B))if(!L.loop)pendingSt=B;
+  appendAt(L,endName,B);
   return}
  if(isEndOf(L,B)){
   const endName=B===L.stops[L.stops.length-1]?"tail":"head";
-  if(appendAt(L,endName,A))if(!L.loop)pendingSt=A;
+  appendAt(L,endName,A);
   return}
- toast("JOIN AT A RINGED LINE END · OR TAP A DIAMOND TO SPLICE")}
+ toast("DRAG FROM A RINGED LINE END")}
 function undoStop(){
  const L=lines[selLine];if(!L||!L.stops.length)return;
- pendingSt=null;
  if(L.loop){L.loop=false;rebuildRouting();refreshUI();toast("LOOP OPENED");return}
  let removed;
  if(L.activeEnd==="tail")removed=L.stops.pop();
@@ -812,46 +849,48 @@ function deleteLine(){
  if(isOp()){let refund=L.trains.length*COST.train*(L.express?1.8:1)*0.5;
   for(let i=0;i<segCountOf(L);i++)refund+=L.paths[i].chord*COST.track*exf(L)*0.5;
   budget+=refund}
- L.stops=[];L.trains=[];L.loop=false;L.flips={};pendingSt=null;
+ L.stops=[];L.trains=[];L.loop=false;L.flips={};L.homeRegion=null;
  rebuildRouting();refreshUI();toast("LINE CLEARED")}
 function spliceAt(li,segIdx,X){
  const L=lines[li];
  if(!canServe(L,X)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
+ if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
  const a=L.stops[segIdx],b=L.stops[(segIdx+1)%L.stops.length];
  if(X===a||X===b||L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return}
  const dc=(segCost(a,X)+segCost(X,b)-segCost(a,b))*exf(L);
  if(!pay(Math.max(0,dc)))return;
  L.stops.splice(segIdx+1,0,X);buzz(12);
  for(const t of L.trains)if(t.seg>segIdx)t.seg++;
- pendingSt=null;
  rebuildRouting();refreshUI();toast("STATION SPLICED IN")}
-function detachStop(){
- const L=lines[selLine];if(!L)return;
- if(pendingSt==null||!L.stops.includes(pendingSt)){
-  toast("TAP A STOP ON THIS LINE FIRST");return}
- const i=L.stops.indexOf(pendingSt),n=L.stops.length;
+function detachAt(li,idx){
+ const L=lines[li];if(!L)return;
+ const i=L.stops.indexOf(idx);
+ if(i<0){toast("NOT A STOP ON THIS LINE");return}
+ const n=L.stops.length;
  let refund=0;
  if(L.loop){
   const a=L.stops[(i-1+n)%n],b=L.stops[(i+1)%n];
-  refund=(segCost(a,pendingSt)+segCost(pendingSt,b)-segCost(a,b))*exf(L)*0.6;
+  refund=(segCost(a,idx)+segCost(idx,b)-segCost(a,b))*exf(L)*0.6;
   L.stops.splice(i,1);
   if(L.stops.length<3)L.loop=false}
  else if(i>0&&i<n-1){
   const a=L.stops[i-1],b=L.stops[i+1];
-  refund=(segCost(a,pendingSt)+segCost(pendingSt,b)-segCost(a,b))*exf(L)*0.6;
+  refund=(segCost(a,idx)+segCost(idx,b)-segCost(a,b))*exf(L)*0.6;
   L.stops.splice(i,1)}
  else{
   const nb=i===0?L.stops[1]:L.stops[n-2];
-  if(nb!=null)refund=segCost(pendingSt,nb)*exf(L)*0.6;
+  if(nb!=null)refund=segCost(idx,nb)*exf(L)*0.6;
   L.stops.splice(i,1)}
  for(const t of L.trains){if(t.seg>=i)t.seg=Math.max(0,t.seg-1)}
  if(isOp())budget+=Math.max(0,refund);
- pendingSt=null;
+ if(!L.stops.length)L.homeRegion=null;
+ buzz(12);
  rebuildRouting();refreshUI();toast("STOP DETACHED")}
 function addTrain(){
  const L=lines[selLine];if(!L||segCountOf(L)<1){toast("SELECT A LINE WITH TRACK");return}
  if(!pay(Math.round(COST.train*(L.express?1.8:1))))return;
- L.trains.push({li:L.id,seg:0,f:0,dir:1,dwell:.4,cars:0,riders:[]})}
+ const dd=L.loop&&L.trains.length%2?-1:1;
+ L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0})}
 function addCar(){
  const L=lines[selLine];if(!L||!L.trains.length){toast("NO TRAIN ON THIS LINE");return}
  const t=L.trains.reduce((m,x)=>x.cars<m.cars?x:m,L.trains[0]);
@@ -862,72 +901,101 @@ function placeStation(p){
  for(const s of stations)if((s.emerged||s.name)&&dist(p,s)<6){toast("TOO CLOSE TO A STATION");return}
  if(!pay(COST.station))return;
  const d=districtAt(p);
+ const cl=city.cores||[city.core];
+ let bi=0,bd=1e9;cl.forEach((c2,ci)=>{const d2=dist(p,c2);if(d2<bd){bd=d2;bi=ci}});
  const s={x:p.x,y:p.y,shape:shapeFor(d,mulberry32((Math.random()*1e9)|0)),district:d,
-  dens:densityAt(p),emerged:true,inter:false,q:[],acc:0,order:0,name:null,
+  dens:densityAt(p),emerged:true,inter:false,q:[],acc:0,order:0,name:null,region:bi,
   strainT:0,emergeAt:simS,id:stations.length};
  stations.push(s);tool=null;rebuildRouting();refreshUI();toast("INFILL STATION OPENED")}
 function upgradeInter(idx){
  const s=stations[idx];
  if(s.inter){toast("ALREADY AN INTERCHANGE");tool=null;refreshUI();return}
  if(!pay(COST.inter))return;
- s.inter=true;tool=null;pendingSt=null;refreshUI();toast("INTERCHANGE BUILT")}
+ s.inter=true;tool=null;refreshUI();toast("INTERCHANGE BUILT")}
 
 /* ================= simulation ================= */
 function nextAfter(L,arriveIdx,dirIn){
  const n=L.stops.length;if(n<2)return null;
- if(L.loop)return L.stops[(arriveIdx+1)%n];
+ if(L.loop)return dirIn>0?L.stops[(arriveIdx+1)%n]:L.stops[(arriveIdx-1+n)%n];
  if(dirIn>0)return arriveIdx>=n-1?L.stops[n-2]:L.stops[arriveIdx+1];
  return arriveIdx<=0?L.stops[1]:L.stops[arriveIdx-1]}
 function exchange(t,L,arriveIdx){
  const stId=L.stops[arriveIdx],st=stations[stId];
+ let moved=0;
  const kept=[];
  for(const r of t.riders){
-  if(r.shape===st.shape){delivered++;journeySum+=(simS-r.spawn)*GM_PER_S;transferSum+=r.tf;
+  if(r.shape===st.shape){delivered++;moved++;journeySum+=(simS-r.spawn)*GM_PER_S;transferSum+=r.tf;
    if(r.ox!=null){
-    const ideal=dist({x:r.ox,y:r.oy},st)/TRAIN_SPEED+1.2;
+    const crowD=dist({x:r.ox,y:r.oy},st);
+    const ideal=crowD/TRAIN_SPEED+2.5+crowD*0.12;
     const act=Math.max(0.001,simS-r.spawn);
     effAvg=effAvg*0.985+clamp(ideal/act,0,1)*0.015}
    if(isOp())budget+=FARE}
   else kept.push(r)}
  t.riders=kept;
  const nx=nextAfter(L,arriveIdx,t.dir);
- if(nx==null){for(const r of t.riders){r.tf++;st.q.push(r)}t.riders=[];return}
+ if(nx==null){for(const r of t.riders){r.tf++;st.q.push(r);moved++}t.riders=[];return moved}
  const dHere=sh=>distByShape[sh]?distByShape[sh][stId]:Infinity;
  const dNext=sh=>distByShape[sh]?distByShape[sh][nx]:Infinity;
  const stay=[];
  for(const r of t.riders){
   if(dNext(r.shape)<dHere(r.shape))stay.push(r);
-  else{r.tf++;st.q.push(r)}}
+  else{r.tf++;st.q.push(r);moved++}}
  t.riders=stay;
  const cap=(1+t.cars)*CAR_CAP;
  const remain=[];
  for(const r of st.q){
-  if(t.riders.length<cap&&dNext(r.shape)<dHere(r.shape))t.riders.push(r);
+  if(t.riders.length<cap&&dNext(r.shape)<dHere(r.shape)){t.riders.push(r);moved++}
   else remain.push(r)}
- st.q=remain}
+ st.q=remain;
+ return moved}
 function stepTrain(t,dt){
  const L=lines[t.li],sc=segCountOf(L);
  if(sc<1)return;
  t.seg=clamp(t.seg,0,sc-1);
- if(t.dwell>0){t.dwell-=dt;return}
+ if(t.dwell>0){t.dwell-=dt;t.v=0;return}
  const P=L.paths[t.seg];if(!P||P.len<=0)return;
- t.f+=t.dir*TRAIN_SPEED*(L.express?2:1)*dt/P.len;
+ const ex=L.express;
+ const vmax=ex?19:9,acc=ex?5.5:7,br=ex?9:12,cornerCap=ex?6.5:5;
+ let s=t.f*P.len;
+ const sdir=t.dir>0?s:P.len-s;
+ const dStop=Math.max(0,P.len-sdir);
+ let allowed=Math.min(vmax,Math.sqrt(2*br*dStop+0.01));
+ if(P.cornerS!=null){
+  const cs=t.dir>0?P.cornerS:P.len-P.cornerS;
+  const dC=Math.abs(sdir-cs);
+  allowed=Math.min(allowed,Math.sqrt(cornerCap*cornerCap+2*br*Math.max(0,dC-1)))}
+ if(!ex&&crossings.length){
+  const pos=pointAt(P.pts,s);
+  for(const c of crossings){
+   if(!c.metroClash)continue;
+   if(c.li!==L.id&&c.liU!==L.id)continue;
+   const d=Math.hypot(pos.x-c.x,pos.y-c.y);
+   if(d<6)allowed=Math.min(allowed,Math.sqrt(12.25+2*br*Math.max(0,d-1.5)))}}
+ if(t.v==null)t.v=0;
+ if(t.v<allowed)t.v=Math.min(allowed,t.v+acc*dt);
+ else t.v=Math.max(allowed,t.v-br*dt);
+ s+=t.dir*t.v*dt;
+ t.f=s/P.len;
  if(t.dir>0&&t.f>=1){
   const n=L.stops.length;
   const arriveIdx=L.loop?(t.seg+1)%n:t.seg+1;
-  exchange(t,L,arriveIdx);
+  const mv=exchange(t,L,arriveIdx);
   const st=stations[L.stops[arriveIdx]];
-  t.dwell=st.inter?0.5:0.95;
+  t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));
+  t.v=0;
   if(L.loop){t.seg=(t.seg+1)%sc;t.f=0}
   else if(arriveIdx>=n-1){t.dir=-1;t.f=1}
   else{t.seg++;t.f=0}
   return}
  if(t.dir<0&&t.f<=0){
   const arriveIdx=t.seg;
-  exchange(t,L,arriveIdx);
+  const mv=exchange(t,L,arriveIdx);
   const st=stations[L.stops[arriveIdx]];
-  t.dwell=st.inter?0.5:0.95;
-  if(arriveIdx<=0){t.dir=1;t.f=0}
+  t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));
+  t.v=0;
+  if(L.loop){t.seg=(t.seg-1+sc)%sc;t.f=1}
+  else if(arriveIdx<=0){t.dir=1;t.f=0}
   else{t.seg--;t.f=1}
   return}}
 function stepSpawns(dt){
@@ -961,7 +1029,7 @@ function busiestLine(needTrains){
  return best}
 function makeOffer(){
  const pool=[{k:"train",l:"+1 TRAIN"},{k:"car",l:"+1 CARRIAGE"},{k:"cash",l:"+$50"}];
- if(lineSlots<MAX_LINES&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT"});
+ if(lineSlots<capTotal()&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT"});
  const i=(Math.random()*pool.length)|0;
  let j=(Math.random()*pool.length)|0;
  while(j===i)j=(Math.random()*pool.length)|0;
@@ -974,12 +1042,13 @@ function applyOffer(k){
  $("offer").style.display="none";
  if(k==="cash"){budget+=50;toast("+$50");return}
  if(k==="line"){
-  if(lineSlots<MAX_LINES){lineSlots++;toast("LINE SLOT ADDED")}
+  if(lineSlots<capTotal()){lineSlots++;toast("LINE SLOT ADDED")}
   else{budget+=50;toast("+$50")}
   refreshUI();return}
  if(k==="train"){const L=busiestLine(false);
   if(!L){budget+=40;toast("NO TRACK YET · +$40")}
-  else{L.trains.push({li:L.id,seg:0,f:0,dir:1,dwell:.4,cars:0,riders:[]});
+  else{const dd=L.loop&&L.trains.length%2?-1:1;
+   L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0});
    toast("TRAIN DELIVERED · LINE "+(L.id+1))}
   return}
  if(k==="car"){const L=busiestLine(true);
@@ -1165,17 +1234,27 @@ function draw(){
    ctx.setLineDash([]);ctx.globalAlpha=1;
    if(snapSt!=null){ctx.lineWidth=px(1.8);
     ctx.beginPath();ctx.arc(T.x,T.y,px(10),0,TAU);ctx.stroke()}}}
+ if(dragMode==="pull"&&dragFrom!=null&&dragW&&selLine>=0){
+  const L=lines[selLine];const i=L.stops.indexOf(dragFrom);
+  if(i>=0){const n=L.stops.length;
+   const a=L.loop?L.stops[(i-1+n)%n]:(i>0?L.stops[i-1]:null);
+   const b=L.loop?L.stops[(i+1)%n]:(i<n-1?L.stops[i+1]:null);
+   ctx.setLineDash([px(4),px(3.5)]);ctx.lineWidth=px(1.6);
+   if(a!=null&&b!=null){ctx.strokeStyle=L.color;ctx.globalAlpha=.7;
+    ctx.beginPath();ctx.moveTo(stations[a].x,stations[a].y);
+    ctx.lineTo(stations[b].x,stations[b].y);ctx.stroke()}
+   ctx.strokeStyle="rgba(255,120,140,.85)";ctx.globalAlpha=.85;
+   ctx.beginPath();ctx.moveTo(stations[dragFrom].x,stations[dragFrom].y);
+   ctx.lineTo(dragW.x,dragW.y);ctx.stroke();
+   ctx.setLineDash([]);ctx.globalAlpha=1}}
  // handles + end rings for selected line
  if(selLine>=0&&!poster){const L=lines[selLine];
   if(L){
-   const hasOrphanPending=pendingSt!=null&&!L.stops.includes(pendingSt);
    for(let i=0;i<L.paths.length;i++){
     const m=pointAt(L.paths[i].pts,L.paths[i].len/2);
     const r=px(3.4);
     ctx.lineWidth=px(1.4);
-    if(hasOrphanPending){const p=(Math.sin(simS*7)+1)/2;
-     ctx.strokeStyle="rgba(255,214,10,"+(0.55+0.4*p).toFixed(3)+")"}
-    else ctx.strokeStyle="rgba(255,255,255,0.6)";
+    ctx.strokeStyle="rgba(255,255,255,0.6)";
     ctx.beginPath();
     ctx.moveTo(m.x,m.y-r);ctx.lineTo(m.x+r,m.y);ctx.lineTo(m.x,m.y+r);ctx.lineTo(m.x-r,m.y);
     ctx.closePath();ctx.stroke()}
@@ -1184,12 +1263,6 @@ function draw(){
      const e=stations[endId];
      ctx.strokeStyle=L.color;ctx.lineWidth=px(1.3);
      ctx.beginPath();ctx.arc(e.x,e.y,px(8),0,TAU);ctx.stroke()}}}}
- // pending station marker
- if(pendingSt!=null&&!poster){
-  const s=stations[pendingSt],p=(Math.sin(simS*7)+1)/2;
-  ctx.strokeStyle="rgba(255,255,255,"+(0.5+0.4*p).toFixed(3)+")";
-  ctx.lineWidth=px(1.5);
-  ctx.beginPath();ctx.arc(s.x,s.y,px(11),0,TAU);ctx.stroke()}
  // stations
  for(const s of stations){
   if(!s.emerged)continue;
@@ -1268,10 +1341,12 @@ cv.addEventListener("pointerdown",e=>{
    if(hit!=null){
     if(Lsel&&!Lsel.loop&&(Lsel.stops.length===0||isEndOf(Lsel,hit))){
      dragMode="connect";dragFrom=hit}
+    else if(Lsel&&Lsel.stops.includes(hit)){
+     dragMode="pull";dragFrom=hit}
     else{
      const ends=linesEndingAt(hit);
      if(ends.length===1){
-      selLine=ends[0];pendingSt=null;rebuildGeometry();refreshUI();
+      selLine=ends[0];rebuildGeometry();refreshUI();
       dragMode="connect";dragFrom=hit}}}
    else if(Lsel){
     for(let i=0;i<Lsel.paths.length;i++){
@@ -1295,11 +1370,12 @@ cv.addEventListener("pointermove",e=>{
   const dx=e.clientX-downP.x,dy=e.clientY-downP.y;
   if(Math.hypot(dx,dy)>7)moved=true;
   if(moved){
-   if(dragMode==="connect"||dragMode==="splice"){
+   if(dragMode==="connect"||dragMode==="splice"||dragMode==="pull"){
     dragW=s2w({x:e.clientX,y:e.clientY});
-    let t=nearestStation(dragW,pxr(30));
-    if(dragMode==="connect"&&t===dragFrom)t=null;
-    if(t!==snapSt){snapSt=t;if(t!=null)buzz(8)}}
+    if(dragMode!=="pull"){
+     let t=nearestStation(dragW,pxr(30));
+     if(dragMode==="connect"&&t===dragFrom)t=null;
+     if(t!==snapSt){snapSt=t;if(t!=null)buzz(8)}}}
    else{userCam=true;view.x-=(e.clientX-prev.x)/view.s;view.y-=(e.clientY-prev.y)/view.s}}}});
 function endPointer(e){
  const was=pointers.size;pointers.delete(e.pointerId);
@@ -1310,7 +1386,10 @@ function endPointer(e){
    if(t!=null&&t!==dragFrom)doConnect(dragFrom,t)}
   else if(moved&&dragMode==="splice"&&dragFrom!=null){
    const t=snapSt!=null?snapSt:nearestStation(s2w({x:e.clientX,y:e.clientY}),pxr(18));
-   if(t!=null)spliceAt(selLine,dragFrom,t)}}
+   if(t!=null)spliceAt(selLine,dragFrom,t)}
+  else if(moved&&dragMode==="pull"&&dragFrom!=null&&selLine>=0){
+   const w=s2w({x:e.clientX,y:e.clientY});
+   if(dist(w,stations[dragFrom])>pxr(26))detachAt(selLine,dragFrom)}}
  if(pointers.size<2)pinchD=0;
  if(pointers.size===0){downP=null;dragMode=null;dragFrom=null;dragW=null;snapSt=null}}
 cv.addEventListener("pointerup",endPointer);
@@ -1324,42 +1403,46 @@ function nearestStation(p,rad){
  for(const s of stations){if(!s.emerged)continue;
   const d=dist(p,s);if(d<bd){bd=d;best=s.id}}
  return best}
+function distPtSegO(p,a,b){return distToSeg(p,[a.x,a.y],[b.x,b.y])}
+function lineAtPoint(p,rad){
+ let best=null,bd=rad;
+ for(const L of lines)for(const P of L.paths)
+  for(let i=1;i<P.pts.length;i++){
+   const d=distPtSegO(p,P.pts[i-1],P.pts[i]);
+   if(d<bd){bd=d;best=L.id}}
+ return best}
 function tap(p){
  if(!running||document.body.classList.contains("poster"))return;
- // segment diamonds (selected line): flip, or splice the pending station
+ // flip diamonds of the selected line
  if(selLine>=0){const L=lines[selLine];
   if(L){const hr=pxr(12);
    for(let i=0;i<L.paths.length;i++){
     const m=pointAt(L.paths[i].pts,L.paths[i].len/2);
     if(dist(p,m)<hr){
-     if(pendingSt!=null&&!L.stops.includes(pendingSt)){spliceAt(selLine,i,pendingSt);return}
      const k=edgeKey(L.paths[i].aId,L.paths[i].bId);
      L.flips[k]=!L.flips[k];
      rebuildRouting();return}}}}
  const hit=nearestStation(p,pxr(16));
- if(hit==null){
-  if(tool==="station"){placeStation(p);return}
-  if(pendingSt!=null){pendingSt=null;toast("DESELECTED")}
-  return}
- // station tapped
- if(tool==="inter"){upgradeInter(hit);return}
- if(tool==="station"){toast("TAP EMPTY GROUND TO BUILD");return}
- if(pendingSt===hit){pendingSt=null;return}
- if(pendingSt==null){
-  pendingSt=hit;
-  if(selLine>=0&&lines[selLine]){
-   const L=lines[selLine];
-   if(!L.stops.length)toast("NOW TAP ANOTHER STATION TO CONNECT");
-   else if(isEndOf(L,hit))toast("NOW TAP THE NEXT STATION");
-   else if(!L.stops.includes(hit))toast("TAP A RINGED END TO JOIN · OR A DIAMOND TO SPLICE")}
-  return}
- if(selLine<0){
-  const ends=linesEndingAt(pendingSt);
-  if(ends.length===1){
-   selLine=ends[0];rebuildGeometry();refreshUI();
-   doConnect(pendingSt,hit);return}
-  toast("SELECT A LINE COLOUR FIRST");pendingSt=hit;return}
- doConnect(pendingSt,hit)}
+ if(hit!=null){
+  if(tool==="inter"){upgradeInter(hit);return}
+  if(tool==="detach"){
+   let li=selLine;
+   if(li<0||!lines[li]||!lines[li].stops.includes(hit)){
+    li=-1;for(const L of lines)if(L.stops.includes(hit)){li=L.id;break}}
+   tool=null;
+   if(li>=0)detachAt(li,hit);else{toast("NOT ON A LINE");refreshUI()}
+   return}
+  if(tool==="station"){toast("TAP EMPTY GROUND TO BUILD");return}
+  // tap a station to select (and cycle) the lines through it
+  const via=[];for(const L of lines)if(L.stops.includes(hit))via.push(L.id);
+  if(via.length){
+   const cur=via.indexOf(selLine);
+   selectLine(via[(cur+1)%via.length]);return}
+  toast("DRAG FROM A LINE END TO CONNECT");return}
+ if(tool==="station"){placeStation(p);return}
+ const li=lineAtPoint(p,pxr(9));
+ if(li!=null){selectLine(li);return}
+ if(selLine>=0)selectLine(-1)}
 
 /* ================= HUD / UI ================= */
 const $=id=>document.getElementById(id);
@@ -1374,7 +1457,7 @@ function refreshUI(){
   b.style.background=i===selLine?L.color:"transparent";
   if(L.express)b.style.borderRadius="5px";
   b.onclick=()=>selectLine(i===selLine?-1:i);cr.appendChild(b)});
- if(lines.length<MAX_LINES){
+ if(lines.length<capTotal()){
   const plus=document.createElement("button");plus.className="chip";
   plus.style.color="#8fa2bd";plus.style.borderColor="rgba(140,160,190,.5)";
   plus.textContent="+";
@@ -1396,17 +1479,17 @@ function refreshUI(){
  mk(ic('<path d="M4.5 7a4.5 4.5 0 1 1 1.3 3.2M4.5 7V3.6M4.5 7h3.4"/>','0 0 14 14'),
   undoStop,false,!hasLine||!lines[selLine].stops.length,"","Undo last stop");
  mk(ic('<circle cx="6.5" cy="7" r="4"/><path d="M12.8 7h4"/>'),
-  detachStop,false,!hasLine||!lines[selLine].stops.length,"","Detach selected stop");
+  ()=>{tool=tool==="detach"?null:"detach";
+   if(tool)toast("TAP A STOP TO LIFT IT OFF ITS LINE");refreshUI()},
+  tool==="detach",false,"","Detach a stop");
  mk(ic('<path d="M2.8 11.2L11.2 2.8M2.8 2.8l8.4 8.4"/>','0 0 14 14'),
   deleteLine,false,!hasLine,"","Clear line").classList.add("warn");
  mk(ic('<circle cx="6.5" cy="7" r="4"/><path d="M12.8 7h4M14.8 5v4"/>'),
-  ()=>{tool=tool==="station"?null:"station";pendingSt=null;
+  ()=>{tool=tool==="station"?null:"station";
    if(tool)toast("TAP EMPTY GROUND TO BUILD");refreshUI()},
   tool==="station",false,co(COST.station),"Build infill station");
  mk(ic('<rect x="2.5" y="2.5" width="9" height="9" rx="2.7"/><circle cx="7" cy="7" r="1.2"/>','0 0 14 14'),
-  ()=>{
-   if(pendingSt!=null){upgradeInter(pendingSt);return}
-   tool=tool==="inter"?null:"inter";
+  ()=>{tool=tool==="inter"?null:"inter";
    if(tool)toast("TAP A STATION TO UPGRADE");refreshUI()},
   tool==="inter",false,co(COST.inter),"Interchange upgrade");
 }
@@ -1420,6 +1503,12 @@ function trendSvg(dir){
 function mv(val,dir){
  const cls=dir>0?"m-up":dir<0?"m-dn":"";
  return '<span class="'+cls+'">'+val+trendSvg(dir)+'</span>'}
+function scaleRiders(n){
+ const p=(city&&city.pop)||16;
+ const r=n*p*212;
+ if(r>=1e6)return(r/1e6).toFixed(1)+"M";
+ if(r>=1e3)return Math.round(r/1e3)+"K";
+ return String(r)}
 function hudTick(){
  $("hCity").textContent=city.name+" · "+(isOp()?"$":"∞");
  const gm=Math.floor(simS*GM_PER_S),day=Math.floor(gm/1440)+1,
@@ -1433,6 +1522,7 @@ function hudTick(){
  const cov=tw?Math.round(100*cw/tw):0;
  const eff=Math.round(effAvg*100);
  const bud=Math.floor(budget);
+ let tkm=0;for(const L of lines)for(const P of L.paths)tkm+=P.chord;
  const now=performance.now();
  if(now-mLastT>2000){
   if(mPrev.eff>=0){
@@ -1441,13 +1531,18 @@ function hudTick(){
    mDir.bud=bud>mPrev.bud+1?1:bud<mPrev.bud-1?-1:0}
   mPrev={eff,cov,bud};mLastT=now}
  if(isOp())
-  $("metrics").innerHTML="BUDGET $"+mv(bud,mDir.bud)+"<br>CARRIED "+delivered+
-   (lost?" · LOST "+lost:"")+"<br>EFFICIENCY "+mv(eff+"%",mDir.eff)+
-   " · COVERAGE "+mv(cov+"%",mDir.cov);
+  $("metrics").innerHTML="BUDGET $"+mv(bud,mDir.bud)+
+   "<br>RIDERSHIP "+scaleRiders(delivered)+
+   (lost?" · STRANDED "+scaleRiders(lost):"")+
+   "<br>"+Math.round(tkm)+" KM"+
+   " · EFF "+mv(eff+"%",mDir.eff)+
+   " · COV "+mv(cov+"%",mDir.cov);
  else
-  $("metrics").innerHTML="CARRIED "+delivered+(lost?" · LOST "+lost:"")+
-   "<br>EFFICIENCY "+mv(eff+"%",mDir.eff)+
-   "<br>COVERAGE "+mv(cov+"%",mDir.cov)}
+  $("metrics").innerHTML="RIDERSHIP "+scaleRiders(delivered)+
+   (lost?" · STRANDED "+scaleRiders(lost):"")+
+   "<br>"+Math.round(tkm)+" KM"+
+   " · EFF "+mv(eff+"%",mDir.eff)+
+   " · COV "+mv(cov+"%",mDir.cov)}
 $("lkMetro").onclick=()=>createLine(false);
 $("lkIC").onclick=()=>createLine(true);
 $("bSpeed").onclick=()=>{speedIdx=(speedIdx+1)%SPEEDS.length;
@@ -1499,11 +1594,18 @@ function loadSave(d){
  lineSlots=d.lineSlots||3;
  stations=d.stations.map((s,i)=>({...s,id:i,q:[],acc:0,order:0,strainT:0,
   emergeAt:s.emerged?-10:0}));
+ {const cl=city.cores||[city.core];
+  for(const s of stations){let bi=0,bd=1e9;
+   cl.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
+   s.region=bi}}
  lines=d.lines.map((L,i)=>{const o=newLineObj(i);o.stops=L.stops;o.flips=L.flips||{};
   o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;
   o.trains=(L.trains||[]).map(t=>({li:i,seg:t.seg,f:t.f||0,dir:t.dir,dwell:.3,
-   cars:t.cars,riders:[]}));return o});
- selLine=-1;tool=null;pendingSt=null;passengers=0;
+   cars:t.cars,riders:[],v:0}));
+  if(o.loop)o.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
+  return o});
+ lines.forEach(L2=>{L2.homeRegion=(!L2.express&&L2.stops.length)?stations[L2.stops[0]].region:null});
+ selLine=-1;tool=null;passengers=0;
  buildDensityLayer();buildUrbanLayer();rebuildRouting();refreshUI();fitView();
  $("overlay").style.display="none";$("offer").style.display="none";running=true;
  toast("SAVE LOADED · "+city.name)}
@@ -1514,6 +1616,11 @@ function paintCityIcon(cnv,cid){
  g.clearRect(0,0,S,S);
  g.fillStyle="#0d1524";g.fillRect(0,0,S,S);
  g.lineJoin="round";g.lineCap="round";
+ for(const b of c.blobs){
+  const gr=g.createRadialGradient(b.x*k,b.y*k,0,b.x*k,b.y*k,b.r*1.9*k);
+  gr.addColorStop(0,"rgba(150,182,232,"+(0.15*b.w).toFixed(3)+")");
+  gr.addColorStop(1,"rgba(150,182,232,0)");
+  g.fillStyle=gr;g.beginPath();g.arc(b.x*k,b.y*k,b.r*1.9*k,0,TAU);g.fill()}
  for(const poly of c.seas){g.beginPath();
   poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
   g.closePath();g.fillStyle="#26436f";g.fill()}
@@ -1528,6 +1635,22 @@ function paintCityIcon(cnv,cid){
  for(const poly of (c.nobuild||[])){g.beginPath();
   poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
   g.closePath();g.fillStyle="rgba(200,220,255,0.08)";g.fill()}}
+const FEAT_CAT={tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
+const FEAT={
+ ferry:{t:"Ferry links",d:'<path d="M1.5 8.5c1.8-1.6 3.6-1.6 5.5 0s3.7 1.6 5.5 0"/><path d="M4 3.5v5M4 3.5l3 1.8V8"/>'},
+ tunnel:{t:"Tunnel crossings",d:'<path d="M2.2 10V7.2a4.8 4.8 0 0 1 9.6 0V10"/><path d="M1 11.6h12" stroke-dasharray="2 1.7"/>'},
+ terrain:{t:"Ridge terrain",d:'<path d="M1.2 11L5 4.2l2.6 4.6L9.4 6l3.4 5"/>'},
+ air:{t:"Airport connections",d:'<path d="M7 1.6v8.8M2.6 6.2L7 4l4.4 2.2M4.8 11l2.2-1.2L9.2 11"/>'},
+ ic:{t:"Intercity expresses",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
+ towns:{t:"Satellite towns",d:'<circle cx="7" cy="6.6" r="2"/><circle cx="7" cy="6.6" r="4.4"/>'},
+ islands:{t:"Island geography",d:'<path d="M3.2 7.6c0-1.9 1.6-3.2 3.8-3.2s3.8 1.3 3.8 3.2-1.7 2.9-3.8 2.9-3.8-1-3.8-2.9Z"/><path d="M1.6 11.4h10.8" stroke-dasharray="2 1.7"/>'}};
+function featLegend(feats){
+ const t=[],v=[];
+ for(const k of feats){const c=FEAT_CAT[k]||"OTHER";(c==="TERRAIN"?t:v).push(FEAT[k].t)}
+ let s="";if(t.length)s+="TERRAIN: "+t.join(", ");
+ if(v.length)s+=(s?"\n":"")+"VEHICLES: "+v.join(", ");return s}
+function featSvg(k){const f=FEAT[k];if(!f)return"";
+ return '<svg viewBox="0 0 14 13" width="15" height="14" fill="none" stroke="rgba(190,210,240,.8)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><title>'+f.t+'</title>'+f.d+'</svg>'}
 const MODE_BLURB={
  op:"OPERATOR · Budgets, fares, tidal rush hours. The city grows; solvency shapes the map. No sudden death.",
  at:"ATELIER · Endless and unpriced. Live efficiency and coverage metrics only. For the poster."};
@@ -1542,10 +1665,14 @@ function buildOverlay(){
   const d=document.createElement("div");
   d.className="ccard"+(id===cityId?" sel":"");
   const inf=document.createElement("button");inf.className="info";inf.textContent="i";
-  inf.onclick=e=>{e.stopPropagation();toggleBlurb("blurbCity",CITIES[id].name+" · "+CITIES[id].blurb,id)};
+  inf.onclick=e=>{e.stopPropagation();
+   const fl=featLegend(CITIES[id].features||[]);
+   toggleBlurb("blurbCity",CITIES[id].name+" · "+CITIES[id].blurb+(fl?"\n"+fl:""),id)};
   const cv2=document.createElement("canvas");cv2.width=124;cv2.height=124;
   const nm=document.createElement("b");nm.textContent=CITIES[id].name;
-  d.appendChild(inf);d.appendChild(cv2);d.appendChild(nm);
+  const ft=document.createElement("div");ft.className="feats";
+  ft.innerHTML=(CITIES[id].features||[]).map(featSvg).join("");
+  d.appendChild(inf);d.appendChild(cv2);d.appendChild(nm);d.appendChild(ft);
   d.onclick=()=>{cityId=id;buildOverlay()};
   cc.appendChild(d);
   paintCityIcon(cv2,id)}
@@ -1560,7 +1687,7 @@ $("beginBtn").onclick=()=>{startGame();$("overlay").style.display="none";
  if(!seenHelp){seenHelp=true;$("helpCard").style.display="flex"}};
 function startGame(){
  city=CITIES[cityId];
- lines=[];selLine=-1;lineSlots=3;tool=null;pendingSt=null;
+ lines=[];selLine=-1;lineSlots=3;tool=null;
  budget=140;delivered=0;lost=0;journeySum=0;transferSum=0;
  simS=0;weekPaid=0;passengers=0;
  nextEmergeAt=DAY_SECONDS*0.7;
