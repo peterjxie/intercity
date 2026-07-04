@@ -329,8 +329,8 @@ chongqing:{
 },
 gba:{
  name:"GREATER BAY",blurb:"Guangzhou, Shenzhen, Hong Kong around the Pearl estuary. Locals serve the cores; up to three intercity expresses stitch the delta.",
- palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2"],
- maxExpress:3,maxMetro:8,
+ palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2","#6ee0b0","#e07a9a","#b0c85a","#8a7ae0"],
+ maxExpress:3,maxMetro:12,
  features:["tunnel","islands","air","ic","towns"],
  regions:[
   {x:31,y:7,t:"GUANGZHOU"},
@@ -403,8 +403,21 @@ const TRAIN_SPEED=9;
 const CAR_CAP=6, MAX_CARS=2;
 const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
-const METRO_KM=65, IC_KM=250;
+const IC_KM=250;
+let metroCapKm=80;
 function kms(u){return u*((city&&city.kmScale)||1)}
+function computeMetroCap(){
+ const regs={};
+ for(const s of stations){
+  if(s.icOnly)continue;
+  (regs[s.region]=regs[s.region]||[]).push(s)}
+ let best=0;
+ for(const k in regs){
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const s of regs[k]){minX=Math.min(minX,s.x);maxX=Math.max(maxX,s.x);
+   minY=Math.min(minY,s.y);maxY=Math.max(maxY,s.y)}
+  best=Math.max(best,Math.hypot(maxX-minX,maxY-minY))}
+ metroCapKm=Math.max(80,Math.round(kms(best)*1.4))}
 function capM(){return(city&&city.maxMetro)||6}
 function capX(){return(city&&city.maxExpress)||2}
 function capTotal(){return capM()+capX()}
@@ -799,7 +812,7 @@ function appendAt(L,endName,X){
   L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
   rebuildRouting();refreshUI();toast("LOOP CLOSED");return true}
  if(L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return false}
- const maxKm=L.express?IC_KM:METRO_KM;
+ const maxKm=L.express?IC_KM:metroCapKm;
  let lineU=0;for(const P of L.paths)lineU+=P.chord;
  lineU+=dist(stations[end],stations[X]);
  if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?"INTERCITY":"METRO")+")");return false}
@@ -819,7 +832,7 @@ function doConnect(A,B){
   if(!canServe(L,A)||!canServe(L,B)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
   if(!L.express&&stations[A].region!==stations[B].region){
    toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
-  if(kms(dist(stations[A],stations[B]))>(L.express?IC_KM:METRO_KM)){
+  if(kms(dist(stations[A],stations[B]))>(L.express?IC_KM:metroCapKm)){
    toast("TOO LONG FOR ONE LINE");return}
   const tc=Math.round(COST.train*(L.express?1.8:1));
   if(!pay(segCost(A,B)*exf(L)+tc))return;
@@ -865,7 +878,7 @@ function spliceAt(li,segIdx,X){
  if(X===a||X===b||L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return}
  let lineU=0;for(const P of L.paths)lineU+=P.chord;
  lineU+=dist(stations[a],stations[X])+dist(stations[X],stations[b])-dist(stations[a],stations[b]);
- if(kms(lineU)>(L.express?IC_KM:METRO_KM)){toast("LINE AT MAX LENGTH");return}
+ if(kms(lineU)>(L.express?IC_KM:metroCapKm)){toast("LINE AT MAX LENGTH");return}
  const dc=(segCost(a,X)+segCost(X,b)-segCost(a,b))*exf(L);
  if(!pay(Math.max(0,dc)))return;
  L.stops.splice(segIdx+1,0,X);buzz(12);
@@ -1616,7 +1629,7 @@ function loadSave(d){
   return o});
  lines.forEach(L2=>{L2.homeRegion=(!L2.express&&L2.stops.length)?stations[L2.stops[0]].region:null});
  selLine=-1;tool=null;passengers=0;
- buildDensityLayer();buildUrbanLayer();rebuildRouting();refreshUI();fitView();
+ computeMetroCap();buildDensityLayer();buildUrbanLayer();rebuildRouting();refreshUI();fitView();
  $("overlay").style.display="none";$("offer").style.display="none";running=true;
  toast("SAVE LOADED · "+city.name)}
 
@@ -1701,7 +1714,7 @@ function startGame(){
  budget=140;delivered=0;lost=0;journeySum=0;transferSum=0;
  simS=0;weekPaid=0;passengers=0;
  nextEmergeAt=DAY_SECONDS*0.7;
- genStations();buildDensityLayer();buildUrbanLayer();rebuildRouting();
+ genStations();computeMetroCap();buildDensityLayer();buildUrbanLayer();rebuildRouting();
  lines.push(newLineObj(0));selLine=0;
  refreshUI();fitView();running=true;
  $("offer").style.display="none";$("lineKind").style.display="none"}
