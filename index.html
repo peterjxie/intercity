@@ -1069,8 +1069,10 @@ function placeStation(p){
 function upgradeInter(idx){
  const s=stations[idx];
  if(s.inter){toast("ALREADY AN INTERCHANGE");tool=null;refreshUI();return}
+ const built=stations.filter(s2=>s2.inter).length;
+ if(built>=capI()){toast("INTERCHANGES AT MAX · "+built+"/"+capI());tool=null;refreshUI();return}
  if(!pay(COST.inter))return;
- s.inter=true;tool=null;refreshUI();toast("INTERCHANGE BUILT")}
+ s.inter=true;tool=null;refreshUI();toast("INTERCHANGE BUILT · "+(built+1)+"/"+capI())}
 
 /* ================= simulation ================= */
 function nextAfter(L,arriveIdx,dirIn){
@@ -1192,6 +1194,7 @@ function busiestLine(needTrains){
  return best}
 function makeOffer(){
  const pool=[{k:"train",l:"+1 TRAIN"},{k:"car",l:"+1 CARRIAGE"},{k:"cash",l:"+$50"}];
+ if(stations.filter(s2=>s2.inter).length<capI())pool.push({k:"inter",l:"+1 INTERCHANGE"});
  if(lineSlots<capTotal()&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT"});
  const i=(Math.random()*pool.length)|0;
  let j=(Math.random()*pool.length)|0;
@@ -1203,6 +1206,14 @@ function makeOffer(){
  $("offer").style.display="block"}
 function applyOffer(k){
  $("offer").style.display="none";
+ if(k==="inter"){
+  let best=null,bq=-1;
+  for(const s of stations){if(s.inter||!s.emerged)continue;
+   const lc=(adj.get(s.id)||[]).length;if(lc>bq){bq=lc;best=s}}
+  if(best){best.inter=true;
+   const ct=stations.filter(s2=>s2.inter).length;
+   toast("INTERCHANGE GRANTED · "+ct+"/"+capI())}
+  else toast("NO ELIGIBLE STATION");return}
  if(k==="cash"){budget+=50;toast("+$50");return}
  if(k==="line"){
   if(lineSlots<capTotal()){lineSlots++;toast("LINE SLOT ADDED")}
@@ -1713,7 +1724,8 @@ function refreshUI(){
  mk(ic('<rect x="2.5" y="2.5" width="9" height="9" rx="2.7"/><circle cx="7" cy="7" r="1.2"/>','0 0 14 14'),
   ()=>{tool=tool==="inter"?null:"inter";
    if(tool)toast("TAP A STATION TO UPGRADE");refreshUI()},
-  tool==="inter",false,co(COST.inter),"Interchange upgrade");
+  tool==="inter",false,
+  co(COST.inter)+" "+stations.filter(s2=>s2.inter).length+"/"+capI(),"Interchange upgrade");
 }
 let mPrev={eff:-1,cov:-1,bud:-1},mDir={eff:0,cov:0,bud:0},mLastT=0;
 function trendSvg(dir){
