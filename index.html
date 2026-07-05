@@ -36,6 +36,7 @@ button:disabled{opacity:.32}
 .row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;align-items:center}
 .row::-webkit-scrollbar{display:none}
 .clsRow{display:flex;gap:4px;align-items:center;padding:1px 0}
+.clsSum{font-size:7.5px;letter-spacing:.18em;color:var(--dim);opacity:.7;padding:0 0 1px}
 .clsLbl{font-size:8px;letter-spacing:.12em;color:var(--dim);width:72px;min-width:72px;white-space:nowrap;text-align:left;flex-shrink:0}
 .chipAdd{opacity:.65}
 .chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
@@ -188,7 +189,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.09";
+const VERSION="1.12";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -454,7 +455,7 @@ bangkok:{
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
  features:["ferry","air","tram","ic"],
- pop:17,popUnit:"M",kmScale:0.5,spacing:{min:4.3,max:7.5},jitter:6.5,
+ pop:17,popUnit:"M",kmScale:0.5,tramRiverMax:0.6,spacing:{min:4.3,max:7.5},jitter:6.5,
  seas:[],
  rivers:[
   {pts:[[30,-4],[28,6],[25,14],[26,20],[23,28],[22,34],[25,39],[30,42],[36,41],[41,39],[44,37],[46,38],[47,40],[47,44],[46,50],[47,56],[50,61],[55,65],[58,70],[56,76],[52,80],[48,79],[45,75],[43,70],[42,66],[40,63],[38,63],[38,67],[39,74],[40,80],[40,92],[40,104]],hw:1.8},
@@ -777,6 +778,14 @@ function pathCrossesWater(pts){
  const L=pathLen(pts),n=Math.max(8,Math.ceil(L*1.4));
  for(let i=0;i<=n;i++){if(inWater(pointAt(pts,L*i/n)))return true}
  return false}
+function pathCrossesMajorRiver(pts){
+ const minHW=(city&&city.tramRiverMax)||999;
+ if(minHW>=999)return false;
+ const L=pathLen(pts),n=Math.max(8,Math.ceil(L*1.4));
+ for(let i=0;i<=n;i++){
+  const p=pointAt(pts,L*i/n);
+  for(const r of city.rivers)if(r.hw>minHW&&distToPolyline(p,r.pts)<r.hw)return true}
+ return false}
 function offsetElbow(raw,d){
  if(Math.abs(d)<1e-6)return raw.map(p=>({x:p.x,y:p.y}));
  const P=raw;
@@ -912,8 +921,10 @@ function createLine(clsKey){
  const L=newLineObj(lines.length);
  L.cls=clsKey;L.express=isX;
  lines.push(L);selectLine(lines.length-1);
- const used=isX?lines.filter(x=>x.express).length:lines.filter(x=>!x.express).length;
- toast(clsName(clsKey)+" "+used+"/"+(isX?capX():capM())+
+ const localUsed=lines.filter(x=>!x.express).length;
+ const xUsed=lines.filter(x=>x.express).length;
+ toast(clsName(clsKey)+" · "+
+  (isX?clsX()+" "+xUsed+"/"+capX():"LOCAL "+localUsed+"/"+capM())+
   (isX?" · HUBS, AIRPORTS, SATELLITES":""))}
 function edgeOnLine(L,a,b){
  const k=edgeKey(a,b);
@@ -928,6 +939,9 @@ function appendAt(L,endName,X){
  if(X===end)return false;
  if(edgeOnLine(L,end,X)){toast("EDGE ALREADY ON THIS LINE");return false}
  if(X===other&&L.stops.length>=3){
+  if((L.cls||"metro")==="tram"){
+   const seg=elbowPts(stations[end],stations[X],false);
+   if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return false}}
   if(!pay(segCost(end,X)*exf(L)))return false;
   L.loop=true;buzz(14);
   L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
@@ -937,6 +951,9 @@ function appendAt(L,endName,X){
  let lineU=0;for(const P of L.paths)lineU+=P.chord;
  lineU+=dist(stations[end],stations[X]);
  if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?clsX():clsM())+")");return false}
+ if((L.cls||"metro")==="tram"){
+  const seg=elbowPts(stations[end],stations[X],false);
+  if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return false}}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
@@ -967,6 +984,9 @@ function doConnect(A,B){
    if(!ok){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}}
   if(kms(dist(stations[A],stations[B]))>(L.express?IC_KM:metroCapKm)){
    toast("TOO LONG FOR ONE LINE");return}
+  if((L.cls||"metro")==="tram"){
+   const seg=elbowPts(stations[A],stations[B],false);
+   if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return}}
   const tc=clsOf(L).trainCost;
   if(!pay(segCost(A,B)*exf(L)+tc))return;
   L.stops=[A,B];L.activeEnd="tail";
@@ -1665,7 +1685,16 @@ function cost(c){return isOp()?" $"+c:""}
 function refreshUI(){
  const cr=$("chipRow");cr.innerHTML="";
  const classes=city?city.classes||["metro","express"]:["metro"];
- const sym={metro:"●",tram:"▫",express:"▪"};
+ const localCls=classes.filter(c=>c!=="express");
+ const exCls=classes.filter(c=>c==="express");
+ const localUsed=lines.filter(L=>!L.express).length;
+ const xUsed=lines.filter(L=>L.express).length;
+ // pool summary
+ const sum=document.createElement("div");sum.className="clsSum";
+ let st=localUsed+"/"+capM()+" LOCAL";
+ if(exCls.length&&capX()>0)st+=" · "+xUsed+"/"+capX()+" "+clsName("express");
+ sum.textContent=st;
+ cr.appendChild(sum);
  for(const cls of classes){
   const isX=cls==="express";
   const cap=isX?capX():capM();
@@ -1675,8 +1704,7 @@ function refreshUI(){
    return lc===cls});
   const row=document.createElement("div");row.className="clsRow";
   const lbl=document.createElement("span");lbl.className="clsLbl";
-  const cn=clsName(cls);
-  lbl.innerHTML=(cn.length>8?cn.slice(0,8):cn)+"<br><span style='opacity:.7'>"+mine.length+"/"+cap+"</span>";
+  lbl.textContent=clsName(cls);
   row.appendChild(lbl);
   for(const L of mine){
    const i=L.id;
@@ -1686,9 +1714,12 @@ function refreshUI(){
    if(cls==="express")b.style.borderRadius="5px";
    if(cls==="tram")b.style.borderStyle="dashed";
    b.onclick=()=>selectLine(i===selLine?-1:i);row.appendChild(b)}
-  if(mine.length<cap){
+  const poolFull=isX?xUsed>=capX():localUsed>=capM();
+  if(!poolFull){
    const pb=document.createElement("button");pb.className="chip chipAdd";
    pb.style.color="#8fa2bd";pb.style.borderColor="rgba(140,160,190,.5)";
+   if(cls==="tram")pb.style.borderStyle="dashed";
+   if(cls==="express")pb.style.borderRadius="5px";
    pb.textContent="+";
    pb.onclick=()=>createLine(cls);row.appendChild(pb)}
   cr.appendChild(row)}
