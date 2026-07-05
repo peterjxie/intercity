@@ -189,7 +189,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.13";
+const VERSION="1.25";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -490,6 +490,66 @@ bangkok:{
   {x:38,y:4,name:"DMK",kind:"air",when:.48}
  ],
  count:78
+},
+amsterdam:{
+ name:"AMSTERDAM",blurb:"Canals fan south from the IJ around a medieval core no rail may enter. Trams circle it; only the metro tunnels beneath.",
+ palette:["#e03a3a","#f0a020","#3a9a4a","#3060c0","#8a4ac0","#d05090","#40a0b0","#b07030","#5a8a30","#c04060","#7050c0"],
+ maxExpress:1,maxMetro:3,
+ classes:["metro","tram","express"],
+ classNames:{metro:"METRO",tram:"TRAM",express:"SPRINTER"},
+ features:["ferry","air","tram","ic"],
+ pop:1.2,popUnit:"M",kmScale:0.32,spacing:{min:3.2,max:5.5},jitter:4.5,
+ symScale:0.8,
+ ijBarrier:{coreClass:"metro"},
+ seas:[
+  [[-5,16],[10,17],[26,19],[40,22],[51,25],[58,26],[70,28],[84,30],[105,33],[105,2],[84,5],[70,9],[58,14],[49,19],[42,15],[28,12],[12,10],[-5,9]]
+ ],
+ rivers:[
+  {pts:[[55,104],[53,88],[52,72],[51,58],[50,46],[49,36]],hw:0.9},
+  {pts:[[24,20],[23,32],[22,44],[21,56],[22,68]],hw:0.7},
+  {pts:[[42.3,26.0],[42.0,28.1],[42.4,30.2],[43.4,32.2],[44.9,33.7],[46.9,34.7],[49.0,35.0],[51.1,34.7],[53.1,33.7],[54.6,32.2],[55.6,30.2],[56.0,28.1],[55.7,26.0]],hw:0.45},
+  {pts:[[39.0,24.9],[38.5,28.2],[39.1,31.4],[40.6,34.2],[42.9,36.5],[45.8,38.0],[49.0,38.5],[52.2,38.0],[55.1,36.5],[57.4,34.2],[58.9,31.4],[59.5,28.2],[59.0,24.9]],hw:0.45},
+  {pts:[[35.6,23.9],[35.0,28.2],[35.7,32.5],[37.7,36.3],[40.8,39.4],[44.7,41.3],[49.0,42.0],[53.3,41.3],[57.2,39.4],[60.3,36.3],[62.3,32.5],[63.0,28.2],[62.4,23.9]],hw:0.45},
+  {pts:[[32.7,23.0],[32.0,28.2],[32.9,33.4],[35.3,38.1],[39.1,41.8],[43.8,44.2],[49.0,45.0],[54.2,44.2],[58.9,41.8],[62.7,38.1],[65.1,33.4],[66.0,28.2],[65.3,23.0]],hw:0.45},
+  {pts:[[29.9,22.2],[29.0,28.3],[30.1,34.4],[32.9,39.9],[37.3,44.2],[42.9,47.0],[49.0,48.0],[55.1,47.0],[60.7,44.2],[65.1,39.9],[67.9,34.4],[69.0,28.3],[68.1,22.2]],hw:0.45}
+ ],
+ islands:[
+  [[58,20],[70,16],[72,19],[60,23]]
+ ],
+ nobuild:[
+  [[45,27],[52,27],[54,31],[50,35],[46,35],[43,31]],
+  [[27,44],[38,47],[37,51],[26,48]]
+ ],
+ blobs:[
+  {x:41,y:33,r:3.5,w:.95,t:"cbd"},{x:57,y:33,r:3.5,w:.9,t:"cbd"},
+  {x:49,y:42,r:4,w:1.0,t:"cbd"},{x:33,y:30,r:3,w:.7,t:"res"},
+  {x:58,y:29,r:3,w:.65,t:"res"},{x:52,y:48,r:4,w:.8,t:"res"},
+  {x:30,y:40,r:4,w:.7,t:"res"},{x:64,y:36,r:4,w:.7,t:"res"},
+  {x:22,y:34,r:4,w:.55,t:"res"},{x:44,y:56,r:4,w:.65,t:"res"},
+  {x:54,y:58,r:4,w:.6,t:"res"},{x:36,y:66,r:4,w:.55,t:"res"},
+  {x:60,y:64,r:4,w:.55,t:"res"},{x:48,y:76,r:4,w:.5,t:"res"},
+  {x:30,y:78,r:4,w:.4,t:"res"},{x:64,y:78,r:4,w:.4,t:"res"},
+  {x:49,y:88,r:4,w:.45,t:"res"},{x:12,y:40,r:4,w:.45,t:"res"},
+  {x:72,y:44,r:4,w:.5,t:"res"},{x:80,y:58,r:4,w:.4,t:"res"},
+  {x:60,y:7,r:3.5,w:.5,t:"res"},{x:76,y:5,r:3,w:.45,t:"res"},
+  {x:16,y:5,r:3,w:.4,t:"res"},{x:30,y:6,r:3,w:.4,t:"res"}
+ ],
+ corridors:[
+  {pts:[[50,40],[50,56],[49,72]],w:1.2},
+  {pts:[[42,38],[34,48],[28,58]],w:.8},
+  {pts:[[56,38],[62,48],[66,58]],w:.8},
+  {pts:[[40,30],[30,32],[20,34]],w:.7},
+  {pts:[[58,30],[66,34],[74,38]],w:.7},
+  {pts:[[58,6],[70,6]],w:.5}
+ ],
+ core:{x:49,y:40},
+ landmark:{x:49,y:26,name:"CENTRAAL"},
+ specials:[
+  {x:64,y:6,name:"NOORD",kind:"hub",when:.3},
+  {x:10,y:26,name:"SLOTERDIJK",kind:"hub",when:.42},
+  {x:52,y:66,name:"AMSTEL",kind:"hub",when:.55}
+ ],
+ count:88
 }};
 
 /* ================= constants ================= */
@@ -503,9 +563,9 @@ const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
 const IC_KM=250;
 const CLASSES={
- metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:2.6},
- tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:2.0},
- express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.6}};
+ metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:2.4, alpha:0.72},
+ tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:1.7, alpha:0.55},
+ express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.8, alpha:1.0}};
 function clsOf(L){return CLASSES[L.cls||(L.express?"express":"metro")]}
 function clsName(k){
  const d={metro:"METRO",tram:"TRAM",express:"INTERCITY"};
@@ -760,7 +820,7 @@ function emergeStation(ping){
 /* ================= lines & geometry ================= */
 function newLineObj(i){
  const pal=(city&&city.palette)||LINE_COLORS;
- return{id:i,color:pal[i%pal.length],stops:[],cls:"metro",express:false,homeRegion:null,
+ return{id:i,color:pal[i%pal.length],stops:[],cls:"metro",express:false,homeRegion:null,visible:true,
  flips:{},loop:false,trains:[],paths:[],activeEnd:"tail"}}
 function segCountOf(L){return L.loop?L.stops.length:Math.max(0,L.stops.length-1)}
 function edgeKey(a,b){return a<b?a+"-"+b:b+"-"+a}
@@ -1385,7 +1445,8 @@ function draw(){
  // glow
  ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineJoin="round";ctx.lineCap="round";
  for(const pass of[[4.5,.09]]){
-  for(const L of lines){ctx.strokeStyle=L.color;
+  for(const L of lines){if(!L.visible){continue}
+   ctx.strokeStyle=L.color;
    ctx.globalAlpha=pass[1]*(L.express?1.8:1);
    ctx.lineWidth=px(pass[0]);
    for(const P of L.paths)strokeElbow(ctx,P.pts,3.2)}}
@@ -1393,8 +1454,9 @@ function draw(){
  // cores
  ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
  for(const L of lines){
-  ctx.strokeStyle=L.color;
-  ctx.globalAlpha=(L.express||L.id===selLine)?1:0.78;
+  const CC=clsOf(L);
+  if(!L.visible){ctx.strokeStyle="#2a303d";ctx.globalAlpha=0.35}
+  else{ctx.strokeStyle=L.color;ctx.globalAlpha=L.id===selLine?1:CC.alpha}
   for(const P of L.paths){
    if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
    if(L.express){
@@ -1515,7 +1577,8 @@ function draw(){
     ctx.fillText("+"+(s.q.length-show),s.x+px(9.5)+4*px(5.2),s.y+px(2.5))}}}
  // trains
  if(!poster||posterTrains){
-  for(const L of lines)for(const t of L.trains){
+  for(const L of lines){if(!L.visible)continue;
+  for(const t of L.trains){
    const P=L.paths[t.seg];if(!P)continue;
    const CC=clsOf(L);
    const carL=px(L.cls==="tram"?10:13),carW=px(L.cls==="tram"?4.5:5.5),gapL=px(2.5);
@@ -1546,7 +1609,7 @@ function draw(){
      const r=t.riders[seat0+k2];if(!r)break;
      const cx=-carL/2+px(2.6)+(k2%cols)*px(4),cyy=k2<cols?-px(1.3):px(1.3);
      shapePath(ctx,cx,cyy,px(1.1),r.shape);ctx.fill()}
-    ctx.restore()}}}
+    ctx.restore()}}}}
 }
 
 /* ================= input ================= */
@@ -1710,11 +1773,12 @@ function refreshUI(){
   for(const L of mine){
    const i=L.id;
    const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
-   b.style.color=L.color;b.style.borderColor=L.color;
-   b.style.background=i===selLine?L.color:"transparent";
+   if(L.visible){b.style.color=L.color;b.style.borderColor=L.color;
+    b.style.background=i===selLine?L.color:"transparent"}
+   else{b.style.color="#3a4050";b.style.borderColor="#3a4050";b.style.background="transparent";b.style.opacity="0.6"}
    if(cls==="express")b.style.borderRadius="5px";
    if(cls==="tram")b.style.borderStyle="dashed";
-   b.onclick=()=>selectLine(i===selLine?-1:i);row.appendChild(b)}
+   b.onclick=()=>{L.visible=!L.visible;refreshUI()};row.appendChild(b)}
   const poolFull=isX?xUsed>=capX():localUsed>=capM();
   if(!poolFull){
    const pb=document.createElement("button");pb.className="chip chipAdd";
@@ -1844,7 +1908,7 @@ $("mSave").onclick=()=>{
   stations:stations.map(s=>({x:s.x,y:s.y,shape:s.shape,district:s.district,dens:s.dens,
    emerged:s.emerged,inter:s.inter,name:s.name,icOnly:!!s.icOnly,air:!!s.air,dead:!!s.dead})),
   lines:lines.map(L=>({stops:L.stops,flips:L.flips,loop:L.loop,activeEnd:L.activeEnd,
-   express:!!L.express,cls:L.cls||(L.express?"express":"metro"),
+   express:!!L.express,visible:L.visible!==false,cls:L.cls||(L.express?"express":"metro"),
    trains:L.trains.map(t=>({seg:t.seg,f:t.f,dir:t.dir,cars:t.cars}))}))};
  try{const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
@@ -1869,7 +1933,7 @@ function loadSave(d){
    cl.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
    s.region=bi}}
  lines=d.lines.map((L,i)=>{const o=newLineObj(i);o.stops=L.stops;o.flips=L.flips||{};
-  o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;o.cls=L.cls||(L.express?"express":"metro");
+  o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;o.visible=L.visible!==false;o.cls=L.cls||(L.express?"express":"metro");
   o.trains=(L.trains||[]).map(t=>({li:i,seg:t.seg,f:t.f||0,dir:t.dir,dwell:.3,
    cars:t.cars,riders:[],v:0}));
   if(o.loop)o.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
