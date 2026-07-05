@@ -189,7 +189,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.12";
+const VERSION="1.13";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -533,6 +533,7 @@ function clsM(){return(city&&city.classNames&&city.classNames.metro)||"METRO"}
 function clsX(){return(city&&city.classNames&&city.classNames.express)||"INTERCITY"}
 function capX(){return(city&&city.maxExpress)||2}
 function capTotal(){return capM()+capX()}
+function capI(){return(city&&city.maxInter)||4}
 const FARE=2, STIPEND=30;
 const SPAWN_K=0.042, PASS_CAP=340;
 const STRAIN_AT=12, STRAIN_INTER=18;
