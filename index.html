@@ -27,13 +27,17 @@ button:active{background:rgba(46,62,92,.9)}
 button.on{border-color:#7fd4ff;color:#c9eeff;box-shadow:0 0 12px rgba(90,190,255,.28)}
 button.warn{border-color:rgba(255,90,120,.6);color:#ffb3c2}
 button:disabled{opacity:.32}
-#bottom{bottom:0;left:0;right:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));
- background:linear-gradient(transparent,rgba(4,6,10,.94) 38%);display:flex;flex-direction:column;gap:7px}
+#bottom{bottom:0;left:0;right:0;padding:6px 10px calc(8px + env(safe-area-inset-bottom));
+ background:linear-gradient(transparent,rgba(4,6,10,.94) 38%);display:flex;flex-direction:column;gap:5px;align-items:stretch}
+#chipRow{display:flex;flex-direction:column;gap:4px;align-items:stretch;width:100%}
 #toolRow button{display:flex;flex-direction:column;align-items:center;gap:2px;
  min-width:42px;padding:7px 6px}
 .bc{font-size:8px;letter-spacing:.05em;color:var(--dim)}
 .row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;align-items:center}
 .row::-webkit-scrollbar{display:none}
+.clsRow{display:flex;gap:4px;align-items:center;padding:1px 0}
+.clsLbl{font-size:8px;letter-spacing:.12em;color:var(--dim);width:72px;min-width:72px;white-space:nowrap;text-align:left;flex-shrink:0}
+.chipAdd{opacity:.65}
 .chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
  align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
 .chip.sel{box-shadow:0 0 10px currentColor}
@@ -132,6 +136,7 @@ body.poster #posterBar{display:flex}
 
 <div class="hud" id="posterBar">
  <button id="pLabels">LABELS · ON</button>
+ <button id="pStats">STATS · OFF</button>
  <button id="pTrains">TRAINS · ON</button>
  <button id="pPng">EXPORT PNG</button>
  <button id="pExit">RETURN</button>
@@ -144,13 +149,7 @@ body.poster #posterBar{display:flex}
  <div class="btns" id="offerBtns"></div>
 </div>
 
-<div class="hud" id="lineKind">
- <div class="t">NEW LINE</div>
- <div class="btns">
-  <button id="lkMetro">● METRO</button>
-  <button id="lkIC">▪ INTERCITY</button>
- </div>
-</div>
+
 
 <div id="helpCard"><div class="box">
  <h2>HOW TO BUILD</h2>
@@ -188,7 +187,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const BUILD="B15";
+const VERSION="1.08";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -287,8 +286,9 @@ istanbul:{
  core:{x:46,y:60},
  pop:16,popUnit:"M",kmScale:0.8,
  landmark:{x:45,y:63,name:"SULTANAHMET"},
- maxExpress:2,maxMetro:6,
- features:["tunnel","ferry","air","ic"],
+ maxExpress:0,maxMetro:7,
+ classes:["metro"],
+ features:["tunnel","ferry","air"],
  specials:[
   {x:28,y:14,name:"IST",kind:"air",when:.4}
  ],
@@ -378,7 +378,7 @@ gba:{
  ],
  cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
  core:{x:44,y:13},
- pop:72,popUnit:"M",kmScale:2.0,symScale:0.85,crossPairs:[[1,2]],
+ pop:72,popUnit:"M",kmScale:2.0,symScale:0.85,crossPairs:[[1,2]],classes:["metro","express"],
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
   {x:41,y:30,name:"GUANGZHOU SOUTH",kind:"hub",when:.14},
@@ -400,6 +400,7 @@ berlin:{
  name:"BERLIN",blurb:"U-Bahn weaves the core; the S-Bahn ring and radials stitch the sprawl. Forests and lakes carve the grid.",
  palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
  maxExpress:3,maxMetro:7,
+ classes:["metro","express"],
  classNames:{metro:"U-BAHN",express:"S-BAHN"},
  features:["terrain","air","sbahn"],
  pop:4,popUnit:"M",kmScale:0.45,spacing:{min:4.2,max:7},jitter:6,
@@ -444,6 +445,49 @@ berlin:{
   {x:60,y:74,name:"BER",kind:"air",when:.4}
  ],
  count:86
+},
+bangkok:{
+ name:"BANGKOK",blurb:"The Chao Phraya draws its strange profile past the old city, then coils around Bang Krachao; the BTS grid weaves the east bank.",
+ palette:["#4fae62","#2f7d5a","#4a63c8","#8a5cc8","#e5b84d","#e87aa0","#c23b3b","#3fa0b8","#d97b3f","#7a8fa6"],
+ maxExpress:2,maxMetro:8,
+ classes:["metro","tram","express"],
+ classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
+ features:["ferry","air","tram","ic"],
+ pop:17,popUnit:"M",kmScale:0.5,spacing:{min:4.3,max:7.5},jitter:6.5,
+ seas:[],
+ rivers:[
+  {pts:[[30,-4],[28,6],[25,14],[26,20],[23,28],[22,34],[25,39],[30,42],[36,41],[41,39],[44,37],[46,38],[47,40],[47,44],[46,50],[47,56],[50,61],[55,65],[58,70],[56,76],[52,80],[48,79],[45,75],[43,70],[42,66],[40,63],[38,63],[38,67],[39,74],[40,80],[40,92],[40,104]],hw:1.8},
+  {pts:[[52,36],[62,36],[72,37],[82,37]],hw:0.5},
+  {pts:[[50,52],[60,53],[70,54]],hw:0.4}
+ ],
+ islands:[],
+ nobuild:[
+  [[42,64],[50,65],[54,72],[50,78],[44,76],[40,68]]
+ ],
+ blobs:[
+  {x:56,y:40,r:5,w:1.0,t:"cbd"},{x:53,y:47,r:4,w:.85,t:"cbd"},
+  {x:28,y:34,r:3.5,w:.55,t:"res"},
+  {x:58,y:28,r:5,w:.6,t:"res"},{x:66,y:40,r:4,w:.65,t:"res"},
+  {x:76,y:44,r:5,w:.5,t:"res"},{x:18,y:30,r:4,w:.4,t:"res"},
+  {x:43,y:48,r:3,w:.5,t:"res"},{x:62,y:30,r:4,w:.5,t:"res"},
+  {x:18,y:44,r:4,w:.4,t:"res"},{x:52,y:56,r:4,w:.5,t:"res"},
+  {x:64,y:58,r:4,w:.45,t:"res"}
+ ],
+ corridors:[
+  {pts:[[52,38],[62,39],[72,41],[82,43]],w:1.3},
+  {pts:[[54,44],[60,48],[66,52]],w:.9},
+  {pts:[[54,20],[54,28],[54,38]],w:1.1},
+  {pts:[[18,24],[18,34],[19,42]],w:.7},
+  {pts:[[56,54],[58,60],[60,66]],w:.7}
+ ],
+ core:{x:56,y:40},
+ landmark:{x:56,y:42,name:"SIAM"},
+ specials:[
+  {x:38,y:14,name:"BANG SUE",kind:"hub",when:.14},
+  {x:84,y:48,name:"BKK",kind:"air",when:.32},
+  {x:38,y:4,name:"DMK",kind:"air",when:.48}
+ ],
+ count:78
 }};
 
 /* ================= constants ================= */
@@ -456,9 +500,18 @@ const CAR_CAP=6, MAX_CARS=2;
 const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
 const IC_KM=250;
+const CLASSES={
+ metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:2.6},
+ tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:2.0},
+ express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.6}};
+function clsOf(L){return CLASSES[L.cls||(L.express?"express":"metro")]}
+function clsName(k){
+ const d={metro:"METRO",tram:"TRAM",express:"INTERCITY"};
+ return (city&&city.classNames&&city.classNames[k])||d[k]}
 function maxTrainsFor(L){
  let u=0;for(const P of L.paths)u+=P.chord;
- return L.express?clamp(Math.round(u/22),2,5):clamp(Math.round(u/12),2,6)}
+ const c=clsOf(L);
+ return clamp(Math.round(u/c.spacing),2,c.maxCars?6:7)}
 let metroCapKm=80;
 function kms(u){return u*((city&&city.kmScale)||1)}
 function computeMetroCap(){
@@ -491,7 +544,7 @@ let effAvg=0.6;
 let emergePtr=0, nextEmergeAt=0, weekPaid=0, passengers=0;
 let tool=null;                    // null | 'station' | 'inter' | 'detach'
 let crossings=[];
-let showDensity=false, posterTrains=true, posterLabels=true, running=false, seenHelp=false;
+let showDensity=false, posterTrains=true, posterLabels=true, posterStats=false, running=false, seenHelp=false;
 let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
 function growthG(){
  const sf=stations.length?emergePtr/stations.length:0;
@@ -704,7 +757,7 @@ function emergeStation(ping){
 /* ================= lines & geometry ================= */
 function newLineObj(i){
  const pal=(city&&city.palette)||LINE_COLORS;
- return{id:i,color:pal[i%pal.length],stops:[],express:false,homeRegion:null,
+ return{id:i,color:pal[i%pal.length],stops:[],cls:"metro",express:false,homeRegion:null,
  flips:{},loop:false,trains:[],paths:[],activeEnd:"tail"}}
 function segCountOf(L){return L.loop?L.stops.length:Math.max(0,L.stops.length-1)}
 function edgeKey(a,b){return a<b?a+"-"+b:b+"-"+a}
@@ -832,7 +885,7 @@ function pickTarget(origin){
 
 /* ================= economy ================= */
 function isOp(){return mode==="operator"}
-function exf(L){return L&&L.express?2.2:1}
+function exf(L){return L?clsOf(L).trackMult:1}
 function buzz(ms){if(navigator.vibrate){try{navigator.vibrate(ms)}catch(e){}}}
 function pay(c){if(!isOp())return true;if(budget<c){toast("NEED $"+Math.ceil(c));return false}
  budget-=c;return true}
@@ -842,36 +895,25 @@ function segCost(a,b,pts){let c=dist(stations[a],stations[b])*COST.track;
 
 /* ================= line editing ================= */
 function selectLine(i){selLine=i;tool=null;
- const lk=document.getElementById("lineKind");if(lk)lk.style.display="none";
  rebuildGeometry();refreshUI()}
-function createLine(express){
- $("lineKind").style.display="none";
+function createLine(clsKey){
  if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
- if(express){
+ const isX=clsKey==="express";
+ if(isX){
   if(lines.filter(x=>x.express).length>=capX()){
-   toast(clsX()+" AT MAX · "+capX()+" LINES");return}}
+   toast(clsName("express")+" AT MAX · "+capX()+" LINES");return}}
  else{
   if(lines.filter(x=>!x.express).length>=capM()){
-   toast(clsM()+" AT MAX · "+capM()+" LINES");return}}
+   toast("LOCAL LINES AT MAX · "+capM());return}}
  if(lines.length>=lineSlots){
   const c=COST.line+30*(lineSlots-3);
   if(!pay(c))return;lineSlots++;toast("LINE SLOT PURCHASED")}
- const L=newLineObj(lines.length);L.express=!!express;
+ const L=newLineObj(lines.length);
+ L.cls=clsKey;L.express=isX;
  lines.push(L);selectLine(lines.length-1);
- const used=lines.filter(x=>x.express===!!express).length;
- toast(express?
-  clsX()+" "+used+"/"+capX()+" · HUBS, AIRPORTS, SATELLITES":
-  clsM()+" "+used+"/"+capM())}
-function addLine(){
- if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
- const mLeft=capM()-lines.filter(x=>!x.express).length;
- const xLeft=capX()-lines.filter(x=>x.express).length;
- if(xLeft<=0&&mLeft>0){createLine(false);return}
- if(mLeft<=0&&xLeft>0){createLine(true);return}
- $("lkMetro").textContent="● "+clsM()+" · "+(capM()-mLeft)+"/"+capM();
- $("lkIC").textContent="▪ "+clsX()+" · "+(capX()-xLeft)+"/"+capX();
- $("lkMetro").disabled=mLeft<=0;$("lkIC").disabled=xLeft<=0;
- $("lineKind").style.display="block"}
+ const used=isX?lines.filter(x=>x.express).length:lines.filter(x=>!x.express).length;
+ toast(clsName(clsKey)+" "+used+"/"+(isX?capX():capM())+
+  (isX?" · HUBS, AIRPORTS, SATELLITES":""))}
 function edgeOnLine(L,a,b){
  const k=edgeKey(a,b);
  for(let i=0;i<segCountOf(L);i++){
@@ -924,7 +966,7 @@ function doConnect(A,B){
    if(!ok){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}}
   if(kms(dist(stations[A],stations[B]))>(L.express?IC_KM:metroCapKm)){
    toast("TOO LONG FOR ONE LINE");return}
-  const tc=Math.round(COST.train*(L.express?1.8:1));
+  const tc=clsOf(L).trainCost;
   if(!pay(segCost(A,B)*exf(L)+tc))return;
   L.stops=[A,B];L.activeEnd="tail";
   L.homeRegion=L.express?null:stations[A].region;
@@ -1002,13 +1044,15 @@ function addTrain(){
  const L=lines[selLine];if(!L||segCountOf(L)<1){toast("SELECT A LINE WITH TRACK");return}
  if(L.trains.length>=maxTrainsFor(L)){
   toast("LINE AT MAX TRAINS · "+maxTrainsFor(L)+" · EXTEND TO FIT MORE");return}
- if(!pay(Math.round(COST.train*(L.express?1.8:1))))return;
+ if(!pay(clsOf(L).trainCost))return;
  const dd=L.loop&&L.trains.length%2?-1:1;
  L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0})}
 function addCar(){
  const L=lines[selLine];if(!L||!L.trains.length){toast("NO TRAIN ON THIS LINE");return}
+ const mc=clsOf(L).maxCars;
+ if(mc===0){toast(clsName(L.cls||"metro")+" RUNS SINGLE CARS");return}
  const t=L.trains.reduce((m,x)=>x.cars<m.cars?x:m,L.trains[0]);
- if(t.cars>=MAX_CARS){toast("TRAIN AT MAX LENGTH");return}
+ if(t.cars>=mc){toast("TRAIN AT MAX LENGTH");return}
  if(!pay(COST.car))return;t.cars++}
 function placeStation(p){
  if(p.x<3||p.x>97||p.y<3||p.y>97||inWater(p,1.2)||inNoBuild(p)){toast("CANNOT BUILD HERE");return}
@@ -1056,7 +1100,7 @@ function exchange(t,L,arriveIdx){
   if(dNext(r.shape)<dHere(r.shape))stay.push(r);
   else{r.tf++;st.q.push(r);moved++}}
  t.riders=stay;
- const cap=(1+t.cars)*CAR_CAP;
+ const cap=(1+t.cars)*clsOf(L).carCap;
  const remain=[];
  for(const r of st.q){
   if(t.riders.length<cap&&dNext(r.shape)<dHere(r.shape)){t.riders.push(r);moved++}
@@ -1070,7 +1114,8 @@ function stepTrain(t,dt){
  if(t.dwell>0){t.dwell-=dt;t.v=0;return}
  const P=L.paths[t.seg];if(!P||P.len<=0)return;
  const ex=L.express;
- const vmax=ex?19:9,acc=ex?5.5:7,br=ex?9:12,cornerCap=ex?6.5:5;
+ const CC=clsOf(L);
+ const vmax=CC.vmax,acc=CC.acc,br=CC.br,cornerCap=CC.corner;
  let s=t.f*P.len;
  const sdir=t.dir>0?s:P.len-s;
  const dStop=Math.max(0,P.len-sdir);
@@ -1289,7 +1334,9 @@ function drawRegions(){
  try{ctx.letterSpacing=px(4)+"px"}catch(e){}
  for(const r of city.regions)ctx.fillText(r.t,r.x,r.y);
  try{ctx.letterSpacing="0px"}catch(e){}}
-function lineWidthFor(li){return px(li===selLine?3.2:2.6)}
+function lineWidthFor(li){
+ const w=clsOf(lines[li]).w;
+ return px(li===selLine?w+0.6:w)}
 function draw(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
@@ -1435,25 +1482,36 @@ function draw(){
     ctx.fillText("+"+(s.q.length-show),s.x+px(9.5)+4*px(5.2),s.y+px(2.5))}}}
  // trains
  if(!poster||posterTrains){
-  const carL=px(13),carW=px(5.5),gapL=px(2.5);
   for(const L of lines)for(const t of L.trains){
    const P=L.paths[t.seg];if(!P)continue;
+   const CC=clsOf(L);
+   const carL=px(L.cls==="tram"?10:13),carW=px(L.cls==="tram"?4.5:5.5),gapL=px(2.5);
    const units=1+t.cars,base=t.f*P.len;
    for(let u=0;u<units;u++){
     const s=clamp(base-t.dir*u*(carL+gapL),0,P.len);
     const p=pointAt(P.pts,s);
-    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.ang);
+    ctx.save();ctx.translate(p.x,p.y);
+    ctx.rotate(p.ang+(t.dir<0?Math.PI:0));
     ctx.fillStyle="#06080d";
     ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(-carL/2,-carW/2,carL,carW,px(2.5));
+    if(L.express&&u===0){
+     const ns=carL*0.34;
+     ctx.moveTo(-carL/2,-carW/2);
+     ctx.lineTo(carL/2-ns,-carW/2);
+     ctx.lineTo(carL/2,0);
+     ctx.lineTo(carL/2-ns,carW/2);
+     ctx.lineTo(-carL/2,carW/2);
+     ctx.closePath()}
+    else if(ctx.roundRect)ctx.roundRect(-carL/2,-carW/2,carL,carW,px(2.5));
     else ctx.rect(-carL/2,-carW/2,carL,carW);
     ctx.fill();
     ctx.strokeStyle=L.color;ctx.lineWidth=px(1.6);ctx.stroke();
     ctx.fillStyle="rgba(223,231,243,0.92)";
-    const seat0=u*CAR_CAP;
-    for(let k2=0;k2<CAR_CAP;k2++){
+    const cc=CC.carCap,cols=Math.ceil(cc/2);
+    const seat0=u*cc;
+    for(let k2=0;k2<cc;k2++){
      const r=t.riders[seat0+k2];if(!r)break;
-     const cx=-carL/2+px(2.6)+(k2%3)*px(4),cyy=k2<3?-px(1.3):px(1.3);
+     const cx=-carL/2+px(2.6)+(k2%cols)*px(4),cyy=k2<cols?-px(1.3):px(1.3);
      shapePath(ctx,cx,cyy,px(1.1),r.shape);ctx.fill()}
     ctx.restore()}}}
 }
@@ -1585,17 +1643,34 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.style.opacity=1;
 function cost(c){return isOp()?" $"+c:""}
 function refreshUI(){
  const cr=$("chipRow");cr.innerHTML="";
- lines.forEach((L,i)=>{
-  const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
-  b.style.color=L.color;b.style.borderColor=L.color;
-  b.style.background=i===selLine?L.color:"transparent";
-  if(L.express)b.style.borderRadius="5px";
-  b.onclick=()=>selectLine(i===selLine?-1:i);cr.appendChild(b)});
- if(lines.length<capTotal()){
-  const plus=document.createElement("button");plus.className="chip";
-  plus.style.color="#8fa2bd";plus.style.borderColor="rgba(140,160,190,.5)";
-  plus.textContent="+";
-  plus.onclick=addLine;cr.appendChild(plus)}
+ const classes=city?city.classes||["metro","express"]:["metro"];
+ const sym={metro:"●",tram:"▫",express:"▪"};
+ for(const cls of classes){
+  const isX=cls==="express";
+  const cap=isX?capX():capM();
+  if(cap<=0)continue;
+  const mine=lines.filter(L=>{
+   const lc=L.cls||(L.express?"express":"metro");
+   return lc===cls});
+  const row=document.createElement("div");row.className="clsRow";
+  const lbl=document.createElement("span");lbl.className="clsLbl";
+  const cn=clsName(cls);
+  lbl.innerHTML=(cn.length>8?cn.slice(0,8):cn)+"<br><span style='opacity:.7'>"+mine.length+"/"+cap+"</span>";
+  row.appendChild(lbl);
+  for(const L of mine){
+   const i=L.id;
+   const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
+   b.style.color=L.color;b.style.borderColor=L.color;
+   b.style.background=i===selLine?L.color:"transparent";
+   if(cls==="express")b.style.borderRadius="5px";
+   if(cls==="tram")b.style.borderStyle="dashed";
+   b.onclick=()=>selectLine(i===selLine?-1:i);row.appendChild(b)}
+  if(mine.length<cap){
+   const pb=document.createElement("button");pb.className="chip chipAdd";
+   pb.style.color="#8fa2bd";pb.style.borderColor="rgba(140,160,190,.5)";
+   pb.textContent="+";
+   pb.onclick=()=>createLine(cls);row.appendChild(pb)}
+  cr.appendChild(row)}
  const tr=$("toolRow");tr.innerHTML="";
  const ic=(d,vb)=>'<svg viewBox="'+(vb||"0 0 18 14")+'" width="19" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
  const mk=(html,fn,on,dis,bc,tt)=>{const b=document.createElement("button");
@@ -1608,11 +1683,11 @@ function refreshUI(){
  const co=n=>isOp()?"$"+n:"";
  mk(ic('<rect x="1.5" y="4" width="11" height="6.5" rx="2.6"/><path d="M14.7 4.9v4.2M12.6 7h4.2"/>'),
   addTrain,false,!hasLine,
-  co(exp?Math.round(COST.train*1.8):COST.train)+
+  co(hasLine?clsOf(lines[selLine]).trainCost:32)+
    (hasLine&&segCountOf(lines[selLine])>0?" "+lines[selLine].trains.length+"/"+maxTrainsFor(lines[selLine]):""),
   "Add train");
  mk(ic('<rect x="3" y="4.7" width="8" height="5.3" rx="2.2"/><path d="M13.8 4.9v4.2M11.7 7h4.2"/>'),
-  addCar,false,!hasLine,co(COST.car),"Add carriage");
+  addCar,false,!hasLine||(hasLine&&clsOf(lines[selLine]).maxCars===0),co(COST.car),"Add carriage");
  mk(ic('<path d="M4.5 7a4.5 4.5 0 1 1 1.3 3.2M4.5 7V3.6M4.5 7h3.4"/>','0 0 14 14'),
   undoStop,false,!hasLine||!lines[selLine].stops.length,"","Undo last stop");
  mk(ic('<circle cx="6.5" cy="7" r="4"/><path d="M12.8 7h4"/>'),
@@ -1681,8 +1756,6 @@ function hudTick(){
    "<br>"+Math.round(tkm)+" KM"+
    " · EFF "+mv(eff+"%",mDir.eff)+
    " · COV "+mv(cov+"%",mDir.cov)}
-$("lkMetro").onclick=()=>createLine(false);
-$("lkIC").onclick=()=>createLine(true);
 $("bSpeed").onclick=()=>{speedIdx=(speedIdx+1)%SPEEDS.length;
  $("bSpeed").textContent=SPEEDLBL[speedIdx]};
 $("bHelp").onclick=()=>{$("helpCard").style.display="flex"};
@@ -1692,7 +1765,7 @@ $("bMenu").onclick=()=>{const m=$("menuPop");
 $("mFit").onclick=()=>{fitView();$("menuPop").style.display="none"};
 $("mDensity").onclick=()=>{showDensity=!showDensity;
  $("mDensity").textContent="DENSITY GLOW · "+(showDensity?"ON":"OFF")};
-$("mBuild").textContent="INTERCITY · "+BUILD;
+$("mBuild").textContent="INTERCITY v"+VERSION;
 $("mRestart").onclick=()=>{$("menuPop").style.display="none";startGame()};
 $("mQuit").onclick=()=>{$("menuPop").style.display="none";running=false;
  buildOverlay();$("overlay").style.display="flex"};
@@ -1700,6 +1773,8 @@ $("bPoster").onclick=()=>{document.body.classList.add("poster");$("menuPop").sty
 $("pExit").onclick=()=>document.body.classList.remove("poster");
 $("pLabels").onclick=()=>{posterLabels=!posterLabels;
  $("pLabels").textContent="LABELS · "+(posterLabels?"ON":"OFF")};
+$("pStats").onclick=()=>{posterStats=!posterStats;
+ $("pStats").textContent="STATS · "+(posterStats?"ON":"OFF")};
 $("pTrains").onclick=()=>{posterTrains=!posterTrains;
  $("pTrains").textContent="TRAINS · "+(posterTrains?"ON":"OFF")};
 $("pPng").onclick=()=>{
@@ -1715,7 +1790,7 @@ $("mSave").onclick=()=>{
   stations:stations.map(s=>({x:s.x,y:s.y,shape:s.shape,district:s.district,dens:s.dens,
    emerged:s.emerged,inter:s.inter,name:s.name,icOnly:!!s.icOnly,air:!!s.air,dead:!!s.dead})),
   lines:lines.map(L=>({stops:L.stops,flips:L.flips,loop:L.loop,activeEnd:L.activeEnd,
-   express:!!L.express,
+   express:!!L.express,cls:L.cls||(L.express?"express":"metro"),
    trains:L.trains.map(t=>({seg:t.seg,f:t.f,dir:t.dir,cars:t.cars}))}))};
  try{const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
@@ -1740,7 +1815,7 @@ function loadSave(d){
    cl.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
    s.region=bi}}
  lines=d.lines.map((L,i)=>{const o=newLineObj(i);o.stops=L.stops;o.flips=L.flips||{};
-  o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;
+  o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;o.cls=L.cls||(L.express?"express":"metro");
   o.trains=(L.trains||[]).map(t=>({li:i,seg:t.seg,f:t.f||0,dir:t.dir,dwell:.3,
    cars:t.cars,riders:[],v:0}));
   if(o.loop)o.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
@@ -1776,13 +1851,14 @@ function paintCityIcon(cnv,cid){
  for(const poly of (c.nobuild||[])){g.beginPath();
   poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
   g.closePath();g.fillStyle="rgba(200,220,255,0.08)";g.fill()}}
-const FEAT_CAT={sbahn:"VEHICLE",tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
+const FEAT_CAT={sbahn:"VEHICLE",tram:"VEHICLE",tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
 const FEAT={
  ferry:{t:"Ferry links",d:'<path d="M1.5 8.5c1.8-1.6 3.6-1.6 5.5 0s3.7 1.6 5.5 0"/><path d="M4 3.5v5M4 3.5l3 1.8V8"/>'},
  tunnel:{t:"Tunnel crossings",d:'<path d="M2.2 10V7.2a4.8 4.8 0 0 1 9.6 0V10"/><path d="M1 11.6h12" stroke-dasharray="2 1.7"/>'},
  terrain:{t:"Ridge terrain",d:'<path d="M1.2 11L5 4.2l2.6 4.6L9.4 6l3.4 5"/>'},
  air:{t:"Airport connections",d:'<path d="M7 1.6v8.8M2.6 6.2L7 4l4.4 2.2M4.8 11l2.2-1.2L9.2 11"/>'},
  ic:{t:"Intercity expresses",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
+ tram:{t:"Tram / monorail",d:'<path d="M1.5 9.5h11"/><rect x="4.2" y="4" width="5.6" height="3.4" rx="1.3"/><path d="M7 7.4v2.1"/>'},
  sbahn:{t:"S-Bahn network",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
  towns:{t:"Satellite towns",d:'<circle cx="7" cy="6.6" r="2"/><circle cx="7" cy="6.6" r="4.4"/>'},
  islands:{t:"Island geography",d:'<path d="M3.2 7.6c0-1.9 1.6-3.2 3.8-3.2s3.8 1.3 3.8 3.2-1.7 2.9-3.8 2.9-3.8-1-3.8-2.9Z"/><path d="M1.6 11.4h10.8" stroke-dasharray="2 1.7"/>'}};
@@ -1836,9 +1912,9 @@ function startGame(){
  genStations();computeMetroCap();buildDensityLayer();buildUrbanLayer();rebuildRouting();
  lines.push(newLineObj(0));selLine=0;
  refreshUI();fitView();running=true;
- $("offer").style.display="none";$("lineKind").style.display="none"}
+ $("offer").style.display="none"}
 buildOverlay();
-document.getElementById("bldTag").textContent=BUILD;
+document.getElementById("bldTag").textContent="v"+VERSION;
 
 /* ================= main loop ================= */
 let lastT=performance.now();
@@ -1849,8 +1925,24 @@ function frame(now){
    view.s+=(tv.s-view.s)*0.045;view.x+=(tv.x-view.x)*0.045;view.y+=(tv.y-view.y)*0.045;
    baseS=view.s}
   if(Math.abs(view.s-lastGeomS)/Math.max(lastGeomS,.001)>0.05)rebuildGeometry();
-  update(dt);draw();hudTick()}
+  update(dt);draw();drawPosterStats();hudTick()}
  requestAnimationFrame(frame)}
+function drawPosterStats(){
+ if(!document.body.classList.contains("poster")||!posterStats)return;
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+ ctx.fillStyle="rgba(223,231,243,0.85)";
+ ctx.font="11px ui-monospace,monospace";
+ const gm=Math.floor(simS*GM_PER_S),day=Math.floor(gm/1440)+1;
+ let tkm=0;for(const L of lines)for(const P of L.paths)tkm+=P.chord;tkm=kms(tkm);
+ let cw=0,tw=0;for(const s of stations){if(!s.emerged)continue;
+  const w=0.25+s.dens;tw+=w;if((adj.get(s.id)||[]).length)cw+=w}
+ const cov=tw?Math.round(100*cw/tw):0;
+ const eff=Math.round(effAvg*100);
+ const txt=[city.name+" · DAY "+day,
+  "RIDERSHIP "+scaleRiders(delivered),
+  Math.round(tkm)+" KM · EFF "+eff+"% · COV "+cov+"%"];
+ const y0=H-48;
+ for(let i=0;i<txt.length;i++)ctx.fillText(txt[i],14,y0+i*16)}
 requestAnimationFrame(frame);
 document.addEventListener("contextmenu",e=>e.preventDefault());
 </script>
