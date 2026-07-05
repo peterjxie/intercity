@@ -153,11 +153,12 @@ body.poster #posterBar{display:flex}
 
 <div id="helpCard"><div class="box">
  <h2>HOW TO BUILD</h2>
- <p><em>Connect:</em> drag from any station to another. Grabbing a line's ringed end extends that line and selects it automatically. The ghost snaps to the nearest station.</p>
- <p><em>Select:</em> tap any line, or tap a station to cycle the lines through it. Tap empty ground to deselect.</p>
- <p><em>Splice:</em> drag a segment diamond onto a bypassed station. <em>Flip a curve:</em> tap a diamond. <em>Detach:</em> drag a middle stop off its line, or use the station-minus tool.</p>
- <p><em>Megacities:</em> metro lines stay within one city; only intercity lines (choose ▪ when adding) cross between cities or reach double-ringed satellites.</p>
- <p><em>Loop:</em> connect one end to the other. <em>Camera:</em> drag empty ground to pan, pinch to zoom.</p>
+ <p><em>Select:</em> tap any line segment, or tap a station to cycle the lines through it. Tap empty ground to deselect.</p>
+ <p><em>Connect:</em> drag from a station to another. Grabbing a line's ringed end extends that line.</p>
+ <p><em>Bend:</em> tap anywhere on a selected line's segment to flip its curve. <em>Splice:</em> drag from a segment onto a bypassed station.</p>
+ <p><em>Detach:</em> drag a middle stop off its line, or use the station-minus tool.</p>
+ <p><em>Megacities:</em> metro lines stay within one city; intercity lines cross between cities and reach satellites.</p>
+ <p><em>Camera:</em> two-finger drag to pan, pinch to zoom. <em>Loop:</em> connect one end to the other.</p>
  <button id="helpOk">GOT IT</button>
 </div></div>
 
@@ -187,7 +188,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.08";
+const VERSION="1.09";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -1520,12 +1521,20 @@ function draw(){
 const pointers=new Map();
 let pinchD=0,downP=null,moved=false,pinched=false,downT=0;
 let dragMode=null,dragFrom=null,dragW=null,snapSt=null;
+function nearestSeg(wp,L,rad){
+ let bi=-1,bd=rad;
+ for(let i=0;i<L.paths.length;i++){
+  for(let j=1;j<L.paths[i].pts.length;j++){
+   const d=distToSeg(wp,[L.paths[i].pts[j-1].x,L.paths[i].pts[j-1].y],
+    [L.paths[i].pts[j].x,L.paths[i].pts[j].y]);
+   if(d<bd){bd=d;bi=i}}}
+ return bi}
 cv.addEventListener("pointerdown",e=>{
  cv.setPointerCapture(e.pointerId);
  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(pointers.size===1){
   downP={x:e.clientX,y:e.clientY};moved=false;pinched=false;downT=Date.now();
-  dragMode="pan";dragFrom=null;dragW=null;snapSt=null;
+  dragMode=null;dragFrom=null;dragW=null;snapSt=null;
   if(running&&!document.body.classList.contains("poster")&&!tool){
    const wp=s2w(downP);
    const hit=nearestStation(wp,pxr(16));
@@ -1541,9 +1550,8 @@ cv.addEventListener("pointerdown",e=>{
       selLine=ends[0];rebuildGeometry();refreshUI();
       dragMode="connect";dragFrom=hit}}}
    else if(Lsel){
-    for(let i=0;i<Lsel.paths.length;i++){
-     const m=pointAt(Lsel.paths[i].pts,Lsel.paths[i].len/2);
-     if(dist(wp,m)<pxr(12)){dragMode="splice";dragFrom=i;break}}}}}
+    const si=nearestSeg(wp,Lsel,pxr(16));
+    if(si>=0){dragMode="splice";dragFrom=si}}}}
  if(pointers.size===2){pinched=true;dragMode=null;dragFrom=null;dragW=null;snapSt=null;
   const p=[...pointers.values()];pinchD=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}});
 cv.addEventListener("pointermove",e=>{
@@ -1554,7 +1562,10 @@ cv.addEventListener("pointermove",e=>{
   const p=[...pointers.values()];
   const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
   const mid={x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2};
-  if(pinchD>0){const f=d/pinchD;const wm=s2w(mid);userCam=true;
+  const dx2=(p[0].x+p[1].x)/2-([...pointers.values()][0].x+prev.x)/2;
+  userCam=true;
+  view.x-=(e.clientX-prev.x)/view.s;view.y-=(e.clientY-prev.y)/view.s;
+  if(pinchD>0){const f=d/pinchD;const wm=s2w(mid);
    view.s=clamp(view.s*f,minZoom(),30);
    view.x=wm.x-mid.x/view.s;view.y=wm.y-mid.y/view.s}
   pinchD=d;return}
@@ -1567,12 +1578,20 @@ cv.addEventListener("pointermove",e=>{
     if(dragMode!=="pull"){
      let t=nearestStation(dragW,pxr(30));
      if(dragMode==="connect"&&t===dragFrom)t=null;
-     if(t!==snapSt){snapSt=t;if(t!=null)buzz(8)}}}
-   else{userCam=true;view.x-=(e.clientX-prev.x)/view.s;view.y-=(e.clientY-prev.y)/view.s}}}});
+     if(t!==snapSt){snapSt=t;if(t!=null)buzz(8)}}}}}});
 function endPointer(e){
  const was=pointers.size;pointers.delete(e.pointerId);
  if(was===1&&!pinched){
-  if(!moved&&Date.now()-downT<450)tap(s2w({x:e.clientX,y:e.clientY}));
+  if(!moved&&Date.now()-downT<450){
+   const wp=s2w({x:e.clientX,y:e.clientY});
+   const Lsel=selLine>=0?lines[selLine]:null;
+   if(Lsel&&!tool){
+    const si=nearestSeg(wp,Lsel,pxr(16));
+    if(si>=0){
+     const k=edgeKey(Lsel.paths[si].aId,Lsel.paths[si].bId);
+     Lsel.flips[k]=!Lsel.flips[k];rebuildRouting();
+     return}}
+   tap(wp)}
   else if(moved&&dragMode==="connect"&&dragFrom!=null){
    const t=snapSt!=null?snapSt:nearestStation(s2w({x:e.clientX,y:e.clientY}),pxr(18));
    if(t!=null&&t!==dragFrom)doConnect(dragFrom,t)}
@@ -1605,15 +1624,6 @@ function lineAtPoint(p,rad){
  return best}
 function tap(p){
  if(!running||document.body.classList.contains("poster"))return;
- // flip diamonds of the selected line
- if(selLine>=0){const L=lines[selLine];
-  if(L){const hr=pxr(12);
-   for(let i=0;i<L.paths.length;i++){
-    const m=pointAt(L.paths[i].pts,L.paths[i].len/2);
-    if(dist(p,m)<hr){
-     const k=edgeKey(L.paths[i].aId,L.paths[i].bId);
-     L.flips[k]=!L.flips[k];
-     rebuildRouting();return}}}}
  const hit=nearestStation(p,pxr(16));
  if(hit!=null){
   if(tool==="inter"){upgradeInter(hit);return}
