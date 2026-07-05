@@ -37,7 +37,7 @@ button:disabled{opacity:.32}
 .row::-webkit-scrollbar{display:none}
 .clsRow{display:flex;gap:4px;align-items:center;padding:1px 0}
 .clsSum{font-size:7.5px;letter-spacing:.18em;color:var(--dim);opacity:.7;padding:0 0 1px}
-.clsLbl{font-size:8px;letter-spacing:.12em;color:var(--dim);width:72px;min-width:72px;white-space:nowrap;text-align:left;flex-shrink:0}
+.clsLbl{font-size:8px;letter-spacing:.12em;color:var(--dim);width:72px;min-width:72px;white-space:nowrap;text-align:left;flex-shrink:0;cursor:pointer;padding:3px 0}
 .chipAdd{opacity:.65}
 .chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
  align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
@@ -189,7 +189,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.25";
+const VERSION="1.30";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -606,6 +606,9 @@ let simS=0, speedIdx=1; const SPEEDS=[0,1,4], SPEEDLBL=["⏸ 0×","▶ 1×","▶
 let effAvg=0.6;
 let emergePtr=0, nextEmergeAt=0, weekPaid=0, passengers=0;
 let tool=null;                    // null | 'station' | 'inter' | 'detach'
+let hiddenCls={};                 // view filter: class key -> hidden
+function clsKeyOf(L){return L.cls||(L.express?"express":"metro")}
+function lineHidden(L){return !!hiddenCls[clsKeyOf(L)]&&L.id!==selLine}
 let crossings=[];
 let showDensity=false, posterTrains=true, posterLabels=true, posterStats=false, running=false, seenHelp=false;
 let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
@@ -1445,7 +1448,7 @@ function draw(){
  // glow
  ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineJoin="round";ctx.lineCap="round";
  for(const pass of[[4.5,.09]]){
-  for(const L of lines){if(!L.visible){continue}
+  for(const L of lines){if(lineHidden(L)){continue}
    ctx.strokeStyle=L.color;
    ctx.globalAlpha=pass[1]*(L.express?1.8:1);
    ctx.lineWidth=px(pass[0]);
@@ -1455,7 +1458,7 @@ function draw(){
  ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
  for(const L of lines){
   const CC=clsOf(L);
-  if(!L.visible){ctx.strokeStyle="#2a303d";ctx.globalAlpha=0.35}
+  if(lineHidden(L)){ctx.strokeStyle="#2a303d";ctx.globalAlpha=0.35}
   else{ctx.strokeStyle=L.color;ctx.globalAlpha=L.id===selLine?1:CC.alpha}
   for(const P of L.paths){
    if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
@@ -1577,7 +1580,7 @@ function draw(){
     ctx.fillText("+"+(s.q.length-show),s.x+px(9.5)+4*px(5.2),s.y+px(2.5))}}}
  // trains
  if(!poster||posterTrains){
-  for(const L of lines){if(!L.visible)continue;
+  for(const L of lines){if(lineHidden(L))continue;
   for(const t of L.trains){
    const P=L.paths[t.seg];if(!P)continue;
    const CC=clsOf(L);
@@ -1769,16 +1772,19 @@ function refreshUI(){
   const row=document.createElement("div");row.className="clsRow";
   const lbl=document.createElement("span");lbl.className="clsLbl";
   lbl.textContent=clsName(cls);
+  if(hiddenCls[cls]){lbl.style.opacity="0.35";lbl.style.textDecoration="line-through"}
+  lbl.onclick=()=>{hiddenCls[cls]=!hiddenCls[cls];refreshUI()};
+  lbl.title="Toggle layer";
   row.appendChild(lbl);
   for(const L of mine){
    const i=L.id;
    const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
-   if(L.visible){b.style.color=L.color;b.style.borderColor=L.color;
+   if(!lineHidden(L)){b.style.color=L.color;b.style.borderColor=L.color;
     b.style.background=i===selLine?L.color:"transparent"}
    else{b.style.color="#3a4050";b.style.borderColor="#3a4050";b.style.background="transparent";b.style.opacity="0.6"}
    if(cls==="express")b.style.borderRadius="5px";
    if(cls==="tram")b.style.borderStyle="dashed";
-   b.onclick=()=>{L.visible=!L.visible;refreshUI()};row.appendChild(b)}
+   b.onclick=()=>selectLine(i===selLine?-1:i);row.appendChild(b)}
   const poolFull=isX?xUsed>=capX():localUsed>=capM();
   if(!poolFull){
    const pb=document.createElement("button");pb.className="chip chipAdd";
