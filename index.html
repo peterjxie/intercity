@@ -37,7 +37,7 @@ button:disabled{opacity:.32}
 .row::-webkit-scrollbar{display:none}
 .clsRow{display:flex;gap:4px;align-items:center;padding:1px 0}
 .clsSum{font-size:7.5px;letter-spacing:.18em;color:var(--dim);opacity:.7;padding:0 0 1px}
-.clsLbl{font-size:8px;letter-spacing:.12em;color:var(--dim);width:72px;min-width:72px;white-space:nowrap;text-align:left;flex-shrink:0;cursor:pointer;padding:3px 0}
+.clsLbl{font-size:8px;letter-spacing:.12em;color:var(--dim);width:72px;min-width:72px;white-space:nowrap;text-align:left;flex-shrink:0}
 .chipAdd{opacity:.65}
 .chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
  align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
@@ -189,7 +189,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.30";
+const VERSION="1.25";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -492,65 +492,128 @@ bangkok:{
  count:78
 },
 amsterdam:{
- name:"AMSTERDAM",blurb:"Canals fan south from the IJ around a medieval core no rail may enter. Trams circle it; only the metro tunnels beneath.",
- palette:["#e03a3a","#f0a020","#3a9a4a","#3060c0","#8a4ac0","#d05090","#40a0b0","#b07030","#5a8a30","#c04060","#7050c0"],
- maxExpress:1,maxMetro:3,
- classes:["metro","tram","express"],
+ name:"AMSTERDAM",blurb:"The grachtengordel fans south from the IJ around a medieval core no rail may enter. Trams thread the canals; only the metro tunnels beneath, and none may cross the IJ but the metro.",
+ palette:["#e03a3a","#f0a020","#3a9a4a","#3060c0","#8a4ac0","#d05090","#40a0b0","#b07030","#5a8a30","#c04060","#7050c0","#4a9ad0","#d0a040"],
+ maxMetro:3,maxTram:9,maxExpress:1,
+ classes:["tram","metro","express"],
  classNames:{metro:"METRO",tram:"TRAM",express:"SPRINTER"},
  features:["ferry","air","tram","ic"],
- pop:1.2,popUnit:"M",kmScale:0.32,spacing:{min:3.2,max:5.5},jitter:4.5,
- symScale:0.8,
- ijBarrier:{coreClass:"metro"},
+ pop:1.2,popUnit:"M",kmScale:0.32,spacing:{min:2.6,max:4.6},jitter:3.6,
+ symScale:0.72,
+ ijBarrier:{y:49.5,coreClass:"metro"},tramRiverMax:0.45,
+ speedScale:{tram:0.6},
+ waterPad:0.35,
  seas:[
-  [[-5,16],[10,17],[26,19],[40,22],[51,25],[58,26],[70,28],[84,30],[105,33],[105,2],[84,5],[70,9],[58,14],[49,19],[42,15],[28,12],[12,10],[-5,9]]
+  [[62.4,51.1],[62.6,51.0],[64.8,52.1],[64.6,53.1],[63.8,52.9],[63.1,52.2],[62.3,51.3],[62.4,51.1]],
+  [[64.4,50.4],[64.5,51.6],[64.3,51.8],[64.9,52.2],[64.8,51.3],[64.8,51.1],[64.7,50.8],[64.4,50.4]],
+  [[65.5,51.1],[65.6,51.4],[67.4,51.9],[67.5,51.6],[65.5,51.1]],
+  [[67.6,51.6],[67.6,51.9],[68.0,52.0],[68.2,51.8],[67.6,51.6]],
+  [[68.2,51.8],[69.5,52.5],[67.5,54.5],[67.4,54.4],[68.9,52.7],[68.9,52.5],[68.0,52.3],[68.2,51.8]],
+  [[54.4,38.8],[56.5,37.3],[59.0,39.5],[60.2,48.5],[54.4,38.8]],
+  [[59.1,40.5],[60.4,40.3],[62.8,50.1],[60.2,48.5],[59.1,40.5]],
+  [[62.5,48.4],[64.5,48.7],[64.7,50.6],[62.9,50.1],[62.5,48.4]],
+  [[64.5,48.8],[77.6,47.6],[78.9,48.2],[77.7,50.4],[72.2,50.5],[68.1,49.2],[66.5,49.8],[64.8,50.6],[64.5,48.8]],
+  [[75.3,50.3],[77.4,50.4],[77.9,52.5],[75.9,52.6],[75.4,51.6],[73.0,52.3],[72.5,51.2],[75.3,51.2],[75.3,50.3]],
+  [[66.7,49.5],[72.4,51.2],[72.8,52.3],[65.4,50.4],[66.7,49.5]],
+  [[56.5,37.3],[51.4,32.7],[10.6,23.8],[10.0,25.0],[50.8,33.7],[54.5,38.8],[56.5,37.3]],
+  [[71.2,54.3],[76.2,53.6],[76.8,54.5],[71.2,54.3]],
+  [[76.1,53.4],[76.6,52.6],[78.0,52.9],[77.0,53.2],[76.7,53.6],[76.7,54.6],[76.1,53.4]],
+  [[77.1,53.1],[78.0,52.8],[78.8,57.9],[80.4,58.7],[80.9,59.1],[80.5,60.4],[78.7,59.7],[78.1,58.7],[78.0,58.2],[78.0,57.7],[78.0,56.9],[77.7,55.7],[77.4,55.7],[75.0,55.8],[75.8,55.3],[76.6,55.3],[77.5,55.2],[77.6,55.1],[77.3,54.0],[77.1,53.1]],
+  [[78.5,48.7],[79.7,48.0],[81.3,50.0],[84.6,52.5],[84.5,54.8],[79.7,50.5],[79.0,49.5],[78.5,49.5],[78.2,49.2],[78.5,48.7]],
+  [[81.2,49.7],[82.5,49.7],[84.6,52.5],[81.2,49.7]],
+  [[78.3,54.8],[81.1,54.9],[81.5,56.2],[81.7,56.7],[81.2,58.4],[81.2,58.5],[79.2,57.2],[78.7,57.0],[78.3,54.8]],
+  [[68.1,48.5],[69.2,48.0],[70.6,47.7],[71.6,47.6],[72.0,47.6],[72.9,47.7],[74.2,47.6],[76.1,47.7],[68.1,48.5]],
+  [[60.1,49.4],[60.2,49.5],[60.5,49.8],[60.7,49.9],[61.1,50.3],[61.0,50.6],[60.8,50.4],[60.8,50.4],[60.9,50.1],[60.7,50.0],[60.6,50.0],[60.5,50.1],[60.0,49.6],[60.1,49.4]],
+  [[60.4,51.4],[61.3,50.6],[61.5,50.7],[61.7,50.7],[61.8,50.7],[61.9,50.7],[61.7,50.8],[61.5,50.9],[61.4,50.9],[61.3,51.0],[61.2,51.1],[61.1,51.3],[60.9,51.5],[60.7,51.5],[60.7,51.6],[60.6,51.6],[60.4,51.4]],
+  [[64.9,51.2],[65.5,51.1],[65.5,51.4],[65.2,51.8],[65.6,52.7],[65.9,53.5],[65.4,53.8],[64.9,53.4],[65.0,53.1],[65.1,52.8],[65.1,52.5],[65.1,52.2],[65.0,51.8],[64.9,51.5],[64.9,51.2]],
+  [[60.3,55.2],[61.8,55.7],[63.1,59.6],[64.4,62.4],[64.7,62.9],[64.9,63.6],[65.3,65.2],[65.8,67.2],[66.4,67.2],[66.8,67.2],[66.8,67.4],[66.2,67.9],[65.5,68.6],[64.8,68.8],[64.1,69.2],[63.8,69.3],[63.6,70.7],[63.4,71.2],[62.5,71.7],[61.7,71.6],[61.2,71.6],[61.3,71.2],[62.5,71.0],[62.9,70.7],[63.0,69.7],[63.1,69.3],[63.5,68.9],[64.6,68.3],[65.4,67.8],[65.4,67.2],[65.0,65.8],[64.8,64.4],[64.4,64.2],[64.3,63.4],[63.8,62.4],[63.2,61.4],[62.8,60.0],[61.5,55.8],[60.3,55.2]],
+  [[53.7,37.7],[51.3,39.8],[48.9,38.1],[48.1,39.0],[50.1,40.5],[49.6,41.1],[48.8,40.6],[48.8,41.0],[50.3,41.8],[52.3,40.3],[52.6,40.9],[52.8,41.3],[52.9,41.1],[52.5,40.2],[53.2,39.7],[53.6,40.9],[54.4,40.6],[54.0,39.2],[54.6,38.7],[54.1,38.2],[53.7,37.7]],
+  [[54.2,35.4],[55.0,34.7],[55.2,35.0],[54.7,35.8],[54.2,35.4]],
+  [[51.2,34.7],[49.3,37.0],[49.5,37.4],[50.9,35.9],[51.3,36.5],[50.5,37.6],[51.0,38.1],[51.9,36.8],[52.0,37.3],[52.8,37.5],[53.0,36.6],[51.6,34.7],[51.2,34.7]],
+  [[54.4,38.9],[55.4,41.9],[56.0,41.4],[54.4,38.9]],
+  [[80.6,60.6],[80.7,60.5],[80.7,60.1],[82.7,60.7],[84.1,61.9],[85.9,63.4],[90.0,67.0],[89.9,67.8],[88.0,66.1],[84.8,63.3],[83.3,61.9],[81.7,60.9],[80.8,60.7],[80.6,60.6]],
+  [[58.7,46.1],[58.7,47.9],[59.0,47.9],[59.0,46.6],[58.7,46.1]],
+  [[65.7,53.7],[68.7,55.4],[68.3,55.6],[67.2,54.9],[65.5,53.8],[65.7,53.7]],
+  [[68.9,55.6],[69.1,55.5],[75.8,55.4],[75.7,55.5],[68.9,55.6]],
+  [[69.1,55.8],[75.3,55.7],[75.2,55.8],[69.1,55.9],[69.1,55.8]]
  ],
  rivers:[
-  {pts:[[55,104],[53,88],[52,72],[51,58],[50,46],[49,36]],hw:0.9},
-  {pts:[[24,20],[23,32],[22,44],[21,56],[22,68]],hw:0.7},
-  {pts:[[42.3,26.0],[42.0,28.1],[42.4,30.2],[43.4,32.2],[44.9,33.7],[46.9,34.7],[49.0,35.0],[51.1,34.7],[53.1,33.7],[54.6,32.2],[55.6,30.2],[56.0,28.1],[55.7,26.0]],hw:0.45},
-  {pts:[[39.0,24.9],[38.5,28.2],[39.1,31.4],[40.6,34.2],[42.9,36.5],[45.8,38.0],[49.0,38.5],[52.2,38.0],[55.1,36.5],[57.4,34.2],[58.9,31.4],[59.5,28.2],[59.0,24.9]],hw:0.45},
-  {pts:[[35.6,23.9],[35.0,28.2],[35.7,32.5],[37.7,36.3],[40.8,39.4],[44.7,41.3],[49.0,42.0],[53.3,41.3],[57.2,39.4],[60.3,36.3],[62.3,32.5],[63.0,28.2],[62.4,23.9]],hw:0.45},
-  {pts:[[32.7,23.0],[32.0,28.2],[32.9,33.4],[35.3,38.1],[39.1,41.8],[43.8,44.2],[49.0,45.0],[54.2,44.2],[58.9,41.8],[62.7,38.1],[65.1,33.4],[66.0,28.2],[65.3,23.0]],hw:0.45},
-  {pts:[[29.9,22.2],[29.0,28.3],[30.1,34.4],[32.9,39.9],[37.3,44.2],[42.9,47.0],[49.0,48.0],[55.1,47.0],[60.7,44.2],[65.1,39.9],[67.9,34.4],[69.0,28.3],[68.1,22.2]],hw:0.45}
+  {pts:[[60.5,48.9],[58.3,52.0],[57.9,54.8],[58.5,55.6],[59.4,55.6]],hw:0.24},
+  {pts:[[59.1,49.9],[57.8,52.2],[57.6,55.2],[58.7,56.4],[60.2,56.8],[60.2,57.3],[58.4,57.0],[57.0,55.5],[57.1,52.3],[58.5,49.7],[58.0,49.3],[56.6,51.9],[56.4,55.9],[57.9,57.6],[60.3,58.2],[60.4,59.1],[58.6,58.9],[57.0,57.6]],hw:0.36},
+  {pts:[[59.6,50.0],[58.4,49.6],[56.2,47.4],[56.5,47.7],[54.6,53.1],[55.6,55.7]],hw:0.3},
+  {pts:[[57.1,44.5],[54.1,53.2],[55.5,56.7],[57.6,58.8],[58.7,59.6],[60.9,59.9],[62.5,59.5],[63.6,58.8],[64.7,58.5],[66.7,57.9],[67.3,57.4],[69.1,56.0],[74.6,55.9]],hw:0.36},
+  {pts:[[61.9,51.1],[60.0,53.5],[59.8,54.5],[59.2,54.6],[59.7,55.3],[60.0,55.4],[61.3,53.4]],hw:0.24},
+  {pts:[[62.3,51.7],[62.4,52.5],[62.9,53.1],[63.7,53.8],[62.5,54.6],[61.9,54.1],[63.6,53.0]],hw:0.24},
+  {pts:[[60.1,56.7],[63.0,55.8],[65.2,53.7],[67.1,54.9],[66.7,55.7],[67.6,56.3],[66.1,57.4],[63.9,56.2],[60.4,57.2],[60.2,57.4],[60.4,58.1],[65.0,56.8],[65.5,57.2],[62.9,58.0],[62.7,57.5]],hw:0.36},
+  {pts:[[55.3,48.5],[53.8,49.1],[48.4,60.1],[47.4,64.3]],hw:0.3},
+  {pts:[[60.9,55.3],[61.9,54.2],[61.8,53.8],[62.0,53.6],[62.3,53.0],[61.8,52.7],[62.1,51.2]],hw:0.24},
+  {pts:[[68.1,52.4],[66.7,53.8]],hw:0.24},
+  {pts:[[56.9,45.5],[58.3,45.5],[57.4,45.6],[57.2,47.1],[58.0,47.5],[58.1,46.2],[57.3,46.2],[58.6,46.1],[58.7,46.0]],hw:0.24},
+  {pts:[[62.2,47.9],[63.0,47.2],[63.4,46.5],[63.3,45.9],[63.2,45.0],[63.7,43.5],[64.5,42.6]],hw:0.24},
+  {pts:[[62.5,48.5],[65.1,46.7],[66.6,45.2],[67.3,43.7],[67.7,40.6],[68.4,38.7],[68.7,37.1],[69.4,36.0],[70.3,34.8],[74.2,33.4],[75.3,29.5],[76.0,29.3],[76.0,22.3]],hw:0.36},
+  {pts:[[57.5,58.9],[57.5,61.5],[57.6,64.1],[57.5,67.0],[57.4,67.9]],hw:0.24},
+  {pts:[[50.0,47.3],[50.7,48.9],[50.7,50.2],[51.4,52.0],[52.4,54.8],[53.2,56.2],[53.4,56.6],[54.8,55.9],[49.5,58.0]],hw:0.3},
+  {pts:[[51.9,53.3],[54.1,52.7],[53.5,53.0],[53.4,53.8],[53.4,54.2],[54.2,56.0]],hw:0.24},
+  {pts:[[55.4,56.5],[57.5,55.4]],hw:0.24},
+  {pts:[[60.1,54.4],[61.7,51.8],[61.6,51.6]],hw:0.24},
+  {pts:[[47.6,65.5],[49.7,64.7],[50.7,63.4],[53.5,62.5],[57.3,63.9],[58.4,64.6],[60.8,64.5],[63.9,63.8],[64.5,63.8],[65.1,64.3],[68.3,62.0],[69.8,61.0],[73.2,59.7],[75.4,60.0],[77.1,59.4],[78.2,59.1]],hw:0.36},
+  {pts:[[55.6,47.1],[53.7,49.2]],hw:0.24},
+  {pts:[[55.8,46.8],[46.0,47.0]],hw:0.24},
+  {pts:[[49.3,48.1],[50.5,49.0]],hw:0.24},
+  {pts:[[39.1,50.0],[44.8,51.7],[48.9,51.2],[48.5,51.2],[49.5,56.7]],hw:0.3},
+  {pts:[[60.5,40.5],[61.5,39.0],[62.0,38.1],[63.1,37.3],[63.3,36.6],[63.5,36.0],[63.0,35.3],[60.5,32.6]],hw:0.24},
+  {pts:[[54.1,32.5],[58.7,36.0],[59.6,34.8],[59.8,33.3],[60.1,32.8]],hw:0.24},
+  {pts:[[60.8,72.3],[61.2,72.7],[60.6,74.1],[60.2,75.7],[60.4,76.8],[61.1,76.8],[61.7,77.3],[63.0,77.7],[64.2,78.6],[64.0,78.9],[63.6,79.3],[63.3,79.5],[62.9,79.8],[63.2,80.6],[63.2,80.8],[62.9,81.5],[62.9,82.3],[63.1,82.7],[63.6,83.5],[63.6,83.6],[63.6,84.3],[63.4,84.5]],hw:0.3},
+  {pts:[[55.0,51.6],[56.9,51.1]],hw:0.24},
+  {pts:[[56.5,46.7],[58.6,48.3]],hw:0.24},
+  {pts:[[58.4,48.3],[58.6,48.5],[58.0,49.3]],hw:0.24},
+  {pts:[[61.0,24.2],[61.1,32.0]],hw:0.24},
+  {pts:[[69.9,17.5],[69.4,22.2],[69.4,25.1],[66.9,27.9],[64.9,33.3],[64.6,35.5],[64.1,35.5]],hw:0.3},
+  {pts:[[64.9,68.9],[67.6,74.2],[69.0,73.4]],hw:0.24},
+  {pts:[[80.3,61.5],[76.9,68.0]],hw:0.24}
  ],
- islands:[
-  [[58,20],[70,16],[72,19],[60,23]]
- ],
+ islands:[],
  nobuild:[
-  [[45,27],[52,27],[54,31],[50,35],[46,35],[43,31]],
-  [[27,44],[38,47],[37,51],[26,48]]
+  [[60.1,51.7],[61.7,52.1],[62.0,53.2],[61.0,54.4],[59.8,53.7],[59.7,52.5]]
  ],
  blobs:[
-  {x:41,y:33,r:3.5,w:.95,t:"cbd"},{x:57,y:33,r:3.5,w:.9,t:"cbd"},
-  {x:49,y:42,r:4,w:1.0,t:"cbd"},{x:33,y:30,r:3,w:.7,t:"res"},
-  {x:58,y:29,r:3,w:.65,t:"res"},{x:52,y:48,r:4,w:.8,t:"res"},
-  {x:30,y:40,r:4,w:.7,t:"res"},{x:64,y:36,r:4,w:.7,t:"res"},
-  {x:22,y:34,r:4,w:.55,t:"res"},{x:44,y:56,r:4,w:.65,t:"res"},
-  {x:54,y:58,r:4,w:.6,t:"res"},{x:36,y:66,r:4,w:.55,t:"res"},
-  {x:60,y:64,r:4,w:.55,t:"res"},{x:48,y:76,r:4,w:.5,t:"res"},
-  {x:30,y:78,r:4,w:.4,t:"res"},{x:64,y:78,r:4,w:.4,t:"res"},
-  {x:49,y:88,r:4,w:.45,t:"res"},{x:12,y:40,r:4,w:.45,t:"res"},
-  {x:72,y:44,r:4,w:.5,t:"res"},{x:80,y:58,r:4,w:.4,t:"res"},
-  {x:60,y:7,r:3.5,w:.5,t:"res"},{x:76,y:5,r:3,w:.45,t:"res"},
-  {x:16,y:5,r:3,w:.4,t:"res"},{x:30,y:6,r:3,w:.4,t:"res"}
+  {x:59.4,y:52.8,r:4,w:1.0,t:"cbd"},
+  {x:61.5,y:49.9,r:3.5,w:0.85,t:"cbd"},
+  {x:60.2,y:55.9,r:3.5,w:0.9,t:"cbd"},
+  {x:56.1,y:57.0,r:3.5,w:0.85,t:"cbd"},
+  {x:62.0,y:55.1,r:3,w:0.7,t:"cbd"},
+  {x:56.0,y:52.1,r:4,w:0.8,t:"res"},
+  {x:59.4,y:61.7,r:4.5,w:0.85,t:"res"},
+  {x:68.9,y:58.4,r:5,w:0.7,t:"res"},
+  {x:50.5,y:51.3,r:5,w:0.7,t:"res"},
+  {x:53.6,y:68.8,r:5,w:0.6,t:"res"},
+  {x:55.5,y:59.9,r:4,w:0.7,t:"res"},
+  {x:52.5,y:59.9,r:4,w:0.55,t:"res"},
+  {x:61.7,y:45.7,r:5,w:0.55,t:"res"},
+  {x:66.6,y:53.2,r:4,w:0.55,t:"res"},
+  {x:43.2,y:45.2,r:5,w:0.5,t:"ind"},
+  {x:66.5,y:65.2,r:4,w:0.5,t:"res"}
  ],
  corridors:[
-  {pts:[[50,40],[50,56],[49,72]],w:1.2},
-  {pts:[[42,38],[34,48],[28,58]],w:.8},
-  {pts:[[56,38],[62,48],[66,58]],w:.8},
-  {pts:[[40,30],[30,32],[20,34]],w:.7},
-  {pts:[[58,30],[66,34],[74,38]],w:.7},
-  {pts:[[58,6],[70,6]],w:.5}
+  {pts:[[61.5,49.9],[59.4,52.8],[60.2,55.9],[66.5,65.2]],w:1.3},
+  {pts:[[61.5,49.9],[56.0,52.1],[50.5,51.3]],w:1.0},
+  {pts:[[59.4,52.8],[56.1,57.0],[55.5,59.9],[53.6,68.8]],w:1.1},
+  {pts:[[59.4,52.8],[59.4,61.7],[53.6,68.8]],w:1.0},
+  {pts:[[60.2,55.9],[62.0,55.1],[68.9,58.4]],w:0.9},
+  {pts:[[56.0,52.1],[59.4,61.7]],w:0.7},
+  {pts:[[61.5,49.9],[66.6,53.2],[68.9,58.4]],w:0.8}
  ],
- core:{x:49,y:40},
- landmark:{x:49,y:26,name:"CENTRAAL"},
+ core:{x:59.4,y:53.2},
+ landmark:{x:61.5,y:49.9,name:"CENTRAAL"},
  specials:[
-  {x:64,y:6,name:"NOORD",kind:"hub",when:.3},
-  {x:10,y:26,name:"SLOTERDIJK",kind:"hub",when:.42},
-  {x:52,y:66,name:"AMSTEL",kind:"hub",when:.55}
+  {x:61.7,y:45.7,name:"NOORD",kind:"hub",when:.28},
+  {x:43.2,y:45.2,name:"SLOTERDIJK",kind:"hub",when:.4},
+  {x:66.5,y:65.2,name:"AMSTEL",kind:"hub",when:.52},
+  {x:53.6,y:68.8,name:"ZUID",kind:"ic",when:.62}
  ],
- count:88
-}};
+ count:92
+}
+};
 
 /* ================= constants ================= */
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
@@ -589,10 +652,11 @@ function computeMetroCap(){
   best=Math.max(best,Math.hypot(maxX-minX,maxY-minY))}
  metroCapKm=Math.max(80,Math.round(kms(best)*1.6))}
 function capM(){return(city&&city.maxMetro)||6}
+function capTram(){return(city&&city.maxTram)||0}
 function clsM(){return(city&&city.classNames&&city.classNames.metro)||"METRO"}
 function clsX(){return(city&&city.classNames&&city.classNames.express)||"INTERCITY"}
 function capX(){return(city&&city.maxExpress)||2}
-function capTotal(){return capM()+capX()}
+function capTotal(){return capM()+capTram()+capX()}
 function capI(){return(city&&city.maxInter)||4}
 const FARE=2, STIPEND=30;
 const SPAWN_K=0.042, PASS_CAP=340;
@@ -606,9 +670,6 @@ let simS=0, speedIdx=1; const SPEEDS=[0,1,4], SPEEDLBL=["⏸ 0×","▶ 1×","▶
 let effAvg=0.6;
 let emergePtr=0, nextEmergeAt=0, weekPaid=0, passengers=0;
 let tool=null;                    // null | 'station' | 'inter' | 'detach'
-let hiddenCls={};                 // view filter: class key -> hidden
-function clsKeyOf(L){return L.cls||(L.express?"express":"metro")}
-function lineHidden(L){return !!hiddenCls[clsKeyOf(L)]&&L.id!==selLine}
 let crossings=[];
 let showDensity=false, posterTrains=true, posterLabels=true, posterStats=false, running=false, seenHelp=false;
 let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
@@ -666,6 +727,19 @@ function inWater(p,pad){pad=pad||0;
  for(const r of city.rivers)if(distToPolyline(p,r.pts)<r.hw+pad)return true;
  return false}
 function inNoBuild(p){return city.nobuild.some(poly=>pointInPoly(p,poly))}
+function segHitsNoBuild(ax,ay,bx,by){
+ if(!city.nobuild||!city.nobuild.length)return false;
+ for(let i=0;i<=12;i++){const t=i/12;
+  if(inNoBuild({x:ax+(bx-ax)*t,y:ay+(by-ay)*t}))return true}
+ return false}
+function crossingBlock(L,ax,ay,bx,by){
+ const cls=L.cls||(L.express?"express":"metro");
+ const bar=city&&city.ijBarrier;
+ if(bar&&cls!==(bar.coreClass||"metro")&&((ay<bar.y)!==(by<bar.y)))
+  return "ONLY THE METRO CROSSES THE IJ";
+ if(cls!=="metro"&&segHitsNoBuild(ax,ay,bx,by))
+  return "ONLY THE METRO ENTERS THE OLD CORE";
+ return null}
 function buildUrbanLayer(g){
  if(g==null)g=growthG();
  lastUrbanG=g;
@@ -718,7 +792,7 @@ function genStations(){
   const base=pointAlongPoly(cor.pts,t);
   const p={x:base.x+(rng()-0.5)*jt,y:base.y+(rng()-0.5)*jt};
   if(p.x<3||p.x>97||p.y<3||p.y>97)continue;
-  if(inWater(p,1.2)||inNoBuild(p))continue;
+  if(inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p))continue;
   const dCore=dCores(p);
   const minD=lerp(spMin,spMax,clamp(dCore/60,0,1));
   let ok=dist(p,lm)>minD;
@@ -741,7 +815,7 @@ function genStations(){
   const ang=rng()*TAU,rr=minDp*(1.05+rng()*0.9);
   const p={x:parent.x+Math.cos(ang)*rr,y:parent.y+Math.sin(ang)*rr};
   if(p.x<3||p.x>97||p.y<3||p.y>97)continue;
-  if(inWater(p,1.2)||inNoBuild(p))continue;
+  if(inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p))continue;
   const d=densityAt(p);
   if(d<0.1&&rng()>0.35)continue;
   if(nearIC(p))continue;
@@ -970,12 +1044,18 @@ function segCost(a,b,pts){let c=dist(stations[a],stations[b])*COST.track;
 /* ================= line editing ================= */
 function selectLine(i){selLine=i;tool=null;
  rebuildGeometry();refreshUI()}
+function clsCount(k){return lines.filter(L=>(L.cls||(L.express?"express":"metro"))===k).length}
 function createLine(clsKey){
  if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
  const isX=clsKey==="express";
+ const hasTram=capTram()>0;
  if(isX){
-  if(lines.filter(x=>x.express).length>=capX()){
+  if(clsCount("express")>=capX()){
    toast(clsName("express")+" AT MAX · "+capX()+" LINES");return}}
+ else if(hasTram){
+  const cap=clsKey==="tram"?capTram():capM();
+  if(clsCount(clsKey)>=cap){
+   toast(clsName(clsKey)+" AT MAX · "+cap+" LINES");return}}
  else{
   if(lines.filter(x=>!x.express).length>=capM()){
    toast("LOCAL LINES AT MAX · "+capM());return}}
@@ -985,10 +1065,8 @@ function createLine(clsKey){
  const L=newLineObj(lines.length);
  L.cls=clsKey;L.express=isX;
  lines.push(L);selectLine(lines.length-1);
- const localUsed=lines.filter(x=>!x.express).length;
- const xUsed=lines.filter(x=>x.express).length;
- toast(clsName(clsKey)+" · "+
-  (isX?clsX()+" "+xUsed+"/"+capX():"LOCAL "+localUsed+"/"+capM())+
+ const poolCap=isX?capX():(capTram()>0?(clsKey==="tram"?capTram():capM()):capM());
+ toast(clsName(clsKey)+" · "+clsCount(clsKey)+"/"+poolCap+
   (isX?" · HUBS, AIRPORTS, SATELLITES":""))}
 function edgeOnLine(L,a,b){
  const k=edgeKey(a,b);
@@ -1018,6 +1096,7 @@ function appendAt(L,endName,X){
  if((L.cls||"metro")==="tram"){
   const seg=elbowPts(stations[end],stations[X],false);
   if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return false}}
+ {const _b=crossingBlock(L,stations[end].x,stations[end].y,stations[X].x,stations[X].y);if(_b){toast(_b);return false}}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
@@ -1053,6 +1132,7 @@ function doConnect(A,B){
    if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return}}
   const tc=clsOf(L).trainCost;
   if(!pay(segCost(A,B)*exf(L)+tc))return;
+  {const _b=crossingBlock(L,stations[A].x,stations[A].y,stations[B].x,stations[B].y);if(_b){toast(_b);return}}
   L.stops=[A,B];L.activeEnd="tail";
   L.homeRegion=L.express?null:stations[A].region;
   buzz(12);
@@ -1140,7 +1220,7 @@ function addCar(){
  if(t.cars>=mc){toast("TRAIN AT MAX LENGTH");return}
  if(!pay(COST.car))return;t.cars++}
 function placeStation(p){
- if(p.x<3||p.x>97||p.y<3||p.y>97||inWater(p,1.2)||inNoBuild(p)){toast("CANNOT BUILD HERE");return}
+ if(p.x<3||p.x>97||p.y<3||p.y>97||inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p)){toast("CANNOT BUILD HERE");return}
  for(const s of stations)if((s.emerged||s.name)&&dist(p,s)<6){toast("TOO CLOSE TO A STATION");return}
  if(!pay(COST.station))return;
  const d=districtAt(p);
@@ -1202,7 +1282,8 @@ function stepTrain(t,dt){
  const P=L.paths[t.seg];if(!P||P.len<=0)return;
  const ex=L.express;
  const CC=clsOf(L);
- const vmax=CC.vmax,acc=CC.acc,br=CC.br,cornerCap=CC.corner;
+ const _ss=(city&&city.speedScale&&city.speedScale[L.cls||"metro"])||1;
+ const vmax=CC.vmax*_ss,acc=CC.acc,br=CC.br,cornerCap=CC.corner;
  let s=t.f*P.len;
  const sdir=t.dir>0?s:P.len-s;
  const dStop=Math.max(0,P.len-sdir);
@@ -1448,7 +1529,7 @@ function draw(){
  // glow
  ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineJoin="round";ctx.lineCap="round";
  for(const pass of[[4.5,.09]]){
-  for(const L of lines){if(lineHidden(L)){continue}
+  for(const L of lines){if(!L.visible){continue}
    ctx.strokeStyle=L.color;
    ctx.globalAlpha=pass[1]*(L.express?1.8:1);
    ctx.lineWidth=px(pass[0]);
@@ -1458,7 +1539,7 @@ function draw(){
  ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
  for(const L of lines){
   const CC=clsOf(L);
-  if(lineHidden(L)){ctx.strokeStyle="#2a303d";ctx.globalAlpha=0.35}
+  if(!L.visible){ctx.strokeStyle="#2a303d";ctx.globalAlpha=0.35}
   else{ctx.strokeStyle=L.color;ctx.globalAlpha=L.id===selLine?1:CC.alpha}
   for(const P of L.paths){
    if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
@@ -1580,7 +1661,7 @@ function draw(){
     ctx.fillText("+"+(s.q.length-show),s.x+px(9.5)+4*px(5.2),s.y+px(2.5))}}}
  // trains
  if(!poster||posterTrains){
-  for(const L of lines){if(lineHidden(L))continue;
+  for(const L of lines){if(!L.visible)continue;
   for(const t of L.trains){
    const P=L.paths[t.seg];if(!P)continue;
    const CC=clsOf(L);
@@ -1756,10 +1837,17 @@ function refreshUI(){
  const exCls=classes.filter(c=>c==="express");
  const localUsed=lines.filter(L=>!L.express).length;
  const xUsed=lines.filter(L=>L.express).length;
+ const clsN=k=>lines.filter(L=>(L.cls||(L.express?"express":"metro"))===k).length;
+ const capOf=k=>k==="express"?capX():(k==="tram"?capTram():capM());
  // pool summary
  const sum=document.createElement("div");sum.className="clsSum";
- let st=localUsed+"/"+capM()+" LOCAL";
- if(exCls.length&&capX()>0)st+=" · "+xUsed+"/"+capX()+" "+clsName("express");
+ let st;
+ if(capTram()>0){
+  st=classes.filter(c=>capOf(c)>0).map(c=>clsN(c)+"/"+capOf(c)+" "+clsName(c)).join(" · ");
+ }else{
+  st=localUsed+"/"+capM()+" LOCAL";
+  if(exCls.length&&capX()>0)st+=" · "+xUsed+"/"+capX()+" "+clsName("express");
+ }
  sum.textContent=st;
  cr.appendChild(sum);
  for(const cls of classes){
@@ -1772,20 +1860,17 @@ function refreshUI(){
   const row=document.createElement("div");row.className="clsRow";
   const lbl=document.createElement("span");lbl.className="clsLbl";
   lbl.textContent=clsName(cls);
-  if(hiddenCls[cls]){lbl.style.opacity="0.35";lbl.style.textDecoration="line-through"}
-  lbl.onclick=()=>{hiddenCls[cls]=!hiddenCls[cls];refreshUI()};
-  lbl.title="Toggle layer";
   row.appendChild(lbl);
   for(const L of mine){
    const i=L.id;
    const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
-   if(!lineHidden(L)){b.style.color=L.color;b.style.borderColor=L.color;
+   if(L.visible){b.style.color=L.color;b.style.borderColor=L.color;
     b.style.background=i===selLine?L.color:"transparent"}
    else{b.style.color="#3a4050";b.style.borderColor="#3a4050";b.style.background="transparent";b.style.opacity="0.6"}
    if(cls==="express")b.style.borderRadius="5px";
    if(cls==="tram")b.style.borderStyle="dashed";
-   b.onclick=()=>selectLine(i===selLine?-1:i);row.appendChild(b)}
-  const poolFull=isX?xUsed>=capX():localUsed>=capM();
+   b.onclick=()=>{L.visible=!L.visible;refreshUI()};row.appendChild(b)}
+  const poolFull=capTram()>0?(clsN(cls)>=capOf(cls)):(isX?xUsed>=capX():localUsed>=capM());
   if(!poolFull){
    const pb=document.createElement("button");pb.className="chip chipAdd";
    pb.style.color="#8fa2bd";pb.style.borderColor="rgba(140,160,190,.5)";
