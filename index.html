@@ -43,7 +43,10 @@ button:disabled{opacity:.32}
 .chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
  align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
 .chip.sel{box-shadow:0 0 10px currentColor}
-.chip.tram{width:16px;height:16px;min-width:16px;font-size:9px}
+.chip svg{width:100%;height:100%;display:block}
+.chip.tram{border-radius:5px}
+.chip.metro{border-radius:50%}
+.chip.express{border-radius:5px}
 #toast{position:fixed;bottom:118px;left:50%;transform:translateX(-50%);z-index:9;
  background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:9px 14px;
  font-size:11px;letter-spacing:.1em;opacity:0;transition:opacity .25s;pointer-events:none;max-width:86vw;text-align:center}
@@ -197,7 +200,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.62";
+const VERSION="1.63";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -717,6 +720,13 @@ const CLSICON={
  tram:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3.4" width="11" height="7.4" rx="1.6"/><path d="M8.6 3.4L10 0.6L11.4 3.4"/><path d="M7.5 0.6h5"/><path d="M4.5 7.1h11"/><path d="M2.5 12.4h15"/></svg>',
  express:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H11A6 4 0 0 1 11 11H3Z"/><path d="M3 7h8"/></svg>'};
 function clsIcon(k){return CLSICON[k]||CLSICON.metro}
+function chipGlyph(cls,onSel){
+ const col=onSel?"#0b0f18":"currentColor";
+ if(cls==="tram")
+  return '<svg viewBox="0 0 20 20" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linecap="round"><rect x="6.5" y="4" width="7" height="7.5" rx="1.8"/><path d="M8.4 7h3.2"/><path d="M10 12.2V14"/><path d="M7.7 16h4.6"/></svg>';
+ if(cls==="express")
+  return '<svg viewBox="0 0 20 20" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l4 4-4 4"/><path d="M10 6l4 4-4 4"/></svg>';
+ return '<svg viewBox="0 0 20 20" fill="'+col+'" stroke="none"><circle cx="10" cy="10" r="3.1"/></svg>';}
 function clsName(k){
  const d={metro:"METRO",tram:"TRAM",express:"INTERCITY"};
  return (city&&city.classNames&&city.classNames[k])||d[k]}
@@ -2225,19 +2235,16 @@ function refreshUI(){
   for(const L of mine){
    const i=L.id;
    const shown=(i===selLine)||!hiddenCls[cls];
-   const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
+   const b=document.createElement("button");b.className="chip "+cls+(i===selLine?" sel":"");
    if(shown){b.style.color=L.color;b.style.borderColor=L.color;
     b.style.background=i===selLine?L.color:"transparent";b.style.opacity="1"}
    else{b.style.color="#3a4050";b.style.borderColor="#3a4050";b.style.background="transparent";b.style.opacity="0.6"}
-   if(cls==="express")b.style.borderRadius="5px";
-   if(cls==="tram"){b.style.borderStyle="dashed";b.classList.add("tram")}
+   b.innerHTML=chipGlyph(cls,i===selLine&&shown);
    b.onclick=()=>{selectLine(i)};row.appendChild(b)}
   const poolFull=capTram()>0?(clsN(cls)>=capOf(cls)):(isX?xUsed>=capX():localUsed>=capM());
   if(!poolFull){
-   const pb=document.createElement("button");pb.className="chip chipAdd";
+   const pb=document.createElement("button");pb.className="chip "+cls+" chipAdd";
    pb.style.color="#8fa2bd";pb.style.borderColor="rgba(140,160,190,.5)";
-   if(cls==="tram")pb.style.borderStyle="dashed";
-   if(cls==="express")pb.style.borderRadius="5px";
    pb.textContent="+";
    pb.onclick=()=>createLine(cls);row.appendChild(pb)}
   cr.appendChild(row)}
@@ -2467,12 +2474,12 @@ function paintCityIcon(cnv,cid){
 const FEAT_CAT={sbahn:"VEHICLE",tram:"VEHICLE",tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
 const FEAT={
  ferry:{t:"Ferry links",d:'<path d="M1.5 8.5c1.8-1.6 3.6-1.6 5.5 0s3.7 1.6 5.5 0"/><path d="M4 3.5v5M4 3.5l3 1.8V8"/>'},
- tunnel:{t:"Tunnel crossings",d:'<path d="M2.2 10V7.2a4.8 4.8 0 0 1 9.6 0V10"/><path d="M1 11.6h12" stroke-dasharray="2 1.7"/>'},
+ tunnel:{t:"Tunnel crossings",d:'<path d="M1 5h12"/><path d="M1 9.2h4.4"/><path d="M8.6 9.2h4.4"/><path d="M6 11.4l1-2 1 2" stroke-linejoin="round"/>'},
  terrain:{t:"Ridge terrain",d:'<path d="M1.2 11L5 4.2l2.6 4.6L9.4 6l3.4 5"/>'},
  air:{t:"Airport connections",d:'<path d="M7 1.6v8.8M2.6 6.2L7 4l4.4 2.2M4.8 11l2.2-1.2L9.2 11"/>'},
  ic:{t:"Intercity expresses",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
  tram:{t:"Tram / monorail",d:'<path d="M1.5 9.5h11"/><rect x="4.2" y="4" width="5.6" height="3.4" rx="1.3"/><path d="M7 7.4v2.1"/>'},
- sbahn:{t:"S-Bahn network",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
+ sbahn:{t:"S-Bahn network",d:'<circle cx="7" cy="6" r="3.4"/><path d="M8.4 4.9a1.7 1.7 0 0 0-2.5 1c0 1.4 2.6 0.7 2.6 2.1a1.7 1.7 0 0 1-2.6 0.9"/><path d="M2 11.6h10"/>'},
  towns:{t:"Satellite towns",d:'<circle cx="7" cy="6.6" r="2"/><circle cx="7" cy="6.6" r="4.4"/>'},
  islands:{t:"Island geography",d:'<path d="M3.2 7.6c0-1.9 1.6-3.2 3.8-3.2s3.8 1.3 3.8 3.2-1.7 2.9-3.8 2.9-3.8-1-3.8-2.9Z"/><path d="M1.6 11.4h10.8" stroke-dasharray="2 1.7"/>'}};
 function featLegend(feats){
