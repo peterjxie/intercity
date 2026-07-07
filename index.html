@@ -199,7 +199,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.72";
+const VERSION="1.74";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -719,6 +719,33 @@ const CLSICON={
  tram:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3.4" width="11" height="7.4" rx="1.6"/><path d="M8.6 3.4L10 0.6L11.4 3.4"/><path d="M7.5 0.6h5"/><path d="M4.5 7.1h11"/><path d="M2.5 12.4h15"/></svg>',
  express:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H11A6 4 0 0 1 11 11H3Z"/><path d="M3 7h8"/></svg>'};
 function clsIcon(k){return CLSICON[k]||CLSICON.metro}
+function clsBlurb(k){
+ const nm=((city&&city.classNames&&city.classNames[k])||"").toUpperCase();
+ if(k==="tram"){
+  if(nm.indexOf("MONORAIL")>=0)return "Single beam; crosses water only at set bridges. Slow, cheap.";
+  return "Corridors only in the old town; can't cross the water. Slow, cheap.";}
+ if(k==="express"){
+  if(nm.indexOf("INTERCITY")>=0)return "Fast, long-range; spans the delta. Sharp bends slow it.";
+  if(nm.indexOf("SPRINTER")>=0)return "Regional rail beyond the metro; the only tram-class over the IJ.";
+  return "Regional express; longer reach, penalised on sharp bends.";}
+ return "Tunnels anywhere, ignores water and corridors. The old core is metro-only.";}
+function showClsLegend(){
+ let box=document.getElementById("clsLegendCard");
+ if(!box){box=document.createElement("div");box.id="clsLegendCard";
+  box.style.cssText="position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:12;background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:12px 14px;width:min(320px,86vw);box-shadow:0 6px 30px rgba(0,0,0,.5)";
+  box.addEventListener("click",e=>{if(e.target===box||e.target.dataset.close)box.style.display="none"});
+  document.body.appendChild(box)}
+ const classes=(city&&city.classes)||["metro","express"];
+ let html='<div style="font-size:9px;letter-spacing:.24em;color:#9fd2ff;margin-bottom:9px">LINE TYPES</div>';
+ const capC=k=>k==="express"?capX():(k==="tram"?capTram():capM());
+ for(const c of classes){
+  if(capC(c)<=0)continue;
+  html+='<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:8px">'+
+   '<span style="flex-shrink:0;opacity:.9;color:#cfe0f5">'+clsIcon(c)+'</span>'+
+   '<div><div style="font-size:10px;letter-spacing:.14em;color:#eaf2ff">'+clsName(c)+'</div>'+
+   '<div style="font-size:9px;line-height:1.5;color:var(--dim);margin-top:2px">'+clsBlurb(c)+'</div></div></div>';}
+ html+='<button data-close="1" style="width:100%;margin-top:4px;background:none;border:1px solid var(--edge);color:var(--ink);font:inherit;font-size:9px;letter-spacing:.2em;padding:8px;border-radius:8px">CLOSE</button>';
+ box.innerHTML=html;box.style.display="block"}
 function chipGlyph(cls,onSel){
  const col=onSel?"#0b0f18":"currentColor";
  // letter-roundel override (e.g. Paris: RER 'R', Metro 'M')
@@ -974,6 +1001,56 @@ function genStations(){
   const district=districtAt(p);
   cand.push({x:p.x,y:p.y,shape:shapeFor(district,rng),district,dens:d,
    emerged:false,inter:false,q:[],acc:0,order:dCore+(rng()-0.5)*16,name:null,strainT:0,emergeAt:0})}
+ // CORE CORRIDOR SNAP: in the snapZone, pull each stop onto the nearest corridor point
+ // so tram tracks never kink out to reach an off-corridor stop. Metro-only islands added after.
+ if(city.snapZone&&city.snapTracks){
+  const projPt=(p)=>{
+   let best=null;
+   for(const tr of city.snapTracks){
+    for(let i=1;i<tr.length;i++){
+     const a={x:tr[i-1][0],y:tr[i-1][1]},b={x:tr[i][0],y:tr[i][1]};
+     const vx=b.x-a.x,vy=b.y-a.y,L2=vx*vx+vy*vy||1;
+     const t=clamp(((p.x-a.x)*vx+(p.y-a.y)*vy)/L2,0,1);
+     const qx=a.x+t*vx,qy=a.y+t*vy,d=Math.hypot(p.x-qx,p.y-qy);
+     if(!best||d<best.d)best={d,x:qx,y:qy}}}
+   return best};
+  const snapped=[];
+  for(const c of cand){
+   if(c.name){snapped.push(c);continue}
+   if(!pointInPoly({x:c.x,y:c.y},city.snapZone)){snapped.push(c);continue}
+   const pr=projPt(c);
+   if(!pr){snapped.push(c);continue}
+   // dedupe: skip if it lands on top of an already-snapped stop
+   let clash=false;
+   for(const s2 of snapped){if(Math.hypot(s2.x-pr.x,s2.y-pr.y)<((city.coreStopGap)||3)*0.8){clash=true;break}}
+   if(clash)continue;
+   c.x=Math.round(pr.x*100)/100;c.y=Math.round(pr.y*100)/100;c.onCorridor=true;
+   snapped.push(c)}
+  cand.length=0;Array.prototype.push.apply(cand,snapped);
+  // 2-3 metro-only islands in the deep core (Nieuwmarkt-style): inside a nobuild poly or far from any track
+  const islandN=2+((rng()*2)|0); // 2 or 3
+  let placed=0,tries=0;
+  const nb=(city.nobuild&&city.nobuild[0]);
+  while(placed<islandN&&tries<400){
+   tries++;
+   let p;
+   if(nb){
+    // sample within the bbox of the first no-go poly, near its centroid
+    let cx=0,cy=0;for(const q of nb){cx+=q[0];cy+=q[1]}cx/=nb.length;cy/=nb.length;
+    p={x:cx+(rng()-0.5)*6,y:cy+(rng()-0.5)*6};
+   }else{p={x:city.core.x+(rng()-0.5)*8,y:city.core.y+(rng()-0.5)*8}}
+   if(inWater({x:p.x,y:p.y},0.2))continue;
+   // must be clearly OFF every corridor
+   const pr=projPt(p);if(pr&&pr.d<2.4)continue;
+   let clash=false;
+   for(const s2 of cand){if(Math.hypot(s2.x-p.x,s2.y-p.y)<3){clash=true;break}}
+   if(clash)continue;
+   const dd=districtAt(p);
+   cand.push({x:Math.round(p.x*100)/100,y:Math.round(p.y*100)/100,
+    shape:shapeFor(dd,rng),district:dd,dens:densityAt(p),metroIsland:true,
+    emerged:false,inter:false,q:[],acc:0,order:-1+(rng()-0.5)*4,name:null,strainT:0,emergeAt:0});
+   placed++}
+ }
  cand.sort((a,b)=>a.order-b.order);
  const need=new Set(["circle","square","triangle"]);
  for(let i=0;i<Math.min(5,cand.length);i++)need.delete(cand[i].shape);
@@ -1091,6 +1168,14 @@ function tramWaterBlock(pts){
     return clsName("tram")+" MUST CROSS AT A BRIDGE";
    s=-1}}
  return null}
+function offsetPolyline(pts,d){
+ if(Math.abs(d)<1e-6)return pts.map(p=>({x:p.x,y:p.y}));
+ const n=pts.length,out=[];
+ for(let i=0;i<n;i++){
+  const a=pts[Math.max(0,i-1)],b=pts[i],c=pts[Math.min(n-1,i+1)];
+  let ux=c.x-a.x,uy=c.y-a.y;const m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
+  out.push({x:b.x-uy*d,y:b.y+ux*d})}
+ return out}
 function offsetElbow(raw,d){
  if(Math.abs(d)<1e-6)return raw.map(p=>({x:p.x,y:p.y}));
  const P=raw;
@@ -1123,7 +1208,7 @@ function rebuildGeometry(){
    const d=(slot-(n-1)/2)*gap;
    const rp=L.railPaths&&L.railPaths[k];
    let pts;
-   if(rp){pts=rp.map(q=>({x:q[0],y:q[1]}))}
+   if(rp){pts=offsetPolyline(rp.map(q=>({x:q[0],y:q[1]})),d)}
    else{const raw=elbowPts(stations[lo],stations[hi],!!L.flips[k]);pts=offsetElbow(raw,d)}
    if(aI!==lo)pts=pts.slice().reverse();
    L.paths.push({pts,len:pathLen(pts),tunnel:pathCrossesWater(pts),
@@ -1473,6 +1558,7 @@ function edgeOnLine(L,a,b){
  return false}
 function appendAt(L,endName,X){
  if(!canServe(L,X)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return false}
+ if(islandBlock(L,X)){toast("OFF-CORRIDOR · METRO ONLY");return false}
  if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return false}
  const end=endName==="tail"?L.stops[L.stops.length-1]:L.stops[0];
  const other=endName==="tail"?L.stops[0]:L.stops[L.stops.length-1];
@@ -1503,6 +1589,10 @@ function appendAt(L,endName,X){
  L.activeEnd=endName;buzz(12);
  rebuildRouting();refreshUI();return true}
 function canServe(L,id){return !stations[id].icOnly||L.express}
+function islandBlock(L,id){
+ if(!stations[id].metroIsland)return false;
+ const cl=L.cls||(L.express?"express":"metro");
+ return cl!=="metro"}
 function regionOK(L,id){
  if(L.express||L.homeRegion==null)return true;
  const r=stations[id].region;
@@ -1520,6 +1610,7 @@ function doConnect(A,B){
  if(A===B)return;
  if(!L.stops.length){
   if(!canServe(L,A)||!canServe(L,B)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
+  if(islandBlock(L,A)||islandBlock(L,B)){toast("OFF-CORRIDOR · METRO ONLY");return}
   if(!L.express&&stations[A].region!==stations[B].region){
    const cp=(city&&city.crossPairs)||[];let ok=false;
    const rA=stations[A].region,rB=stations[B].region;
@@ -1572,6 +1663,7 @@ function deleteLine(){
 function spliceAt(li,segIdx,X){
  const L=lines[li];
  if(!canServe(L,X)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
+ if(islandBlock(L,X)){toast("OFF-CORRIDOR · METRO ONLY");return}
  if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
  const a=L.stops[segIdx],b=L.stops[(segIdx+1)%L.stops.length];
  if(X===a||X===b||L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return}
@@ -2340,7 +2432,7 @@ function refreshUI(){
   st='<span style="opacity:.85">'+clsIcon("metro")+'</span> '+localUsed+"/"+capM();
   if(exCls.length&&capX()>0)st+="&nbsp;&nbsp;"+'<span style="opacity:.85">'+clsIcon("express")+'</span> '+xUsed+"/"+capX();
  }
- sum.innerHTML=st;
+ sum.innerHTML=st+' <button onclick="showClsLegend()" style="background:none;border:0;color:var(--dim);font:inherit;font-size:10px;padding:0 0 0 5px;cursor:pointer;opacity:.7">&#9432;</button>';
  cr.appendChild(sum);
  for(const cls of classes){
   const isX=cls==="express";
