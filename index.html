@@ -488,7 +488,7 @@ berlin:{
 bangkok:{
  name:"BANGKOK",blurb:"The Chao Phraya draws its true meander past the old city; the BTS and MRT weave the east bank while the monorail may cross the khlongs but never the great river.",
  palette:["#4fae62","#2f7d5a","#4a63c8","#8a5cc8","#e5b84d","#e87aa0","#c23b3b","#3fa0b8","#d97b3f","#7a8fa6"],
- maxExpress:2,maxMetro:8,maxTram:2,
+ maxExpress:2,maxMetro:8,
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
  features:["ferry","air","tram","ic"],
@@ -821,24 +821,29 @@ function buildUrbanLayer(g){
   gc.fillRect((x+gapc/2)*k,(y+gapc/2)*k,(cell-gapc)*k,(cell-gapc)*k)}}
 function rebuildDemand(){
  lastDemT=simS;
- const g2=growthG(),thr=lerp(0.75,0.12,g2),cell=2.5,R2=36;
+ const cell=2.5,R2=36;
  const served=[];
  for(const s of stations)if(s.emerged&&(adj.get(s.id)||[]).length)served.push(s);
  densCanvas=document.createElement("canvas");densCanvas.width=520;densCanvas.height=520;
  const gc=densCanvas.getContext("2d"),k=520/100;
+ gc.globalCompositeOperation="lighter";
  let tot=0,cov=0;
+ // sample the demand field; paint UNMET demand as a soft warm haze (radial dabs, not a grid)
  for(let x=0;x<100;x+=cell)for(let y=0;y<100;y+=cell){
   const c={x:x+cell/2,y:y+cell/2};
   if(inWater(c)||inNoBuild(c))continue;
   const d=densityAt(c);
-  if(d<thr)continue;
+  if(d<0.08)continue;
   tot+=d;
   let ok=false;
   for(const s of served){const q=(s.x-c.x)**2+(s.y-c.y)**2;if(q<R2){ok=true;break}}
   if(ok){cov+=d;continue}
-  const a=Math.min(0.34,0.10+d*0.28);
-  gc.fillStyle="rgba(255,150,70,"+a.toFixed(3)+")";
-  gc.fillRect((x+0.3)*k,(y+0.3)*k,(cell-0.6)*k,(cell-0.6)*k)}
+  const a=Math.min(0.30,0.06+d*0.26);
+  const rad=cell*1.7*k;
+  const gr=gc.createRadialGradient(c.x*k,c.y*k,0,c.x*k,c.y*k,rad);
+  gr.addColorStop(0,"rgba(255,150,70,"+a.toFixed(3)+")");
+  gr.addColorStop(1,"rgba(255,150,70,0)");
+  gc.fillStyle=gr;gc.beginPath();gc.arc(c.x*k,c.y*k,rad,0,TAU);gc.fill()}
  demandCov=tot?Math.round(100*cov/tot):100}
 
 /* ================= station generation ================= */
