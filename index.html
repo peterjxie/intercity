@@ -79,8 +79,8 @@ body.poster #offer,body.poster #lineKind{display:none!important}
 .card b{display:block;font-size:12px;letter-spacing:.24em;font-weight:400;color:#fff}
 .card span{display:block;color:var(--dim);font-size:10px;letter-spacing:.08em;margin-top:4px;line-height:1.5}
 .card.sel{border-color:#7fd4ff;box-shadow:0 0 16px rgba(90,190,255,.22)}
-.ccards{display:flex;gap:8px}
-.ccard{position:relative;flex:1;padding:10px 4px 8px;border-radius:12px;display:flex;
+.ccards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ccard{position:relative;padding:10px 4px 8px;border-radius:12px;display:flex;
  flex-direction:column;align-items:center;gap:7px;background:var(--panel);
  border:1px solid var(--edge);cursor:pointer}
 .ccard.sel{border-color:#7fd4ff;box-shadow:0 0 14px rgba(90,190,255,.22)}
@@ -199,7 +199,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.70";
+const VERSION="1.72";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -269,7 +269,7 @@ function pointAlongPoly(pl,t){
 /* ================= city data (octilinear, stylised) ================= */
 const CITIES={
 istanbul:{
- name:"ISTANBUL",blurb:"Two continents, one strait; every east\u2013west line pays the Bosphorus.",
+ name:"ISTANBUL",blurb:"Two continents, one strait.",
  palette:["#e04b4b","#37b46e","#4db8e8","#e0559f","#9a6ee0","#d8b45a","#e08a6a","#8a9bb8"],
  seas:[
   [[-5,74],[14,74],[20,68],[34,68],[40,74],[50,74],[52,72],[58,72],[62,76],[78,76],[84,70],[105,70],[105,105],[-5,105]]
@@ -307,7 +307,7 @@ istanbul:{
  count:82
 },
 chongqing:{
- name:"CHONGQING",blurb:"Two rivers wrap Yuzhong; the monorail rides the bridges, only the metro tunnels the ridges.",
+ name:"CHONGQING",blurb:"Two rivers, one peninsula; monorail on the bridges, metro under the ridge.",
  palette:["#e05252","#3cb46e","#5a86e0","#d8b45a","#5bc8d8","#e06ab0","#9a6ee0","#a8c85a"],
  maxMetro:6,maxTram:2,maxExpress:0,
  classes:["metro","tram"],
@@ -373,7 +373,7 @@ chongqing:{
  count:78
 },
 gba:{
- name:"GREATER BAY",blurb:"Three cities round the Pearl estuary; locals stay home, only intercity spans the delta.",
+ name:"GREATER BAY",blurb:"Three cities, one delta; intercity is the only thread between them.",
  palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2","#6ee0b0","#e07a9a","#b0c85a","#8a7ae0"],
  maxExpress:3,maxMetro:14,
  features:["tunnel","islands","air","ic","towns"],
@@ -439,7 +439,7 @@ gba:{
  count:84
 },
 berlin:{
- name:"BERLIN",blurb:"The U-Bahn weaves the core; the Ring stitches everything else.",
+ name:"BERLIN",blurb:"U-Bahn holds the core; the Ring carries the rest.",
  palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
  maxExpress:3,maxMetro:7,
  classes:["metro","express"],
@@ -489,7 +489,7 @@ berlin:{
  count:86
 },
 bangkok:{
- name:"BANGKOK",blurb:"The Chao Phraya meanders past the old city; the monorail crosses khlongs, never the river.",
+ name:"BANGKOK",blurb:"The river bends past the old city; the monorail never touches it.",
  palette:["#4fae62","#2f7d5a","#4a63c8","#8a5cc8","#e5b84d","#e87aa0","#c23b3b","#3fa0b8","#d97b3f","#7a8fa6"],
  maxExpress:2,maxMetro:8,
  classes:["metro","tram","express"],
@@ -541,7 +541,7 @@ bangkok:{
  count:80
 },
 amsterdam:{
- name:"AMSTERDAM",blurb:"Canals fan from the IJ round a core no tram may enter; only the metro tunnels beneath.",
+ name:"AMSTERDAM",blurb:"Canals ring a core no tram may enter; only the metro dives under.",
  palette:["#e03a3a","#f0a020","#3a9a4a","#3060c0","#8a4ac0","#d05090","#40a0b0","#b07030","#5a8a30","#c04060","#7050c0","#4a9ad0","#d0a040"],
  maxMetro:3,maxTram:9,maxExpress:1,
  classes:["tram","metro","express"],
@@ -1859,9 +1859,9 @@ function shapePath(g,x,y,r,shape){
   g.closePath()}}
 function strokeElbow(g,pts,r){
  g.beginPath();g.moveTo(pts[0].x,pts[0].y);
- if(pts.length===3){
-  const l1=dist(pts[0],pts[1]),l2=dist(pts[1],pts[2]);
-  g.arcTo(pts[1].x,pts[1].y,pts[2].x,pts[2].y,Math.min(r,l1*.45,l2*.45))}
+ for(let i=1;i<pts.length-1;i++){
+  const l1=dist(pts[i-1],pts[i]),l2=dist(pts[i],pts[i+1]);
+  g.arcTo(pts[i].x,pts[i].y,pts[i+1].x,pts[i+1].y,Math.min(r,l1*.45,l2*.45))}
  g.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);g.stroke()}
 function polyPath(g,poly){g.beginPath();
  poly.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath()}
