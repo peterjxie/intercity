@@ -1,7 +1,2212 @@
 <!doctype html>
 <html lang="en">
 <head>
+<meta charset="utf-8"><!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>INTERCITY</title>
+<meta name="theme-color" content="#06080d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="INTERCITY">
+<style>
+:root{--bg:#06080d;--ink:#dfe7f3;--dim:#6b7a92;--panel:rgba(16,22,34,.88);--edge:rgba(120,150,200,.22)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+ font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+ user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+canvas{position:fixed;inset:0;touch-action:none;display:block}
+.hud{position:fixed;z-index:6;user-select:none;-webkit-user-select:none}
+#topL{top:10px;left:12px;font-size:10px;letter-spacing:.22em;line-height:1.7;pointer-events:none}
+#topL .city{font-size:13px;color:#fff}
+#topL .sub,#metrics{color:var(--dim)}
+.m-up{color:#5fd68b}
+.m-dn{color:#e07272}
+#topR{top:10px;right:10px;display:flex;gap:7px}
+button{background:var(--panel);border:1px solid var(--edge);color:var(--ink);font:inherit;
+ font-size:10px;letter-spacing:.12em;padding:10px 11px;border-radius:10px;white-space:nowrap}
+button:active{background:rgba(46,62,92,.9)}
+button.on{border-color:#7fd4ff;color:#c9eeff;box-shadow:0 0 12px rgba(90,190,255,.28)}
+button.warn{border-color:rgba(255,90,120,.6);color:#ffb3c2}
+button:disabled{opacity:.32}
+#bottom{bottom:0;left:0;right:0;padding:6px 10px calc(8px + env(safe-area-inset-bottom));
+ background:linear-gradient(transparent,rgba(4,6,10,.94) 38%);display:flex;flex-direction:column;gap:5px;align-items:stretch}
+#chipRow{display:flex;flex-direction:column;gap:4px;align-items:stretch;width:100%}
+#toolRow button{display:flex;flex-direction:column;align-items:center;gap:2px;
+ min-width:42px;padding:7px 6px}
+.bc{font-size:8px;letter-spacing:.05em;color:var(--dim)}
+.row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;align-items:center}
+.row::-webkit-scrollbar{display:none}
+.clsRow{display:flex;gap:4px;align-items:center;padding:1px 0}
+.clsSum{font-size:9px;letter-spacing:.08em;color:var(--dim);opacity:.85;padding:0 0 2px;display:flex;align-items:center;gap:2px}
+.clsSum svg{vertical-align:-3px}
+.clsLbl{width:26px;min-width:26px;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0;opacity:.9}
+.chipAdd{opacity:.65}
+.chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
+ align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
+.chip.sel{box-shadow:0 0 10px currentColor}
+#toast{position:fixed;bottom:118px;left:50%;transform:translateX(-50%);z-index:9;
+ background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:9px 14px;
+ font-size:11px;letter-spacing:.1em;opacity:0;transition:opacity .25s;pointer-events:none;max-width:86vw;text-align:center}
+#offer,#lineKind{position:fixed;left:50%;transform:translateX(-50%);bottom:138px;z-index:8;
+ background:var(--panel);border:1px solid rgba(140,200,255,.35);border-radius:12px;
+ padding:10px 12px;display:none;text-align:center}
+#offer .t,#lineKind .t{font-size:9px;letter-spacing:.26em;color:#9fd2ff;margin-bottom:8px}
+#offer .btns,#lineKind .btns{display:flex;gap:8px;justify-content:center}
+body.poster #offer,body.poster #lineKind{display:none!important}
+#menuPop{top:52px;right:10px;display:none;flex-direction:column;gap:7px;background:var(--panel);
+ border:1px solid var(--edge);border-radius:12px;padding:10px}
+#menuPop button{border:none;background:transparent;text-align:left;padding:8px 6px}
+#posterBar{bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+ display:none;gap:8px}
+#helpCard{position:fixed;inset:0;z-index:16;display:none;align-items:center;justify-content:center;
+ background:rgba(3,5,9,.72)}
+#helpCard .box{width:min(360px,88vw);background:#0b1120;border:1px solid var(--edge);
+ border-radius:14px;padding:20px 20px 16px}
+#helpCard h2{font-size:11px;letter-spacing:.3em;font-weight:400;color:#fff;margin-bottom:14px}
+#helpCard p{font-size:10.5px;letter-spacing:.06em;color:#aebbd2;line-height:1.75;margin-bottom:12px}
+#helpCard em{font-style:normal;color:#e8f2ff}
+#helpCard button{width:100%;margin-top:4px}
+#overlay{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 90% at 50% 8%,#0b1322 0%,#06080d 62%);
+ display:flex;align-items:center;justify-content:center;overflow-y:auto}
+#overlay .inner{width:min(430px,92vw);padding:34px 0 44px;text-align:center}
+#overlay h1{font-size:30px;font-weight:400;letter-spacing:.55em;text-indent:.55em;color:#fff;
+ text-shadow:0 0 18px rgba(120,200,255,.55),0 0 46px rgba(90,140,255,.3)}
+#overlay .tag{color:var(--dim);font-size:10px;letter-spacing:.3em;margin:10px 0 26px}
+#overlay .lbl{color:var(--dim);font-size:9px;letter-spacing:.3em;margin:20px 0 8px;text-align:left}
+.card{display:block;width:100%;text-align:left;margin-bottom:8px;padding:13px 14px;border-radius:12px}
+.card b{display:block;font-size:12px;letter-spacing:.24em;font-weight:400;color:#fff}
+.card span{display:block;color:var(--dim);font-size:10px;letter-spacing:.08em;margin-top:4px;line-height:1.5}
+.card.sel{border-color:#7fd4ff;box-shadow:0 0 16px rgba(90,190,255,.22)}
+.ccards{display:flex;gap:8px}
+.ccard{position:relative;flex:1;padding:10px 4px 8px;border-radius:12px;display:flex;
+ flex-direction:column;align-items:center;gap:7px;background:var(--panel);
+ border:1px solid var(--edge);cursor:pointer}
+.ccard.sel{border-color:#7fd4ff;box-shadow:0 0 14px rgba(90,190,255,.22)}
+.ccard canvas{width:62px;height:62px;border-radius:9px}
+.ccard b{font-size:8.5px;letter-spacing:.2em;font-weight:400;color:#fff;text-align:center}
+.feats{display:flex;gap:5px;justify-content:center;min-height:14px}
+.micon{width:44px;height:44px;border:1.5px solid rgba(190,215,245,.5);border-radius:50%;
+ display:flex;align-items:center;justify-content:center;font-size:20px;color:#d9e6f7;margin:9px 0}
+.info{position:absolute;top:5px;right:6px;width:17px;height:17px;border-radius:50%;
+ border:1px solid var(--edge);color:var(--dim);font-size:9px;line-height:1;
+ background:transparent;padding:0;letter-spacing:0}
+.mrow{display:flex;gap:8px;align-items:center}
+.mrow .mbtn{flex:1;padding:11px 6px;font-size:9px;letter-spacing:.2em;border-radius:11px;
+ background:var(--panel);border:1px solid var(--edge);color:#fff}
+.mrow .mbtn.sel{border-color:#7fd4ff;box-shadow:0 0 12px rgba(90,190,255,.22)}
+.mrow .info{position:static;min-width:17px}
+.blurb{display:none;color:var(--dim);font-size:9.5px;letter-spacing:.06em;
+ line-height:1.65;margin-top:8px;text-align:left;white-space:pre-line}
+#beginBtn{width:100%;margin-top:24px;padding:15px;font-size:12px;letter-spacing:.34em;
+ border-color:rgba(140,220,255,.5);color:#d9f3ff}
+#seedRow{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:14px}
+#seedVal{color:var(--dim);font-size:10px;letter-spacing:.2em}
+.hidden{display:none!important}
+body.poster #topL,body.poster #topR,body.poster #bottom{display:none}
+body.poster #posterBar{display:flex}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div class="hud" id="topL">
+ <div class="city" id="hCity">—</div>
+ <div class="sub" id="hClock">—</div>
+ <div id="metrics"></div>
+</div>
+
+<div class="hud" id="topR">
+ <button id="bSpeed">▶ 1×</button>
+ <button id="bHelp">?</button>
+ <button id="bFit" title="Center view"><svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7" cy="7" r="4"/><path d="M7 1v3M7 10v3M1 7h3M10 7h3"/></svg></button>
+ <button id="bPoster" title="Poster view"><svg viewBox="0 0 16 14" width="15" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="10" rx="1.5"/><path d="M2 9l3.5-3 2.5 2 2-1.6L14 9"/><circle cx="6" cy="5" r="1"/></svg></button>
+ <button id="bMenu">☰</button>
+</div>
+
+<div class="hud" id="menuPop">
+ <button disabled style="opacity:.5" id="mBuild">INTERCITY</button>
+ <button id="mSave">SAVE · JSON</button>
+ <button id="mLoad">LOAD · JSON</button>
+ <button id="mRestart">↺ RESTART CITY</button>
+ <button id="mQuit">◂ QUIT TO TITLE</button>
+ <button id="mFit">FIT VIEW</button>
+ <button id="mDensity">DENSITY GLOW · OFF</button>
+</div>
+
+<div class="hud" id="bottom">
+ <div class="row" id="chipRow"></div>
+ <div class="row" id="toolRow"></div>
+</div>
+
+<div class="hud" id="posterBar">
+ <button id="pLabels">LABELS · ON</button>
+ <button id="pStats">STATS · OFF</button>
+ <button id="pTrains">TRAINS · ON</button>
+ <button id="pPng">EXPORT PNG</button>
+ <button id="pExit">RETURN</button>
+</div>
+
+<div id="toast"></div>
+
+<div class="hud" id="offer">
+ <div class="t">WEEKLY DELIVERY · CHOOSE ONE</div>
+ <div class="btns" id="offerBtns"></div>
+</div>
+
+
+
+<div id="helpCard"><div class="box">
+ <h2>LEGEND &amp; HOW TO BUILD</h2>
+ <div id="iconLegend" style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-bottom:14px;font-size:10px;color:#aebbd2"></div>
+ <p><em>Select:</em> tap any line segment, or tap a station to cycle the lines through it. Tap empty ground to deselect.</p>
+ <p><em>Connect:</em> drag from a station to another. Grabbing a line's ringed end extends that line.</p>
+ <p><em>Bend:</em> tap anywhere on a selected line's segment to flip its curve. <em>Splice:</em> drag from a segment onto a bypassed station.</p>
+ <p><em>Detach:</em> drag a middle stop off its line, or use the station-minus tool.</p>
+ <p><em>Megacities:</em> metro lines stay within one city; intercity lines cross between cities and reach satellites.</p>
+ <p><em>Camera:</em> two-finger drag to pan on phone, trackpad scroll or middle-mouse drag to pan on desktop, pinch or ctrl+scroll to zoom. <em>Loop:</em> connect one end to the other.</p>
+ <button id="helpOk">GOT IT</button>
+</div></div>
+
+<div id="overlay">
+ <div class="inner">
+  <h1>INTERCITY</h1>
+  <div class="tag">A TRANSIT LAYOUT GARDEN · <span id="bldTag"></span></div>
+  <div class="lbl">CITY</div>
+  <div class="ccards" id="cityCards"></div>
+  <div class="blurb" id="blurbCity"></div>
+  <div class="lbl">MODE</div>
+  <div class="mrow">
+   <button class="mbtn" id="cardOp">$ OPERATOR</button>
+   <button class="mbtn" id="cardAt">∞ ATELIER</button>
+   <button class="info" id="infoMode">i</button>
+  </div>
+  <div class="blurb" id="blurbMode"></div>
+  <div id="seedRow">
+   <span id="seedVal">GROWTH SEED —</span>
+   <button id="bSeed">↺ NEW SEED</button>
+  </div>
+  <button id="beginBtn">BEGIN</button>
+ </div>
+</div>
+
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+
+<script>
+"use strict";
+const VERSION="1.31";
+(function appIcon(){
+ try{
+  const c=document.createElement("canvas");c.width=180;c.height=180;
+  const g=c.getContext("2d");
+  g.fillStyle="#06080d";g.fillRect(0,0,180,180);
+  g.strokeStyle="#29c5e6";g.lineWidth=20;g.lineCap="round";
+  g.beginPath();g.moveTo(38,142);g.lineTo(142,38);g.stroke();
+  g.fillStyle="#06080d";g.strokeStyle="#dfe7f3";g.lineWidth=11;
+  g.beginPath();g.arc(90,90,27,0,Math.PI*2);g.fill();g.stroke();
+  const u=c.toDataURL("image/png");
+  for(const rel of["icon","apple-touch-icon"]){
+   const l=document.createElement("link");l.rel=rel;l.href=u;
+   document.head.appendChild(l)}
+ }catch(e){}})();
+/* ================= utils ================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+ t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const TAU=Math.PI*2;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function pointInPoly(p,poly){let inside=false;
+ for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+  const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+  if(((yi>p.y)!==(yj>p.y))&&(p.x<(xj-xi)*(p.y-yi)/(yj-yi)+xi))inside=!inside;}
+ return inside}
+function distToSeg(p,a,b){
+ const vx=b[0]-a[0],vy=b[1]-a[1],wx=p.x-a[0],wy=p.y-a[1];
+ const L2=vx*vx+vy*vy;if(!L2)return Math.hypot(wx,wy);
+ const t=clamp((wx*vx+wy*vy)/L2,0,1);
+ return Math.hypot(wx-t*vx,wy-t*vy)}
+function distToPolyline(p,pts){let d=Infinity;
+ for(let i=1;i<pts.length;i++)d=Math.min(d,distToSeg(p,pts[i-1],pts[i]));
+ return d}
+function segIntersect(a,b,c,d){ // strict interior intersection of ab and cd
+ const r={x:b.x-a.x,y:b.y-a.y},s={x:d.x-c.x,y:d.y-c.y};
+ const den=r.x*s.y-r.y*s.x;if(Math.abs(den)<1e-9)return null;
+ const t=((c.x-a.x)*s.y-(c.y-a.y)*s.x)/den;
+ const u=((c.x-a.x)*r.y-(c.y-a.y)*r.x)/den;
+ if(t<=.04||t>=.96||u<=.04||u>=.96)return null;
+ return{x:a.x+t*r.x,y:a.y+t*r.y}}
+function ribbon(center,hw){ // centreline [[x,y]..] half-width -> polygon
+ const L=[],R=[];
+ for(let i=0;i<center.length;i++){
+  const p=center[i],a=center[Math.max(0,i-1)],b=center[Math.min(center.length-1,i+1)];
+  let dx=b[0]-a[0],dy=b[1]-a[1];const m=Math.hypot(dx,dy)||1;dx/=m;dy/=m;
+  L.push([p[0]-dy*hw,p[1]+dx*hw]);R.push([p[0]+dy*hw,p[1]-dx*hw])}
+ return L.concat(R.reverse())}
+function pathLen(pts){let s=0;for(let i=1;i<pts.length;i++)s+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);return s}
+function pointAt(pts,s){
+ for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);
+  if(s<=l||i===pts.length-1){const t=l?clamp(s/l,0,1):0;
+   return{x:lerp(pts[i-1].x,pts[i].x,t),y:lerp(pts[i-1].y,pts[i].y,t),
+    ang:Math.atan2(pts[i].y-pts[i-1].y,pts[i].x-pts[i-1].x)}}
+  s-=l}
+ const p=pts[pts.length-1];return{x:p.x,y:p.y,ang:0}}
+function pointAlongPoly(pl,t){
+ let tot=0;const segs=[];
+ for(let i=1;i<pl.length;i++){const l=Math.hypot(pl[i][0]-pl[i-1][0],pl[i][1]-pl[i-1][1]);segs.push(l);tot+=l}
+ let s=t*tot;
+ for(let i=0;i<segs.length;i++){if(s<=segs[i]||i===segs.length-1){
+  const tt=segs[i]?clamp(s/segs[i],0,1):0;
+  return{x:lerp(pl[i][0],pl[i+1][0],tt),y:lerp(pl[i][1],pl[i+1][1],tt)}}
+  s-=segs[i]}
+ return{x:pl[0][0],y:pl[0][1]}}
+
+/* ================= city data (octilinear, stylised) ================= */
+const CITIES={
+istanbul:{
+ name:"ISTANBUL",blurb:"Two continents, one strait. Every east–west line pays the Bosphorus toll.",
+ palette:["#e04b4b","#37b46e","#4db8e8","#e0559f","#9a6ee0","#d8b45a","#e08a6a","#8a9bb8"],
+ seas:[
+  [[-5,74],[14,74],[20,68],[34,68],[40,74],[50,74],[52,72],[58,72],[62,76],[78,76],[84,70],[105,70],[105,105],[-5,105]]
+ ],
+ rivers:[
+  {pts:[[56.5,-4],[56.5,12],[61,16.5],[61,24],[54.5,30.5],[54.5,44],[51,47.5],[51,60],[55,64],[55,79]],hw:3},
+  {pts:[[51,52],[43,44]],hw:1.6}
+ ],
+ nobuild:[],
+ blobs:[
+  {x:46,y:61,r:6,w:1.0,t:"cbd"},{x:47,y:40,r:6,w:.95,t:"cbd"},{x:47,y:26,r:5,w:.8,t:"cbd"},
+  {x:64,y:63,r:5,w:.8,t:"cbd"},
+  {x:30,y:62,r:9,w:.7,t:"res"},{x:18,y:55,r:9,w:.55,t:"res"},{x:28,y:48,r:8,w:.6,t:"res"},
+  {x:66,y:50,r:6,w:.65,t:"res"},{x:80,y:60,r:10,w:.6,t:"res"},{x:76,y:38,r:9,w:.5,t:"res"},
+  {x:22,y:68,r:6,w:.5,t:"ind"},{x:90,y:66,r:7,w:.5,t:"ind"}
+ ],
+ corridors:[
+  {pts:[[46,66],[34,66],[20,64],[8,64]],w:1},
+  {pts:[[44,62],[34,58],[24,52],[14,48]],w:1},
+  {pts:[[47,46],[47,36],[48,26],[46,14]],w:1.2},
+  {pts:[[50,42],[50,33],[53,24]],w:.6},
+  {pts:[[63,66],[74,64],[86,66],[96,64]],w:1},
+  {pts:[[64,56],[72,46],[78,34],[82,22]],w:.9},
+  {pts:[[62,48],[63,36],[66,26]],w:.6}
+ ],
+ core:{x:46,y:60},
+ pop:16,popUnit:"M",kmScale:0.8,
+ landmark:{x:45,y:63,name:"SULTANAHMET"},
+ maxExpress:0,maxMetro:7,
+ classes:["metro"],
+ features:["tunnel","ferry","air"],
+ specials:[
+  {x:28,y:14,name:"IST",kind:"air",when:.4}
+ ],
+ count:82
+},
+chongqing:{
+ name:"CHONGQING",blurb:"Two rivers meet at a peninsula; ridge country hems the grid in.",
+ palette:["#e05252","#3cb46e","#5a86e0","#d8b45a","#5bc8d8","#e06ab0","#9a6ee0","#a8c85a"],
+ maxMetro:6,maxTram:2,maxExpress:0,
+ classes:["metro","tram"],
+ classNames:{tram:"MONORAIL"},
+ seas:[],
+ rivers:[
+  {pts:[[-4,88],[14,88],[32,70],[44,70],[58,56],[64,50],[80,50],[92,38],[104,38]],hw:4},
+  {pts:[[36,-4],[36,12],[28,20],[28,32],[40,44],[52,44],[60,52]],hw:3.5}
+ ],
+ nobuild:[
+  [[8,0],[15,0],[24,100],[17,100]],
+  [[84,0],[91,0],[98,100],[93,100]]
+ ],
+ blobs:[
+  {x:50,y:51.5,r:4.5,w:1.0,t:"cbd"},{x:56,y:38,r:6,w:.85,t:"cbd"},
+  {x:64,y:62,r:7,w:.7,t:"res"},{x:34,y:50,r:7,w:.7,t:"res"},{x:58,y:20,r:9,w:.55,t:"res"},
+  {x:74,y:44,r:6,w:.45,t:"res"},{x:26,y:80,r:7,w:.5,t:"ind"}
+ ],
+ corridors:[
+  {pts:[[43,54],[48,52],[52,50]],w:1.3},
+  {pts:[[56,42],[56,32],[58,22],[60,12]],w:1.1},
+  {pts:[[62,60],[66,68],[68,78],[70,88]],w:1},
+  {pts:[[46,54],[38,52],[30,52]],w:.9},
+  {pts:[[40,60],[32,64],[23,71]],w:.8},
+  {pts:[[64,44],[72,42],[82,36]],w:.9}
+ ],
+ core:{x:50,y:51},
+ pop:32,popUnit:"M",kmScale:0.6,
+ landmark:{x:52,y:50,name:"CHAOTIANMEN"},
+ features:["tunnel","terrain","air","tram"],
+ specials:[
+  {x:60,y:12,name:"CKG",kind:"air",when:.35}
+ ],
+ count:78
+},
+gba:{
+ name:"GREATER BAY",blurb:"Guangzhou, Shenzhen, Hong Kong around the Pearl estuary. Locals serve the cores; up to three intercity expresses stitch the delta.",
+ palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2","#6ee0b0","#e07a9a","#b0c85a","#8a7ae0"],
+ maxExpress:3,maxMetro:14,
+ features:["tunnel","islands","air","ic","towns"],
+ regions:[
+  {x:31,y:7,t:"GUANGZHOU"},
+  {x:73,y:61,t:"SHENZHEN"},
+  {x:70,y:99,t:"HONG KONG"}
+ ],
+ seas:[
+  [[-5,96],[40,96],[48,92],[56,89],[105,89],[105,105],[-5,105]]
+ ],
+ rivers:[
+  {pts:[[-4,16],[12,16],[26,17],[40,17],[50,20],[53,28],[51,36]],hw:2.8},
+  {pts:[[51,34],[48,44],[47,56]],hw:8},
+  {pts:[[47,54],[47,78],[47,95]],hw:12},
+  {pts:[[56,85],[66,85],[76,87],[86,87]],hw:3.4},
+  {pts:[[55,63],[60,67],[64,70]],hw:2.6}
+ ],
+ islands:[
+  [[45,82],[54,80],[59,84],[57,91],[47,92],[44,87]],
+  [[61,88],[75,88],[79,92],[73,96],[61,96],[57,92]]
+ ],
+ nobuild:[],
+ blobs:[
+  {x:44,y:12,r:5.5,w:1.0,t:"cbd"},{x:45,y:22,r:4,w:.7,t:"cbd"},{x:32,y:13,r:4,w:.55,t:"res"},
+  {x:57,y:22,r:4,w:.5,t:"res"},
+  {x:70,y:52,r:6,w:1.0,t:"cbd"},{x:62,y:55,r:4,w:.75,t:"cbd"},{x:78,y:55,r:5,w:.6,t:"res"},
+  {x:72,y:44,r:5,w:.5,t:"res"},
+  {x:66,y:80,r:4.5,w:1.0,t:"cbd"},{x:68,y:91,r:4,w:.95,t:"cbd"},{x:70,y:70,r:5,w:.55,t:"res"},
+  {x:33,y:19,r:4,w:.3,t:"res"}
+ ],
+ corridors:[
+  {pts:[[30,12],[38,13],[46,13]],w:1.1},
+  {pts:[[44,7],[44,12]],w:.5},
+  {pts:[[38,22],[44,23],[48,25]],w:.9},
+  {pts:[[56,18],[57,24],[58,28]],w:.6},
+  {pts:[[58,50],[66,52],[74,53],[82,55]],w:1.2},
+  {pts:[[62,58],[68,57],[74,57]],w:.7},
+  {pts:[[70,49],[72,43],[74,37]],w:.6},
+  {pts:[[61,78],[66,80],[71,79]],w:1.2},
+  {pts:[[72,78],[76,76]],w:.6},
+  {pts:[[63,90],[68,91],[73,92]],w:1.1},
+  {pts:[[67,75],[71,71],[75,67]],w:.8}
+ ],
+ cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
+ core:{x:44,y:13},
+ pop:72,popUnit:"M",kmScale:2.0,symScale:0.85,crossPairs:[[1,2]],classes:["metro","express"],
+ landmark:{x:46,y:22,name:"CANTON TOWER"},
+ specials:[
+  {x:41,y:30,name:"GUANGZHOU SOUTH",kind:"hub",when:.14},
+  {x:72,y:47,name:"SHENZHEN NORTH",kind:"hub",when:.24},
+  {x:63,y:80,name:"WEST KOWLOON",kind:"hub",when:.32},
+  {x:43,y:6,name:"CAN",kind:"air",when:.2},
+  {x:58,y:45,name:"SZX",kind:"air",when:.34},
+  {x:48,y:84,name:"HKG",kind:"air",when:.46},
+  {x:60,y:30,name:"DONGGUAN",kind:"ic",when:.28},
+  {x:28,y:22,name:"FOSHAN",kind:"ic",when:.38},
+  {x:30,y:58,name:"ZHONGSHAN",kind:"ic",when:.5},
+  {x:88,y:42,name:"HUIZHOU",kind:"ic",when:.55},
+  {x:31,y:73,name:"ZHUHAI",kind:"ic",when:.6},
+  {x:31,y:81,name:"MACAU",kind:"ic",when:.7}
+ ],
+ count:84
+},
+berlin:{
+ name:"BERLIN",blurb:"U-Bahn weaves the core; the S-Bahn ring and radials stitch the sprawl. Forests and lakes carve the grid.",
+ palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
+ maxExpress:3,maxMetro:7,
+ classes:["metro","express"],
+ classNames:{metro:"U-BAHN",express:"S-BAHN"},
+ features:["terrain","air","sbahn"],
+ pop:4,popUnit:"M",kmScale:0.45,spacing:{min:4.2,max:7},jitter:6,
+ seas:[
+  [[84,56],[96,54],[100,60],[95,68],[85,66],[81,60]],
+  [[20,15],[28,13],[31,19],[26,25],[19,22]],
+  [[9,52],[16,54],[18,60],[14,66],[8,64],[7,57]]
+ ],
+ rivers:[
+  {pts:[[84,60],[72,60],[64,52],[56,52],[50,46],[46,46],[43,43],[40,43],[37,46],[30,46],[24,40],[19,35]],hw:1.6},
+  {pts:[[58,52],[55,55],[44,55],[38,49],[31,49],[29,47]],hw:0.8},
+  {pts:[[51,47],[48,49],[45,49],[43,47]],hw:0.6},
+  {pts:[[19,4],[19,14],[16,17],[16,29],[19,32],[19,36],[16,39],[16,50],[13,53],[13,60],[16,63],[16,72],[13,75],[13,88]],hw:2}
+ ],
+ islands:[],
+ nobuild:[
+  [[15,40],[24,42],[27,62],[17,64]],
+  [[78,66],[94,70],[92,84],[76,80]],
+  [[41,57],[48,57],[49,62],[42,63]]
+ ],
+ blobs:[
+  {x:44,y:42,r:5,w:1.0,t:"cbd"},{x:34,y:46,r:4,w:.85,t:"cbd"},
+  {x:48,y:52,r:5,w:.7,t:"res"},{x:48,y:34,r:4,w:.7,t:"res"},
+  {x:56,y:44,r:4,w:.65,t:"res"},{x:28,y:42,r:4,w:.6,t:"res"},
+  {x:20,y:34,r:4,w:.45,t:"res"},{x:34,y:62,r:5,w:.55,t:"res"},
+  {x:68,y:30,r:5,w:.5,t:"res"},{x:76,y:58,r:4,w:.45,t:"res"},
+  {x:39,y:61,r:4,w:.5,t:"res"},{x:38,y:30,r:4,w:.55,t:"res"},
+  {x:60,y:38,r:4,w:.55,t:"res"}
+ ],
+ corridors:[
+  {pts:[[26,44],[36,44],[46,43],[56,44],[66,46]],w:1.3},
+  {pts:[[44,26],[45,36],[45,48],[42,54],[41,66]],w:1.2},
+  {pts:[[40,50],[32,56],[26,62]],w:.8},
+  {pts:[[50,36],[58,30],[66,26]],w:.8},
+  {pts:[[52,48],[62,54],[72,58]],w:.9},
+  {pts:[[38,38],[30,32],[24,26]],w:.7}
+ ],
+ core:{x:44,y:43},
+ landmark:{x:47,y:41,name:"ALEXANDERPLATZ"},
+ specials:[
+  {x:42,y:40,name:"HAUPTBAHNHOF",kind:"hub",when:.12},
+  {x:60,y:74,name:"BER",kind:"air",when:.4}
+ ],
+ count:86
+},
+bangkok:{
+ name:"BANGKOK",blurb:"The Chao Phraya draws its true meander past the old city; the BTS and MRT weave the east bank while the monorail may cross the khlongs but never the great river.",
+ palette:["#4fae62","#2f7d5a","#4a63c8","#8a5cc8","#e5b84d","#e87aa0","#c23b3b","#3fa0b8","#d97b3f","#7a8fa6"],
+ maxExpress:2,maxMetro:8,maxTram:2,
+ classes:["metro","tram","express"],
+ classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
+ features:["ferry","air","tram","ic"],
+ pop:17,popUnit:"M",kmScale:0.5,tramRiverMax:0.6,spacing:{min:4.0,max:7.0},jitter:6,waterPad:0.4,
+ seas:[],
+ rivers:[
+  {pts:[[31.2,27.8],[29.9,29.3],[28.9,31.0],[28.4,32.3],[27.9,33.6],[27.4,34.8],[26.8,36.2],[25.9,37.6],[24.2,39.0],[23.2,40.2],[22.7,41.8],[22.7,43.8],[23.2,45.8],[24.0,46.9],[25.1,47.7],[27.1,48.4],[28.9,48.8],[30.2,49.3],[31.6,50.7],[32.2,52.1],[32.2,52.7],[32.5,53.6],[32.5,54.5],[32.5,56.1],[32.0,58.0],[31.4,58.9],[29.5,61.4],[27.5,62.8],[25.9,63.9],[24.0,65.1],[23.5,66.8],[25.5,68.5],[28.5,70.0],[31.3,69.8],[34.1,71.1],[36.7,72.8],[39.3,75.2],[42.1,76.5],[44.4,76.1],[46.8,73.8],[47.0,70.8],[46.9,66.6],[47.8,62.7],[50.4,61.4],[54.3,62.7],[59.0,64.1],[61.0,66.6],[62.5,67.8],[62.9,70.4],[61.7,74.6],[58.5,77.9],[56.0,81.2],[53.2,82.1],[51.1,83.1],[47.5,82.7],[45.0,81.3],[43.1,80.9],[41.6,82.9],[41.1,86.5],[42.1,89.8],[43.8,92.8],[46.4,96.0]],hw:0.9},
+  {pts:[[21.9,39.5],[19.1,39.0],[17.3,37.7],[16.2,36.3],[15.6,34.4],[14.8,32.4],[13.8,31.3],[13.5,29.6],[13.9,27.5],[14.8,26.0],[15.7,24.4],[16.6,22.3],[17.7,20.4]],hw:0.35},
+  {pts:[[74.7,80.6],[75.5,79.8],[78.9,79.0],[80.9,77.5],[82.1,76.9],[82.8,77.0],[83.7,76.5],[85.4,75.3],[86.5,75.3]],hw:0.35},
+  {pts:[[24.9,39.1],[28.2,40.1],[29.6,41.9],[29.0,44.3],[27.6,46.8]],hw:0.35},
+  {pts:[[29.3,41.9],[33.7,43.2],[46.7,44.9],[52.2,45.3],[66.0,47.8]],hw:0.35},
+  {pts:[[31.0,27.8],[33.1,25.9],[34.0,23.9],[34.8,22.1],[34.6,19.8],[33.9,18.1],[32.0,17.1],[29.3,16.2],[27.8,14.6],[27.4,12.6],[26.5,11.0],[25.3,9.8],[24.2,8.0]],hw:0.35}
+ ],
+ islands:[],
+ nobuild:[],
+ blobs:[
+  {x:40.6,y:45.6,r:5,w:1.0,t:"cbd"},
+  {x:51.0,y:49.3,r:5,w:0.95,t:"cbd"},
+  {x:36.3,y:54.6,r:4.5,w:0.9,t:"cbd"},
+  {x:38.3,y:56.3,r:4,w:0.8,t:"cbd"},
+  {x:56.6,y:39.1,r:5,w:0.7,t:"res"},
+  {x:40.6,y:41.1,r:4,w:0.7,t:"res"},
+  {x:47.0,y:22.7,r:5,w:0.65,t:"res"},
+  {x:33.9,y:48.9,r:4,w:0.6,t:"res"},
+  {x:21.2,y:55.1,r:5,w:0.6,t:"res"},
+  {x:23.9,y:43.6,r:4,w:0.55,t:"res"},
+  {x:67.3,y:62.0,r:5,w:0.6,t:"res"},
+  {x:68.5,y:77.6,r:5,w:0.5,t:"res"},
+  {x:57.0,y:17.0,r:5,w:0.55,t:"res"},
+  {x:35.1,y:22.7,r:4,w:0.5,t:"ind"},
+  {x:45.0,y:58.3,r:4,w:0.6,t:"res"}
+ ],
+ corridors:[
+  {pts:[[35.1,22.7],[40.6,41.1],[40.6,45.6],[36.3,54.6],[38.3,56.3]],w:1.3},
+  {pts:[[40.6,45.6],[51.0,49.3],[67.3,62.0],[68.5,77.6]],w:1.2},
+  {pts:[[47.0,22.7],[56.6,39.1],[51.0,49.3]],w:1.0},
+  {pts:[[40.6,45.6],[33.9,48.9],[35.9,50.1]],w:0.8},
+  {pts:[[40.6,41.1],[41.8,37.9],[57.0,17.0]],w:0.9}
+ ],
+ core:{x:40.6,y:45.6},
+ landmark:{x:40.6,y:45.6,name:"SIAM"},
+ specials:[
+  {x:35.1,y:22.7,name:"BANG SUE",kind:"hub",when:.14},
+  {x:88,y:78,name:"BKK",kind:"air",when:.32},
+  {x:57.0,y:6,name:"DMK",kind:"air",when:.48}
+ ],
+ count:80
+},
+amsterdam:{
+ name:"AMSTERDAM",blurb:"The grachtengordel fans south from the IJ around a medieval core no rail may enter. Trams thread the canals; only the metro tunnels beneath, and none may cross the IJ but the metro.",
+ palette:["#e03a3a","#f0a020","#3a9a4a","#3060c0","#8a4ac0","#d05090","#40a0b0","#b07030","#5a8a30","#c04060","#7050c0","#4a9ad0","#d0a040"],
+ maxMetro:3,maxTram:9,maxExpress:1,
+ classes:["tram","metro","express"],
+ classNames:{metro:"METRO",tram:"TRAM",express:"SPRINTER"},
+ features:["ferry","air","tram","ic"],
+ pop:1.2,popUnit:"M",kmScale:0.32,spacing:{min:2.4,max:4.2},jitter:3.2,
+ symScale:0.68,
+ ijBarrier:{y:22,coreClass:"metro"},tramRiverMax:0.3,
+ speedScale:{tram:0.45},waterPad:0.3,
+ seas:[
+  [[22.0,-21.9],[23.9,-19.2],[17.5,-11.8],[18.2,-10.4],[22.4,-14.6],[23.8,-12.9],[21.2,-9.6],[22.9,-8.3],[25.5,-11.5],[25.9,-11.3],[26.1,-10.8],[28.5,-10.0],[28.9,-11.7],[29.5,-11.9],[31.1,-9.5],[23.7,-3.0],[16.2,-8.3],[13.8,-5.3],[19.9,-0.6],[18.5,1.0],[15.9,-0.5],[15.9,0.8],[20.7,3.4],[26.7,-1.0],[28.5,1.7],[28.8,1.1],[27.7,-1.6],[29.4,-2.8],[30.1,-2.5],[31.0,0.5],[33.4,-0.3],[32.4,-4.6],[33.0,-5.3],[33.6,-5.3],[36.4,3.7],[38.1,2.4],[38.7,2.5],[46.8,16.1],[46.8,22.3],[47.8,22.2],[47.9,19.7],[48.6,19.3],[51.5,24.1],[59.6,29.2],[64.4,30.4],[64.9,33.6],[64.2,34.5],[59.0,32.0],[58.0,33.0],[62.8,38.0],[65.2,38.6],[65.8,36.0],[66.5,35.8],[66.7,37.6],[66.3,39.4],[68.0,40.8],[76.6,46.2],[78.0,45.7],[74.3,43.7],[74.2,43.1],[80.4,36.6],[76.4,34.4],[74.6,33.8],[68.0,32.3],[66.0,32.7],[65.5,31.2],[65.8,30.7],[67.4,30.0],[90.8,36.0],[98.9,34.1],[100.3,37.1],[101.7,37.0],[102.1,37.3],[100.8,40.2],[85.9,42.3],[102.4,42.8],[102.9,43.1],[103.4,42.8],[102.9,42.0],[103.0,40.0],[104.0,39.1],[104.4,39.4],[105.8,44.4],[105.5,45.0],[99.7,45.6],[79.2,46.0],[78.6,46.4],[79.2,46.6],[79.2,47.4],[105.9,46.7],[106.9,50.3],[107.2,55.8],[109.2,59.2],[114.9,61.3],[115.2,62.0],[115.7,62.3],[118.4,62.9],[123.4,66.0],[144.2,84.2],[144.4,81.9],[121.6,62.2],[115.4,60.4],[115.2,59.9],[116.2,57.3],[109.6,53.3],[109.3,51.5],[109.9,51.1],[117.1,55.2],[118.7,49.7],[117.8,48.2],[116.7,44.1],[108.0,43.6],[105.3,30.3],[106.0,30.1],[107.7,27.0],[110.1,27.4],[112.2,30.5],[127.3,43.9],[127.6,36.6],[121.1,27.8],[116.7,28.0],[112.2,22.7],[110.1,23.7],[109.7,23.2],[105.8,21.3],[100.4,21.8],[95.1,21.3],[91.1,21.8],[88.4,21.4],[84.0,21.6],[76.2,24.0],[65.3,25.0],[58.6,24.0],[58.3,23.6],[52.2,-1.3],[48.2,-1.1],[47.8,-3.9],[34.7,-15.4],[34.7,-15.9],[35.9,-18.0],[35.3,-18.9],[33.4,-17.1],[32.9,-17.1],[24.0,-25.1],[-60.0,-43.4],[-60.0,-39.5],[22.0,-21.9]],
+  [[51.8,45.1],[55.6,47.1],[60.9,64.2],[62.9,67.4],[64.2,70.7],[64.7,73.1],[65.8,73.8],[67.6,82.3],[67.5,84.4],[61.7,87.7],[60.6,88.9],[59.8,93.4],[58.6,94.3],[54.9,94.9],[54.8,96.2],[58.9,96.5],[61.5,95.1],[62.7,89.1],[65.9,87.4],[68.0,86.7],[72.0,83.1],[72.0,82.3],[69.4,82.3],[69.0,82.0],[65.5,69.0],[64.6,67.6],[60.6,58.8],[56.4,46.7],[51.8,45.1]],
+  [[51.0,27.5],[52.5,29.1],[53.4,29.2],[53.3,30.1],[54.2,31.1],[54.0,31.6],[52.2,33.3],[52.7,33.7],[53.7,33.6],[55.0,31.9],[56.9,31.2],[54.4,30.7],[54.3,29.8],[51.7,27.2],[51.3,26.9],[51.0,27.5]]
+ ],
+ rivers:[
+  {pts:[[48.2,28.5],[43.9,35.9],[43.4,45.2],[47.0,48.8],[51.4,49.9],[51.6,51.7],[46.0,50.6],[41.7,46.2],[41.9,36.1],[46.3,27.9],[44.8,26.6],[40.3,34.7],[39.6,47.2],[44.5,52.7],[51.7,54.3],[52.1,57.1],[46.5,56.6],[41.5,52.6]],hw:0.14},
+  {pts:[[32.5,38.7],[36.8,49.8],[43.4,56.4],[46.7,58.7],[53.8,59.6],[58.7,58.4],[62.3,56.2],[65.6,55.5],[71.7,53.5],[73.6,51.9],[79.2,47.5],[96.3,47.2]],hw:0.14},
+  {pts:[[12.2,77.1],[18.7,74.7],[21.8,70.8],[30.8,67.8],[42.6,72.3],[45.9,74.4],[53.5,74.1],[63.0,71.8],[64.9,71.8],[66.9,73.4],[76.7,66.3],[81.6,63.0],[92.1,59.2],[98.8,59.9],[103.0,58.7]],hw:0.14},
+  {pts:[[36.4,24.1],[31.6,26.2],[14.9,60.3],[11.5,73.3]],hw:0.1},
+  {pts:[[51.2,49.6],[60.2,47.0],[67.2,40.3],[73.0,44.0],[71.9,46.5],[74.7,48.5],[69.8,51.8],[66.6,50.0]],hw:0.1},
+  {pts:[[66.6,50.0],[63.2,48.1],[52.2,51.4],[51.5,51.8],[52.1,54.2],[66.6,50.0]],hw:0.1},
+  {pts:[[19.6,20.6],[21.8,25.6],[21.8,29.4],[24.0,35.1],[27.3,43.7],[29.6,48.3],[30.1,49.0]],hw:0.1},
+  {pts:[[43.0,56.6],[43.2,64.6],[43.5,72.8],[43.2,81.9],[42.7,84.6]],hw:0.1},
+  {pts:[[40.0,21.9],[34.0,38.5],[37.1,46.6]],hw:0.1},
+  {pts:[[52.5,25.5],[45.7,35.2],[44.4,43.8],[46.3,46.2],[49.0,46.4]],hw:0.1},
+  {pts:[[57.0,32.4],[51.1,39.9],[50.3,42.8],[48.4,43.3],[50.1,45.5],[51.0,45.7],[55.1,39.4]],hw:0.1},
+  {pts:[[57.7,22.3],[60.4,20.2]],hw:0.1},
+  {pts:[[25.8,39.1],[32.4,37.1],[30.8,38.2],[30.4,40.6],[30.4,42.0],[32.8,47.5]],hw:0.1},
+  {pts:[[-3.0,32.2],[3.7,34.2],[15.1,32.8]],hw:0.1},
+  {pts:[[15.1,32.8],[18.1,49.8]],hw:0.1},
+  {pts:[[66.1,87.7],[73.9,103.0]],hw:0.1},
+  {pts:[[53.9,45.3],[56.8,42.0],[56.5,40.7],[57.3,40.1],[58.0,38.2],[56.5,37.1],[57.6,32.6]],hw:0.1},
+  {pts:[[60.8,39.1],[62.3,40.6],[58.8,43.1],[56.8,41.8],[60.8,39.1]],hw:0.1},
+  {pts:[[30.1,49.0],[18.2,53.9]],hw:0.1},
+  {pts:[[66.6,50.0],[68.1,51.2],[59.8,53.8],[59.4,52.2]],hw:0.1},
+  {pts:[[49.6,28.9],[46.1,27.7],[40.0,21.9]],hw:0.1},
+  {pts:[[30.1,49.0],[30.3,49.3],[34.8,47.1],[30.1,49.0]],hw:0.1},
+  {pts:[[51.4,42.5],[56.1,34.6],[55.9,34.0]],hw:0.1},
+  {pts:[[36.7,49.1],[43.0,45.6]],hw:0.1},
+  {pts:[[76.2,36.3],[71.8,40.7]],hw:0.1},
+  {pts:[[57.9,34.2],[58.3,36.7],[60.1,38.4],[60.8,39.1]],hw:0.1},
+  {pts:[[35.5,34.0],[41.2,32.2]],hw:0.1},
+  {pts:[[53.5,98.3],[54.8,99.5],[53.2,103.0]],hw:0.1},
+  {pts:[[17.5,22.8],[21.4,25.8]],hw:0.1},
+  {pts:[[46.0,23.6],[46.4,24.2],[44.8,26.6]],hw:0.1},
+  {pts:[[40.0,21.9],[38.9,20.9],[40.0,21.8],[40.0,21.9]],hw:0.1},
+  {pts:[[15.1,32.8],[16.3,32.7],[15.0,32.5],[15.1,32.8]],hw:0.1},
+  {pts:[[76.8,103.0],[78.9,101.7]],hw:0.1},
+  {pts:[[60.8,39.1],[62.0,38.2]],hw:0.1}
+ ],
+ islands:[],
+ nobuild:[
+    [[51.3,34.2],[56.3,35.3],[57.2,39.0],[54.0,42.6],[50.4,40.4],[50.0,36.7]]
+ ],
+ blobs:[
+  {x:49.0,y:37.5,r:3.5,w:1.0,t:"cbd"},
+  {x:55.7,y:28.5,r:3,w:0.85,t:"cbd"},
+  {x:51.6,y:47.3,r:3,w:0.9,t:"cbd"},
+  {x:38.8,y:50.7,r:3,w:0.85,t:"cbd"},
+  {x:57.2,y:44.8,r:2.6,w:0.7,t:"cbd"},
+  {x:38.3,y:35.3,r:3.5,w:0.8,t:"res"},
+  {x:49.1,y:65.5,r:4,w:0.85,t:"res"},
+  {x:78.8,y:55.2,r:4.5,w:0.7,t:"res"},
+  {x:21.2,y:33.1,r:4.5,w:0.7,t:"res"},
+  {x:31.1,y:87.6,r:4.5,w:0.6,t:"res"},
+  {x:37.0,y:59.7,r:3.5,w:0.7,t:"res"},
+  {x:27.5,y:59.6,r:3.5,w:0.55,t:"res"},
+  {x:56.3,y:15.4,r:4.5,w:0.55,t:"res"},
+  {x:71.6,y:39.0,r:3.5,w:0.5,t:"res"},
+  {x:65.3,y:47.8,r:3,w:0.6,t:"res"},
+  {x:31.1,y:18.3,r:3.5,w:0.55,t:"res"},
+  {x:10.4,y:25.7,r:4,w:0.5,t:"ind"}
+ ],
+ corridors:[
+  {pts:[[55.7,28.5],[49.0,37.5],[51.6,47.3],[57.2,44.8],[71.1,76.1]],w:1.3},
+  {pts:[[55.7,28.5],[38.3,35.3],[21.2,33.1]],w:1.0},
+  {pts:[[49.0,37.5],[38.8,50.7],[37.0,59.7],[31.1,87.6]],w:1.1},
+  {pts:[[49.0,37.5],[49.1,65.5],[31.1,87.6]],w:1.0},
+  {pts:[[51.6,47.3],[65.3,47.8],[78.8,55.2]],w:0.9},
+  {pts:[[55.7,28.5],[71.6,39.0],[78.8,55.2]],w:0.8}
+ ],
+ core:{x:49.0,y:37.5},
+ landmark:{x:55.7,y:28.5,name:"CENTRAAL"},
+ specials:[
+  {x:56.3,y:15.4,name:"NOORD",kind:"hub",when:.28},
+  {x:10.4,y:25.7,name:"SLOTERDIJK",kind:"hub",when:.4},
+  {x:71.1,y:76.1,name:"AMSTEL",kind:"hub",when:.52},
+  {x:31.1,y:87.6,name:"ZUID",kind:"ic",when:.62}
+ ],
+ count:92
+}
+};
+
+/* ================= constants ================= */
+const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
+const SHAPES=["circle","triangle","square","diamond","star","plane"];
+const DAY_SECONDS=75;
+const GM_PER_S=1440/DAY_SECONDS;
+const TRAIN_SPEED=9;
+const CAR_CAP=6, MAX_CARS=2;
+const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
+const MAX_LINES=7;
+const IC_KM=250;
+const CLASSES={
+ metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:2.4, alpha:0.72},
+ tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:1.7, alpha:0.55},
+ express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.8, alpha:1.0}};
+
+function clsOf(L){return CLASSES[L.cls||(L.express?"express":"metro")]}
+const CLSICON={
+ metro:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 5a3.5 3.5 0 0 1 7 0"/><rect x="7.5" y="5" width="5" height="6" rx="1.4"/><path d="M7.5 8h5"/><path d="M2.5 12.4h15"/></svg>',
+ tram:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3.4" width="11" height="7.4" rx="1.6"/><path d="M8.6 3.4L10 0.6L11.4 3.4"/><path d="M7.5 0.6h5"/><path d="M4.5 7.1h11"/><path d="M2.5 12.4h15"/></svg>',
+ express:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H11A6 4 0 0 1 11 11H3Z"/><path d="M3 7h8"/></svg>'};
+function clsIcon(k){return CLSICON[k]||CLSICON.metro}
+function clsName(k){
+ const d={metro:"METRO",tram:"TRAM",express:"INTERCITY"};
+ return (city&&city.classNames&&city.classNames[k])||d[k]}
+function maxTrainsFor(L){
+ let u=0;for(const P of L.paths)u+=P.chord;
+ const c=clsOf(L);
+ return clamp(Math.round(u/c.spacing),2,c.maxCars?6:7)}
+let metroCapKm=80;
+function kms(u){return u*((city&&city.kmScale)||1)}
+function computeMetroCap(){
+ const regs={};
+ for(const s of stations){
+  if(s.icOnly)continue;
+  (regs[s.region]=regs[s.region]||[]).push(s)}
+ let best=0;
+ for(const k in regs){
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const s of regs[k]){minX=Math.min(minX,s.x);maxX=Math.max(maxX,s.x);
+   minY=Math.min(minY,s.y);maxY=Math.max(maxY,s.y)}
+  best=Math.max(best,Math.hypot(maxX-minX,maxY-minY))}
+ metroCapKm=Math.max(80,Math.round(kms(best)*1.6))}
+function capM(){return(city&&city.maxMetro!=null)?city.maxMetro:6}
+function capTram(){return(city&&city.maxTram!=null)?city.maxTram:0}
+function clsM(){return(city&&city.classNames&&city.classNames.metro)||"METRO"}
+function clsX(){return(city&&city.classNames&&city.classNames.express)||"INTERCITY"}
+function capX(){return(city&&city.maxExpress!=null)?city.maxExpress:2}
+function capTotal(){return capM()+capTram()+capX()}
+function capI(){return(city&&city.maxInter)||4}
+function tramMaxKm(){return(city&&city.tramMaxKm)||10}
+const FARE=2, STIPEND=30;
+const SPAWN_K=0.042, PASS_CAP=340;
+const STRAIN_AT=12, STRAIN_INTER=18;
+
+/* ================= state ================= */
+let cityId="istanbul", mode="operator", seed=(Math.random()*1e9)|0;
+let city=null, stations=[], lines=[], selLine=-1, lineSlots=3;
+let budget=140, delivered=0, lost=0, journeySum=0, transferSum=0;
+let simS=0, speedIdx=1; const SPEEDS=[0,1,4], SPEEDLBL=["⏸ 0×","▶ 1×","▶▶ 4×"];
+let effAvg=0.6;
+let emergePtr=0, nextEmergeAt=0, weekPaid=0, passengers=0;
+let tool=null;                    // null | 'station' | 'inter' | 'detach'
+let hiddenCls={};                 // per-class layer-hide state; tap a class icon to toggle
+let crossings=[];
+let showDensity=false, posterTrains=true, posterLabels=true, posterStats=false, running=false, seenHelp=false;
+let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
+function growthG(){
+ const sf=stations.length?emergePtr/stations.length:0;
+ const tf=simS/(DAY_SECONDS*34);
+ return clamp(Math.max(sf,tf),0.12,1)}
+function clsKeyOf(L){return L.cls||(L.express?"express":"metro")}
+function lineShown(L){return L.id===selLine||!hiddenCls[clsKeyOf(L)]}
+
+/* ================= view / canvas ================= */
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+let DPR=1,W=0,H=0;
+const view={x:0,y:0,s:6};
+let baseS=3.5,userCam=false;
+function resize(){DPR=Math.min(2.5,window.devicePixelRatio||1);
+ W=window.innerWidth;H=window.innerHeight;cv.width=W*DPR;cv.height=H*DPR;
+ cv.style.width=W+"px";cv.style.height=H+"px"}
+window.addEventListener("resize",resize);resize();
+function growBounds(){
+ let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9,n=0;
+ for(const s of stations){if(!s.emerged)continue;n++;
+  minX=Math.min(minX,s.x);maxX=Math.max(maxX,s.x);
+  minY=Math.min(minY,s.y);maxY=Math.max(maxY,s.y)}
+ if(!n){minX=32;maxX=68;minY=32;maxY=68}
+ const m=14;
+ return{bw:maxX-minX+2*m,bh:maxY-minY+2*m,cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
+function minZoom(){
+ const b=growBounds();
+ return Math.max(0.62*Math.min(W/b.bw,H/b.bh),0.6*Math.min(W,H)/112)}
+function frameTarget(){
+ const b=growBounds();
+ const s=clamp(Math.min(W/b.bw,H/b.bh),minZoom(),30);
+ return{s,x:b.cx-(W/s)/2,y:b.cy-(H/s)/2}}
+function fitView(){const t=frameTarget();
+ view.s=t.s;view.x=t.x;view.y=t.y;baseS=view.s;userCam=false}
+function s2w(p){return{x:p.x/view.s+view.x,y:p.y/view.s+view.y}}
+function symF(){
+ // symbols are world objects with a pixel ceiling: constant when zoomed in
+ // past the planning zoom (neighbours 34px apart), strictly proportional below it
+ const sRef=34/Math.max(nnWorld,1.5);
+ return clamp(view.s/sRef,0.3,1)*((city&&city.symScale)||1)}
+function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
+function pxr(v){return v/view.s}
+
+/* ================= density & districts ================= */
+function densityAt(p){let d=0;
+ for(const b of city.blobs){const q=(p.x-b.x)**2+(p.y-b.y)**2;d+=b.w*Math.exp(-q/(2*b.r*b.r))}
+ return Math.min(1,d)}
+function districtAt(p){let best=0,t="res";
+ for(const b of city.blobs){const q=(p.x-b.x)**2+(p.y-b.y)**2,v=b.w*Math.exp(-q/(2*b.r*b.r));
+  if(v>best){best=v;t=b.t}}
+ return t}
+function inWater(p,pad){pad=pad||0;
+ for(const poly of (city.islands||[]))if(pointInPoly(p,poly))return false;
+ for(const poly of city.seas)if(pointInPoly(p,poly))return true;
+ for(const r of city.rivers)if(distToPolyline(p,r.pts)<r.hw+pad)return true;
+ return false}
+function inNoBuild(p){return city.nobuild.some(poly=>pointInPoly(p,poly))}
+function segHitsNoBuild(ax,ay,bx,by){
+ if(!city.nobuild||!city.nobuild.length)return false;
+ for(let i=0;i<=12;i++){const t=i/12;
+  if(inNoBuild({x:ax+(bx-ax)*t,y:ay+(by-ay)*t}))return true}
+ return false}
+function crossingBlock(L,ax,ay,bx,by){
+ const cls=L.cls||(L.express?"express":"metro");
+ const bar=city&&city.ijBarrier;
+ if(bar&&cls!==(bar.coreClass||"metro")&&((ay<bar.y)!==(by<bar.y)))
+  return "ONLY THE METRO CROSSES THE IJ";
+ if(cls!=="metro"&&segHitsNoBuild(ax,ay,bx,by))
+  return "ONLY THE METRO ENTERS THE OLD CORE";
+ return null}
+function buildUrbanLayer(g){
+ if(g==null)g=growthG();
+ lastUrbanG=g;
+ urbanCanvas=document.createElement("canvas");urbanCanvas.width=640;urbanCanvas.height=640;
+ const gc=urbanCanvas.getContext("2d"),k=640/100,cell=2.5,gapc=0.45;
+ const thr=lerp(0.62,0.14,g);
+ const cols=[[0.14,"rgba(80,110,170,"],[0.38,"rgba(120,155,210,"],[0.62,"rgba(170,195,235,"]];
+ for(let x=0;x<100;x+=cell)for(let y=0;y<100;y+=cell){
+  const c={x:x+cell/2,y:y+cell/2};
+  if(inWater(c)||inNoBuild(c))continue;
+  const d=densityAt(c);
+  if(d<thr)continue;
+  let col=cols[0];for(const C of cols)if(d>=C[0])col=C;
+  const a=d>0.7?0.10:d>0.42?0.065:0.035;
+  gc.fillStyle=col[1]+a+")";
+  gc.fillRect((x+gapc/2)*k,(y+gapc/2)*k,(cell-gapc)*k,(cell-gapc)*k)}}
+function buildDensityLayer(){
+ densCanvas=document.createElement("canvas");densCanvas.width=520;densCanvas.height=520;
+ const g=densCanvas.getContext("2d"),k=520/100;
+ const hue={cbd:"255,158,80",res:"90,130,255",ind:"150,165,185",star:"255,220,120"};
+ for(const b of city.blobs){
+  const gr=g.createRadialGradient(b.x*k,b.y*k,0,b.x*k,b.y*k,b.r*2.1*k);
+  gr.addColorStop(0,`rgba(${hue[b.t]},${0.16*b.w})`);gr.addColorStop(1,`rgba(${hue[b.t]},0)`);
+  g.fillStyle=gr;g.beginPath();g.arc(b.x*k,b.y*k,b.r*2.1*k,0,TAU);g.fill()}}
+
+/* ================= station generation ================= */
+function shapeFor(district,rng){
+ const r=rng();
+ if(district==="cbd")return r<.68?"square":r<.88?"circle":"diamond";
+ if(district==="ind")return r<.62?"triangle":r<.85?"circle":"square";
+ return r<.66?"circle":r<.84?"triangle":"square"}
+function genStations(){
+ const rng=mulberry32(seed);stations=[];
+ const coreList=city.cores||[city.core];
+ const dCores=p=>{let m=1e9;for(const c of coreList)m=Math.min(m,dist(p,c));return m};
+ const lm=city.landmark;
+ stations.push({x:lm.x,y:lm.y,shape:"star",district:"star",dens:1,
+  emerged:false,inter:false,q:[],acc:0,order:0,name:lm.name,strainT:0,emergeAt:0});
+ const cand=[];
+ let attempts=0;
+ const spMin=(city.spacing&&city.spacing.min)||4.8;
+ const spMax=(city.spacing&&city.spacing.max)||10;
+ const jt=(city.jitter!=null)?city.jitter:9;
+ while(cand.length<city.count-1&&attempts<city.count*90){
+  attempts++;
+  let cw=0;for(const c of city.corridors)cw+=c.w;
+  let pick=rng()*cw,cor=city.corridors[0];
+  for(const c of city.corridors){if(pick<c.w){cor=c;break}pick-=c.w}
+  const t=Math.min(1,rng()*rng()+rng()*.9);
+  const base=pointAlongPoly(cor.pts,t);
+  const p={x:base.x+(rng()-0.5)*jt,y:base.y+(rng()-0.5)*jt};
+  if(p.x<3||p.x>97||p.y<3||p.y>97)continue;
+  if(inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p))continue;
+  const dCore=dCores(p);
+  const minD=lerp(spMin,spMax,clamp(dCore/60,0,1));
+  let ok=dist(p,lm)>minD;
+  if(ok)for(const c of cand){if(dist(p,c)<minD){ok=false;break}}
+  if(!ok)continue;
+  const district=districtAt(p);
+  cand.push({x:p.x,y:p.y,shape:shapeFor(district,rng),district,dens:densityAt(p),
+   emerged:false,inter:false,q:[],acc:0,order:dCore+(rng()-0.5)*16,name:null,strainT:0,emergeAt:0})}
+ const icPts=(city.specials||[]).filter(sp=>sp.kind==="ic");
+ const nearIC=p2=>{for(const q of icPts)if(dist(p2,q)<9)return true;return false};
+ const regOf=p2=>{let bi=0,bd=1e9;coreList.forEach((c2,ci)=>{const d2=dist(p2,c2);if(d2<bd){bd=d2;bi=ci}});return bi};
+ for(let ci=cand.length-1;ci>=0;ci--)if(nearIC(cand[ci]))cand.splice(ci,1);
+ // accretion: sprawl off existing candidates until the roster is full
+ let guard=0;
+ while(cand.length<city.count-1&&guard<city.count*80){
+  guard++;
+  const parent=cand.length?cand[(rng()*cand.length)|0]:coreList[(rng()*coreList.length)|0];
+  const dCoreP=dCores(parent);
+  const minDp=lerp(spMin,spMax,clamp(dCoreP/60,0,1));
+  const ang=rng()*TAU,rr=minDp*(1.05+rng()*0.9);
+  const p={x:parent.x+Math.cos(ang)*rr,y:parent.y+Math.sin(ang)*rr};
+  if(p.x<3||p.x>97||p.y<3||p.y>97)continue;
+  if(inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p))continue;
+  const d=densityAt(p);
+  if(d<0.1&&rng()>0.35)continue;
+  if(nearIC(p))continue;
+  if(cand.length&&regOf(p)!==regOf(parent))continue;
+  const dCore=dCores(p);
+  const minD=lerp(spMin,spMax,clamp(dCore/60,0,1));
+  let ok=dist(p,lm)>minD;
+  if(ok)for(const c of cand){if(dist(p,c)<minD){ok=false;break}}
+  if(!ok)continue;
+  const district=districtAt(p);
+  cand.push({x:p.x,y:p.y,shape:shapeFor(district,rng),district,dens:d,
+   emerged:false,inter:false,q:[],acc:0,order:dCore+(rng()-0.5)*16,name:null,strainT:0,emergeAt:0})}
+ cand.sort((a,b)=>a.order-b.order);
+ const need=new Set(["circle","square","triangle"]);
+ for(let i=0;i<Math.min(5,cand.length);i++)need.delete(cand[i].shape);
+ for(const s of need){const j=cand.findIndex((c,i)=>i>=5&&c.shape===s);
+  if(j>0){const t=cand[4];cand[4]=cand[j];cand[j]=t}}
+ if(city.specials){
+  const sp=city.specials.slice().sort((a,b)=>a.when-b.when);
+  for(const S of sp){
+   const st={x:S.x,y:S.y,name:S.name,kind:S.kind,
+    icOnly:S.kind==="ic",air:S.kind==="air",inter:S.kind==="hub",
+    shape:S.kind==="air"?"plane":(S.kind==="hub"?"square":["circle","triangle","square"][(S.x|0)%3]),
+    district:S.kind==="air"?"air":(S.kind==="hub"?"cbd":"res"),
+    dens:S.kind==="hub"?0.9:(S.kind==="air"?0.8:0.7),
+    emerged:false,q:[],acc:0,order:0,name2:null,strainT:0,emergeAt:0};
+   const idx=Math.min(cand.length,Math.floor(S.when*(cand.length+sp.length)));
+   cand.splice(idx,0,st)}}
+ stations=stations.concat(cand);
+ stations.forEach((s,i)=>{s.id=i;
+  let bi=0,bd=1e9;
+  coreList.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
+  s.region=bi});
+ emergePtr=0;
+ for(let i=0;i<Math.min(8,stations.length);i++)emergeStation(false)}
+function distToNetwork(p){
+ let d=Infinity;
+ for(const L of lines)for(const P of L.paths)
+  for(let i=1;i<P.pts.length;i++)
+   d=Math.min(d,distToSeg(p,[P.pts[i-1].x,P.pts[i-1].y],[P.pts[i].x,P.pts[i].y]));
+ return d}
+function tooCloseToEmerged(s){
+ for(const e of stations){if(!e.emerged)continue;
+  if(dist(s,e)<4.5)return true}
+ return false}
+function emergeStation(ping){
+ while(emergePtr<stations.length&&(stations[emergePtr].emerged||stations[emergePtr].dead))emergePtr++;
+ if(emergePtr>=stations.length)return;
+ // gather the next viable candidates, culling any that grew too close
+ const win=[];
+ for(let k=emergePtr;k<stations.length&&win.length<8;k++){
+  const s=stations[k];
+  if(s.emerged||s.dead)continue;
+  if(!s.name&&tooCloseToEmerged(s)){s.dead=true;continue}
+  win.push(k)}
+ if(!win.length)return;
+ let pick=win[0];
+ if(ping){
+  let tot=0;const wts=win.map((k,i)=>{
+   const near=distToNetwork(stations[k])<8?3.5:0;
+   const w=1+near+(win.length-i)*0.18;tot+=w;return w});
+  let r=Math.random()*tot;
+  for(let i=0;i<win.length;i++){if(r<wts[i]){pick=win[i];break}r-=wts[i]}}
+ while(emergePtr<stations.length&&(stations[emergePtr].emerged||stations[emergePtr].dead))emergePtr++;
+ if(pick!==emergePtr){const t=stations[emergePtr];
+  const a=stations[emergePtr].id,b=stations[pick].id;
+  stations[emergePtr]=stations[pick];stations[pick]=t;
+  stations[emergePtr].id=a;stations[pick].id=b}
+ const s=stations[emergePtr++];s.emerged=true;s.emergeAt=simS;
+ let more=false;
+ for(let k=emergePtr;k<stations.length;k++){
+  const q=stations[k];if(!q.emerged&&!q.dead){more=true;break}}
+ if(ping){
+  if(!more)toast("NEW STATION · THE CITY IS FULLY GROWN");
+  else if(s.icOnly)toast("NEW · "+s.name+" · INTERCITY LINES ONLY");
+  else toast("NEW STATION · "+(s.name||s.district.toUpperCase()))}
+ rebuildRouting()}
+
+/* ================= lines & geometry ================= */
+function newLineObj(i){
+ const pal=(city&&city.palette)||LINE_COLORS;
+ return{id:i,color:pal[i%pal.length],stops:[],cls:"metro",express:false,homeRegion:null,visible:true,
+ flips:{},loop:false,trains:[],paths:[],activeEnd:"tail"}}
+function segCountOf(L){return L.loop?L.stops.length:Math.max(0,L.stops.length-1)}
+function edgeKey(a,b){return a<b?a+"-"+b:b+"-"+a}
+function isEndOf(L,id){return!L.loop&&L.stops.length>0&&
+ (id===L.stops[0]||id===L.stops[L.stops.length-1])}
+function linesEndingAt(id){
+ const r=[];for(const L of lines)if(isEndOf(L,id))r.push(L.id);return r}
+function elbowPts(a,b,flip){
+ const dx=b.x-a.x,dy=b.y-a.y,adx=Math.abs(dx),ady=Math.abs(dy);
+ if(adx<.5||ady<.5||Math.abs(adx-ady)<.5)return[{x:a.x,y:a.y},{x:b.x,y:b.y}];
+ const sx=Math.sign(dx),sy=Math.sign(dy);let c;
+ if(adx>ady)c=flip?{x:a.x+sx*(adx-ady),y:a.y}:{x:a.x+sx*ady,y:a.y+sy*ady};
+ else c=flip?{x:a.x,y:a.y+sy*(ady-adx)}:{x:a.x+sx*adx,y:a.y+sy*adx};
+ return[{x:a.x,y:a.y},c,{x:b.x,y:b.y}]}
+function pathCrossesWater(pts){
+ const L=pathLen(pts),n=Math.max(8,Math.ceil(L*1.4));
+ for(let i=0;i<=n;i++){if(inWater(pointAt(pts,L*i/n)))return true}
+ return false}
+function pathCrossesMajorRiver(pts){
+ const minHW=(city&&city.tramRiverMax)||999;
+ if(minHW>=999)return false;
+ const L=pathLen(pts),n=Math.max(8,Math.ceil(L*1.4));
+ for(let i=0;i<=n;i++){
+  const p=pointAt(pts,L*i/n);
+  for(const r of city.rivers)if(r.hw>minHW&&distToPolyline(p,r.pts)<r.hw)return true}
+ return false}
+function offsetElbow(raw,d){
+ if(Math.abs(d)<1e-6)return raw.map(p=>({x:p.x,y:p.y}));
+ const P=raw;
+ if(P.length===2){
+  let ux=P[1].x-P[0].x,uy=P[1].y-P[0].y;const m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
+  const nx=-uy*d,ny=ux*d;
+  return[{x:P[0].x+nx,y:P[0].y+ny},{x:P[1].x+nx,y:P[1].y+ny}]}
+ let u1x=P[1].x-P[0].x,u1y=P[1].y-P[0].y;const m1=Math.hypot(u1x,u1y)||1;u1x/=m1;u1y/=m1;
+ let u2x=P[2].x-P[1].x,u2y=P[2].y-P[1].y;const m2=Math.hypot(u2x,u2y)||1;u2x/=m2;u2y/=m2;
+ const A={x:P[0].x-u1y*d,y:P[0].y+u1x*d},B={x:P[2].x-u2y*d,y:P[2].y+u2x*d};
+ const den=u1x*u2y-u1y*u2x;
+ let C;
+ if(Math.abs(den)<1e-6)C={x:P[1].x-u1y*d,y:P[1].y+u1x*d};
+ else{const t=((B.x-A.x)*u2y-(B.y-A.y)*u2x)/den;C={x:A.x+u1x*t,y:A.y+u1y*t}}
+ return[A,C,B]}
+function bundleGap(){return clamp(px(4.2),0.4,3)}
+function rebuildGeometry(){
+ lastGeomS=view.s;
+ const reg={};
+ for(const L of lines){const sc=segCountOf(L);
+  for(let i=0;i<sc;i++){const a=L.stops[i],b=L.stops[(i+1)%L.stops.length];
+   const k=edgeKey(a,b);(reg[k]=reg[k]||[]).push(L.id)}}
+ for(const k in reg)reg[k]=[...new Set(reg[k])].sort((a,b)=>a-b);
+ const gap=bundleGap();
+ for(const L of lines){const sc=segCountOf(L);L.paths=[];
+  for(let i=0;i<sc;i++){
+   const aI=L.stops[i],bI=L.stops[(i+1)%L.stops.length];
+   const lo=Math.min(aI,bI),hi=Math.max(aI,bI),k=edgeKey(aI,bI);
+   const slot=reg[k].indexOf(L.id),n=reg[k].length;
+   const d=(slot-(n-1)/2)*gap;
+   const raw=elbowPts(stations[lo],stations[hi],!!L.flips[k]);
+   let pts=offsetElbow(raw,d);
+   if(aI!==lo)pts=pts.slice().reverse();
+   L.paths.push({pts,len:pathLen(pts),tunnel:pathCrossesWater(pts),
+    chord:dist(stations[aI],stations[bI]),aId:aI,bId:bI,
+    cornerS:pts.length===3?dist(pts[0],pts[1]):null})}}
+ computeCrossings()}
+function computeCrossings(){
+ crossings=[];
+ const legs=[];
+ for(const L of lines)for(const P of L.paths)
+  for(let i=1;i<P.pts.length;i++)
+   legs.push({a:P.pts[i-1],b:P.pts[i],li:L.id,aId:P.aId,bId:P.bId,tunnel:P.tunnel});
+ for(let i=0;i<legs.length;i++)for(let j=i+1;j<legs.length;j++){
+  const A=legs[i],B=legs[j];
+  if(A.li===B.li)continue;
+  if(A.aId===B.aId||A.aId===B.bId||A.bId===B.aId||A.bId===B.bId)continue;
+  const p=segIntersect(A.a,A.b,B.a,B.b);
+  if(!p)continue;
+  let over=B,under=A;
+  if(A.li===selLine){over=A;under=B}
+  else if(B.li!==selLine&&A.li>B.li){over=A;under=B}
+  const dx=over.b.x-over.a.x,dy=over.b.y-over.a.y,m=Math.hypot(dx,dy)||1;
+  crossings.push({x:p.x,y:p.y,dx:dx/m,dy:dy/m,li:over.li,liU:under.li,tunnel:over.tunnel,
+   metroClash:!lines[over.li].express&&!lines[under.li].express})}}
+
+/* ================= routing ================= */
+let adj=new Map(),distByShape={},nnWorld=6;
+function rebuildRouting(){
+ rebuildGeometry();
+ adj=new Map();
+ const add=(a,b)=>{if(!adj.has(a))adj.set(a,[]);adj.get(a).push(b)};
+ for(const L of lines){const sc=segCountOf(L);
+  for(let i=0;i<sc;i++){const a=L.stops[i],b=L.stops[(i+1)%L.stops.length];add(a,b);add(b,a)}}
+ distByShape={};
+ for(const sh of SHAPES){
+  const d=new Array(stations.length).fill(Infinity);const q=[];
+  for(const s of stations)if(s.emerged&&s.shape===sh){d[s.id]=0;q.push(s.id)}
+  while(q.length){const u=q.shift();const ns=adj.get(u)||[];
+   for(const v of ns)if(d[v]===Infinity){d[v]=d[u]+1;q.push(v)}}
+  distByShape[sh]=d}
+ // 25th-percentile nearest-neighbour spacing among emerged stations (world units)
+ const em=stations.filter(s=>s.emerged);
+ if(em.length>3){
+  const ds=[];
+  for(const a of em){let m=1e9;
+   for(const b of em){if(a===b)continue;const d2=dist(a,b);if(d2<m)m=d2}
+   ds.push(m)}
+  ds.sort((a,b)=>a-b);
+  nnWorld=ds[Math.floor(ds.length*0.25)]}}
+
+/* ================= demand ================= */
+function minOfDay(){return Math.floor(simS*GM_PER_S)%1440}
+function isMorning(t){return t>=420&&t<600}
+function isEvening(t){return t>=1020&&t<1200}
+function isNight(t){return t<330||t>1380}
+function produceF(d,t){
+ if(d==="air")return isNight(t)?0.7:1.2;
+ if(d==="res")return isMorning(t)?3.0:isEvening(t)?1.2:isNight(t)?0.3:0.8;
+ if(d==="cbd")return isMorning(t)?0.5:isEvening(t)?2.8:isNight(t)?0.35:1.0;
+ if(d==="ind")return isNight(t)?0.3:(isMorning(t)||isEvening(t))?1.4:0.9;
+ return isNight(t)?0.5:1.5}
+function attractF(d,t){
+ if(d==="air")return isNight(t)?1.3:2.0;
+ if(d==="cbd")return isMorning(t)?3.2:isEvening(t)?0.55:1;
+ if(d==="res")return isMorning(t)?0.45:isEvening(t)?2.6:1;
+ if(d==="ind")return isNight(t)?0.7:1.1;
+ return 1.7}
+function pickTarget(origin){
+ const t=minOfDay(),w={};let tot=0;
+ for(const s of stations){if(!s.emerged||s.shape===origin.shape)continue;
+  const a=attractF(s.district,t)*(0.25+s.dens);w[s.shape]=(w[s.shape]||0)+a;tot+=a}
+ if(tot<=0)return null;
+ let r=Math.random()*tot;
+ for(const sh in w){if(r<w[sh])return sh;r-=w[sh]}
+ return null}
+
+/* ================= economy ================= */
+function isOp(){return mode==="operator"}
+function exf(L){return L?clsOf(L).trackMult:1}
+function buzz(ms){if(navigator.vibrate){try{navigator.vibrate(ms)}catch(e){}}}
+function pay(c){if(!isOp())return true;if(budget<c){toast("NEED $"+Math.ceil(c));return false}
+ budget-=c;return true}
+function segCost(a,b,pts){let c=dist(stations[a],stations[b])*COST.track;
+ if(pathCrossesWater(pts||elbowPts(stations[a],stations[b],false)))c+=COST.tunnel;
+ return c}
+
+/* ================= line editing ================= */
+function selectLine(i){selLine=i;tool=null;
+ rebuildGeometry();refreshUI()}
+function clsCount(k){return lines.filter(L=>(L.cls||(L.express?"express":"metro"))===k).length}
+function lineMaxKm(L){return L.express?IC_KM:((L.cls||"metro")==="tram"?tramMaxKm():metroCapKm)}
+function createLine(clsKey){
+ if(lines.length>=capTotal()){toast("NETWORK AT MAX · "+capTotal()+" LINES");return}
+ const isX=clsKey==="express";
+ const hasTram=capTram()>0;
+ if(isX){
+  if(clsCount("express")>=capX()){
+   toast(clsName("express")+" AT MAX · "+capX()+" LINES");return}}
+ else if(hasTram){
+  const cap=clsKey==="tram"?capTram():capM();
+  if(clsCount(clsKey)>=cap){
+   toast(clsName(clsKey)+" AT MAX · "+cap+" LINES");return}}
+ else{
+  if(lines.filter(x=>!x.express).length>=capM()){
+   toast("LOCAL LINES AT MAX · "+capM());return}}
+ if(lines.length>=lineSlots){
+  const c=COST.line+30*(lineSlots-3);
+  if(!pay(c))return;lineSlots++;toast("LINE SLOT PURCHASED")}
+ const L=newLineObj(lines.length);
+ L.cls=clsKey;L.express=isX;
+ if(hiddenCls[clsKey])L.visible=false;
+ lines.push(L);selectLine(lines.length-1);
+ const poolCap=isX?capX():(capTram()>0?(clsKey==="tram"?capTram():capM()):capM());
+ toast(clsName(clsKey)+" · "+clsCount(clsKey)+"/"+poolCap+
+  (isX?" · HUBS, AIRPORTS, SATELLITES":""))}
+function edgeOnLine(L,a,b){
+ const k=edgeKey(a,b);
+ for(let i=0;i<segCountOf(L);i++){
+  if(edgeKey(L.stops[i],L.stops[(i+1)%L.stops.length])===k)return true}
+ return false}
+function appendAt(L,endName,X){
+ if(!canServe(L,X)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return false}
+ if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return false}
+ const end=endName==="tail"?L.stops[L.stops.length-1]:L.stops[0];
+ const other=endName==="tail"?L.stops[0]:L.stops[L.stops.length-1];
+ if(X===end)return false;
+ if(edgeOnLine(L,end,X)){toast("EDGE ALREADY ON THIS LINE");return false}
+ if(X===other&&L.stops.length>=3){
+  if((L.cls||"metro")==="tram"){
+   const seg=elbowPts(stations[end],stations[X],false);
+   if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return false}}
+  if(!pay(segCost(end,X)*exf(L)))return false;
+  L.loop=true;buzz(14);
+  L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
+  rebuildRouting();refreshUI();toast("LOOP CLOSED");return true}
+ if(L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return false}
+ const maxKm=lineMaxKm(L);
+ let lineU=0;for(const P of L.paths)lineU+=P.chord;
+ lineU+=dist(stations[end],stations[X]);
+ if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?clsX():clsName(L.cls||"metro"))+")");return false}
+ if((L.cls||"metro")==="tram"){
+  const seg=elbowPts(stations[end],stations[X],false);
+  if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return false}}
+ {const _b=crossingBlock(L,stations[end].x,stations[end].y,stations[X].x,stations[X].y);if(_b){toast(_b);return false}}
+ if(!pay(segCost(end,X)*exf(L)))return false;
+ if(endName==="tail")L.stops.push(X);
+ else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
+ L.activeEnd=endName;buzz(12);
+ rebuildRouting();refreshUI();return true}
+function canServe(L,id){return !stations[id].icOnly||L.express}
+function regionOK(L,id){
+ if(L.express||L.homeRegion==null)return true;
+ const r=stations[id].region;
+ if(r===L.homeRegion)return true;
+ const cp=(city&&city.crossPairs)||[];
+ let ok=false;
+ for(const p of cp)if((p[0]===L.homeRegion&&p[1]===r)||(p[1]===L.homeRegion&&p[0]===r)){ok=true;break}
+ if(!ok)return false;
+ let foreign=0;for(const s of L.stops)if(stations[s].region!==L.homeRegion)foreign++;
+ if(foreign>=1){toast("ONE BORDER STATION MAX · LO WU RULE");return false}
+ return true}
+function doConnect(A,B){
+ const L=lines[selLine];if(!L)return;
+ if(L.loop){toast("LINE IS A LOOP · UNDO TO REOPEN");return}
+ if(A===B)return;
+ if(!L.stops.length){
+  if(!canServe(L,A)||!canServe(L,B)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
+  if(!L.express&&stations[A].region!==stations[B].region){
+   const cp=(city&&city.crossPairs)||[];let ok=false;
+   const rA=stations[A].region,rB=stations[B].region;
+   for(const p of cp)if((p[0]===rA&&p[1]===rB)||(p[1]===rA&&p[0]===rB)){ok=true;break}
+   if(!ok){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}}
+  if(kms(dist(stations[A],stations[B]))>lineMaxKm(L)){
+   toast("TOO LONG FOR ONE LINE");return}
+  if((L.cls||"metro")==="tram"){
+   const seg=elbowPts(stations[A],stations[B],false);
+   if(pathCrossesMajorRiver(seg)){toast("MONORAIL CANNOT CROSS THE RIVER");return}}
+  const tc=clsOf(L).trainCost;
+  if(!pay(segCost(A,B)*exf(L)+tc))return;
+  {const _b=crossingBlock(L,stations[A].x,stations[A].y,stations[B].x,stations[B].y);if(_b){toast(_b);return}}
+  L.stops=[A,B];L.activeEnd="tail";
+  L.homeRegion=L.express?null:stations[A].region;
+  buzz(12);
+  L.trains.push({li:L.id,seg:0,f:0,dir:1,dwell:.4,cars:0,riders:[],v:0});
+  toast("LINE OPENED · FIRST TRAIN INCLUDED");
+  rebuildRouting();refreshUI();return}
+ if(isEndOf(L,A)){
+  const endName=A===L.stops[L.stops.length-1]?"tail":"head";
+  appendAt(L,endName,B);
+  return}
+ if(isEndOf(L,B)){
+  const endName=B===L.stops[L.stops.length-1]?"tail":"head";
+  appendAt(L,endName,A);
+  return}
+ toast("DRAG FROM A RINGED LINE END")}
+function undoStop(){
+ const L=lines[selLine];if(!L||!L.stops.length)return;
+ if(L.loop){L.loop=false;rebuildRouting();refreshUI();toast("LOOP OPENED");return}
+ let removed;
+ if(L.activeEnd==="tail")removed=L.stops.pop();
+ else{removed=L.stops.shift();for(const t of L.trains)t.seg=Math.max(0,t.seg-1)}
+ if(isOp()&&L.stops.length>=1){
+  const end=L.activeEnd==="tail"?L.stops[L.stops.length-1]:L.stops[0];
+  budget+=segCost(end,removed)*exf(L)*0.6}
+ rebuildRouting();refreshUI()}
+let delArm=0;
+function deleteLine(){
+ const L=lines[selLine];if(!L)return;
+ if(Date.now()-delArm>1600){delArm=Date.now();toast("TAP AGAIN TO CONFIRM CLEAR");return}
+ if(isOp()){let refund=L.trains.length*COST.train*(L.express?1.8:1)*0.5;
+  for(let i=0;i<segCountOf(L);i++)refund+=L.paths[i].chord*COST.track*exf(L)*0.5;
+  budget+=refund}
+ L.stops=[];L.trains=[];L.loop=false;L.flips={};L.homeRegion=null;
+ rebuildRouting();refreshUI();toast("LINE CLEARED")}
+function spliceAt(li,segIdx,X){
+ const L=lines[li];
+ if(!canServe(L,X)){toast("INTERCITY STATION · EXPRESS LINES ONLY");return}
+ if(!regionOK(L,X)){toast("METRO LINES STAY WITHIN ONE CITY · USE INTERCITY");return}
+ const a=L.stops[segIdx],b=L.stops[(segIdx+1)%L.stops.length];
+ if(X===a||X===b||L.stops.includes(X)){toast("STATION ALREADY ON THIS LINE");return}
+ let lineU=0;for(const P of L.paths)lineU+=P.chord;
+ lineU+=dist(stations[a],stations[X])+dist(stations[X],stations[b])-dist(stations[a],stations[b]);
+ if(kms(lineU)>lineMaxKm(L)){toast("LINE AT MAX LENGTH");return}
+ const dc=(segCost(a,X)+segCost(X,b)-segCost(a,b))*exf(L);
+ if(!pay(Math.max(0,dc)))return;
+ L.stops.splice(segIdx+1,0,X);buzz(12);
+ for(const t of L.trains)if(t.seg>segIdx)t.seg++;
+ rebuildRouting();refreshUI();toast("STATION SPLICED IN")}
+function detachAt(li,idx){
+ const L=lines[li];if(!L)return;
+ const i=L.stops.indexOf(idx);
+ if(i<0){toast("NOT A STOP ON THIS LINE");return}
+ const n=L.stops.length;
+ let refund=0;
+ if(L.loop){
+  const a=L.stops[(i-1+n)%n],b=L.stops[(i+1)%n];
+  refund=(segCost(a,idx)+segCost(idx,b)-segCost(a,b))*exf(L)*0.6;
+  L.stops.splice(i,1);
+  if(L.stops.length<3)L.loop=false}
+ else if(i>0&&i<n-1){
+  const a=L.stops[i-1],b=L.stops[i+1];
+  refund=(segCost(a,idx)+segCost(idx,b)-segCost(a,b))*exf(L)*0.6;
+  L.stops.splice(i,1)}
+ else{
+  const nb=i===0?L.stops[1]:L.stops[n-2];
+  if(nb!=null)refund=segCost(idx,nb)*exf(L)*0.6;
+  L.stops.splice(i,1)}
+ for(const t of L.trains){if(t.seg>=i)t.seg=Math.max(0,t.seg-1)}
+ if(isOp())budget+=Math.max(0,refund);
+ if(!L.stops.length)L.homeRegion=null;
+ buzz(12);
+ rebuildRouting();refreshUI();toast("STOP DETACHED")}
+function addTrain(){
+ const L=lines[selLine];if(!L||segCountOf(L)<1){toast("SELECT A LINE WITH TRACK");return}
+ if(L.trains.length>=maxTrainsFor(L)){
+  toast("LINE AT MAX TRAINS · "+maxTrainsFor(L)+" · EXTEND TO FIT MORE");return}
+ if(!pay(clsOf(L).trainCost))return;
+ const dd=L.loop&&L.trains.length%2?-1:1;
+ L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0})}
+function addCar(){
+ const L=lines[selLine];if(!L||!L.trains.length){toast("NO TRAIN ON THIS LINE");return}
+ const mc=clsOf(L).maxCars;
+ if(mc===0){toast(clsName(L.cls||"metro")+" RUNS SINGLE CARS");return}
+ const t=L.trains.reduce((m,x)=>x.cars<m.cars?x:m,L.trains[0]);
+ if(t.cars>=mc){toast("TRAIN AT MAX LENGTH");return}
+ if(!pay(COST.car))return;t.cars++}
+function placeStation(p){
+ if(p.x<3||p.x>97||p.y<3||p.y>97||inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p)){toast("CANNOT BUILD HERE");return}
+ for(const s of stations)if((s.emerged||s.name)&&dist(p,s)<6){toast("TOO CLOSE TO A STATION");return}
+ if(!pay(COST.station))return;
+ const d=districtAt(p);
+ const cl=city.cores||[city.core];
+ let bi=0,bd=1e9;cl.forEach((c2,ci)=>{const d2=dist(p,c2);if(d2<bd){bd=d2;bi=ci}});
+ const s={x:p.x,y:p.y,shape:shapeFor(d,mulberry32((Math.random()*1e9)|0)),district:d,
+  dens:densityAt(p),emerged:true,inter:false,q:[],acc:0,order:0,name:null,region:bi,
+  strainT:0,emergeAt:simS,id:stations.length};
+ stations.push(s);tool=null;rebuildRouting();refreshUI();toast("INFILL STATION OPENED")}
+function upgradeInter(idx){
+ const s=stations[idx];
+ if(s.inter){toast("ALREADY AN INTERCHANGE");tool=null;refreshUI();return}
+ const built=stations.filter(s2=>s2.inter).length;
+ if(built>=capI()){toast("INTERCHANGES AT MAX · "+built+"/"+capI());tool=null;refreshUI();return}
+ if(!pay(COST.inter))return;
+ s.inter=true;tool=null;refreshUI();toast("INTERCHANGE BUILT · "+(built+1)+"/"+capI())}
+
+/* ================= simulation ================= */
+function nextAfter(L,arriveIdx,dirIn){
+ const n=L.stops.length;if(n<2)return null;
+ if(L.loop)return dirIn>0?L.stops[(arriveIdx+1)%n]:L.stops[(arriveIdx-1+n)%n];
+ if(dirIn>0)return arriveIdx>=n-1?L.stops[n-2]:L.stops[arriveIdx+1];
+ return arriveIdx<=0?L.stops[1]:L.stops[arriveIdx-1]}
+function exchange(t,L,arriveIdx){
+ const stId=L.stops[arriveIdx],st=stations[stId];
+ let moved=0;
+ const kept=[];
+ for(const r of t.riders){
+  if(r.shape===st.shape){delivered++;moved++;journeySum+=(simS-r.spawn)*GM_PER_S;transferSum+=r.tf;
+   if(r.ox!=null){
+    const crowD=dist({x:r.ox,y:r.oy},st);
+    const ideal=crowD/TRAIN_SPEED+2.5+crowD*0.12;
+    const act=Math.max(0.001,simS-r.spawn);
+    effAvg=effAvg*0.985+clamp(ideal/act,0,1)*0.015}
+   if(isOp())budget+=FARE}
+  else kept.push(r)}
+ t.riders=kept;
+ const nx=nextAfter(L,arriveIdx,t.dir);
+ if(nx==null){for(const r of t.riders){r.tf++;st.q.push(r);moved++}t.riders=[];return moved}
+ const dHere=sh=>distByShape[sh]?distByShape[sh][stId]:Infinity;
+ const dNext=sh=>distByShape[sh]?distByShape[sh][nx]:Infinity;
+ const stay=[];
+ for(const r of t.riders){
+  if(dNext(r.shape)<dHere(r.shape))stay.push(r);
+  else{r.tf++;st.q.push(r);moved++}}
+ t.riders=stay;
+ const cap=(1+t.cars)*clsOf(L).carCap;
+ const remain=[];
+ for(const r of st.q){
+  if(t.riders.length<cap&&dNext(r.shape)<dHere(r.shape)){t.riders.push(r);moved++}
+  else remain.push(r)}
+ st.q=remain;
+ return moved}
+function stepTrain(t,dt){
+ const L=lines[t.li],sc=segCountOf(L);
+ if(sc<1)return;
+ t.seg=clamp(t.seg,0,sc-1);
+ if(t.dwell>0){t.dwell-=dt;t.v=0;return}
+ const P=L.paths[t.seg];if(!P||P.len<=0)return;
+ const ex=L.express;
+ const CC=clsOf(L);
+ const _ss=(city&&city.speedScale&&city.speedScale[L.cls||"metro"])||1;
+ const vmax=CC.vmax*_ss,acc=CC.acc,br=CC.br,cornerCap=CC.corner;
+ let s=t.f*P.len;
+ const sdir=t.dir>0?s:P.len-s;
+ const dStop=Math.max(0,P.len-sdir);
+ let allowed=Math.min(vmax,Math.sqrt(2*br*dStop+0.01));
+ if(P.cornerS!=null){
+  const cs=t.dir>0?P.cornerS:P.len-P.cornerS;
+  const dC=Math.abs(sdir-cs);
+  allowed=Math.min(allowed,Math.sqrt(cornerCap*cornerCap+2*br*Math.max(0,dC-1)))}
+ if(!ex&&crossings.length){
+  const pos=pointAt(P.pts,s);
+  for(const c of crossings){
+   if(!c.metroClash)continue;
+   if(c.li!==L.id&&c.liU!==L.id)continue;
+   const d=Math.hypot(pos.x-c.x,pos.y-c.y);
+   if(d<6)allowed=Math.min(allowed,Math.sqrt(12.25+2*br*Math.max(0,d-1.5)))}}
+ if(t.v==null)t.v=0;
+ if(t.v<allowed)t.v=Math.min(allowed,t.v+acc*dt);
+ else t.v=Math.max(allowed,t.v-br*dt);
+ s+=t.dir*t.v*dt;
+ t.f=s/P.len;
+ if(t.dir>0&&t.f>=1){
+  const n=L.stops.length;
+  const arriveIdx=L.loop?(t.seg+1)%n:t.seg+1;
+  const mv=exchange(t,L,arriveIdx);
+  const st=stations[L.stops[arriveIdx]];
+  t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));
+  t.v=0;
+  if(L.loop){t.seg=(t.seg+1)%sc;t.f=0}
+  else if(arriveIdx>=n-1){t.dir=-1;t.f=1}
+  else{t.seg++;t.f=0}
+  return}
+ if(t.dir<0&&t.f<=0){
+  const arriveIdx=t.seg;
+  const mv=exchange(t,L,arriveIdx);
+  const st=stations[L.stops[arriveIdx]];
+  t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));
+  t.v=0;
+  if(L.loop){t.seg=(t.seg-1+sc)%sc;t.f=1}
+  else if(arriveIdx<=0){t.dir=1;t.f=0}
+  else{t.seg--;t.f=1}
+  return}}
+function stepSpawns(dt){
+ if(passengers>=PASS_CAP)return;
+ const t=minOfDay();
+ for(const s of stations){
+  if(!s.emerged)continue;
+  const served=(adj.get(s.id)||[]).length>0;
+  if(!served&&s.q.length>=8)continue;
+  s.acc+=dt*SPAWN_K*(0.3+1.7*s.dens)*produceF(s.district,t)*(served?1:0.25);
+  while(s.acc>=1){s.acc-=1;
+   if(passengers>=PASS_CAP)return;
+   const sh=pickTarget(s);if(!sh)continue;
+   s.q.push({shape:sh,spawn:simS,tf:0,ox:s.x,oy:s.y});passengers++}}}
+function stepStrain(dt){
+ for(const s of stations){
+  if(!s.emerged)continue;
+  if(!(adj.get(s.id)||[]).length){s.strainT=0;continue}
+  const cap=s.inter?STRAIN_INTER:STRAIN_AT;
+  if(s.q.length>cap){s.strainT+=dt;
+   if(s.strainT>7){s.strainT=0;s.q.pop();lost++;passengers--}}
+  else s.strainT=0}}
+function recountPassengers(){
+ let n=0;for(const s of stations)n+=s.q.length;
+ for(const L of lines)for(const t of L.trains)n+=t.riders.length;
+ passengers=n}
+function busiestLine(needTrains){
+ let best=null,bs=-1;
+ for(const L of lines){
+  if(segCountOf(L)<1)continue;
+  if(needTrains&&!L.trains.length)continue;
+  let q=0;for(const id of L.stops)q+=stations[id].q.length;
+  if(q>bs){bs=q;best=L}}
+ return best}
+function makeOffer(){
+ const pool=[{k:"train",l:"+1 TRAIN"},{k:"car",l:"+1 CARRIAGE"},{k:"cash",l:"+$50"}];
+ if(stations.filter(s2=>s2.inter).length<capI())pool.push({k:"inter",l:"+1 INTERCHANGE"});
+ if(lineSlots<capTotal()&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT"});
+ const i=(Math.random()*pool.length)|0;
+ let j=(Math.random()*pool.length)|0;
+ while(j===i)j=(Math.random()*pool.length)|0;
+ const bb=$("offerBtns");bb.innerHTML="";
+ for(const o of[pool[i],pool[j]]){
+  const b=document.createElement("button");
+  b.textContent=o.l;b.onclick=()=>applyOffer(o.k);bb.appendChild(b)}
+ $("offer").style.display="block"}
+function applyOffer(k){
+ $("offer").style.display="none";
+ if(k==="inter"){
+  let best=null,bq=-1;
+  for(const s of stations){if(s.inter||!s.emerged)continue;
+   const lc=(adj.get(s.id)||[]).length;if(lc>bq){bq=lc;best=s}}
+  if(best){best.inter=true;
+   const ct=stations.filter(s2=>s2.inter).length;
+   toast("INTERCHANGE GRANTED · "+ct+"/"+capI())}
+  else toast("NO ELIGIBLE STATION");return}
+ if(k==="cash"){budget+=50;toast("+$50");return}
+ if(k==="line"){
+  if(lineSlots<capTotal()){lineSlots++;toast("LINE SLOT ADDED")}
+  else{budget+=50;toast("+$50")}
+  refreshUI();return}
+ if(k==="train"){
+  let L=null,bs=-1;
+  for(const C of lines){
+   if(segCountOf(C)<1||C.trains.length>=maxTrainsFor(C))continue;
+   let q=0;for(const id of C.stops)q+=stations[id].q.length;
+   if(q>bs){bs=q;L=C}}
+  if(!L){budget+=40;toast("ALL LINES AT MAX TRAINS · +$40")}
+  else{const dd=L.loop&&L.trains.length%2?-1:1;
+   L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0});
+   toast("TRAIN DELIVERED · LINE "+(L.id+1))}
+  return}
+ if(k==="car"){const L=busiestLine(true);
+  let t=null;
+  if(L)t=L.trains.reduce((m,x)=>x.cars<m.cars?x:m,L.trains[0]);
+  if(!t||t.cars>=MAX_CARS){budget+=30;toast("+$30")}
+  else{t.cars++;toast("CARRIAGE DELIVERED · LINE "+(L.id+1))}}}
+function update(dtReal){
+ const dt=dtReal*SPEEDS[speedIdx];
+ if(dt<=0)return;
+ simS+=dt;
+ if(emergePtr<stations.length&&simS>=nextEmergeAt){
+  emergeStation(true);
+  const gg=stations.length?emergePtr/stations.length:1;
+  nextEmergeAt=simS+(isOp()?0.6:0.5)*DAY_SECONDS*(0.7+Math.random()*0.6)*(1+1.7*gg)}
+ if(isOp()){const wk=Math.floor(simS/(DAY_SECONDS*7));
+  if(wk>weekPaid){weekPaid=wk;
+   let tr=0,cc=0,ukm=0;
+   for(const L of lines){tr+=L.trains.length;
+    for(const t of L.trains)cc+=t.cars;
+    for(const P of L.paths)ukm+=P.chord}
+   const up=Math.round(1.5*tr+0.7*cc+0.32*kms(ukm));
+   budget+=STIPEND-up;
+   toast("WEEK "+wk+" · +$"+STIPEND+" SUBSIDY · −$"+up+" UPKEEP");
+   makeOffer()}}
+ const ug=growthG();
+ if(Math.abs(ug-lastUrbanG)>0.03)buildUrbanLayer(ug);
+ stepSpawns(dt);
+ for(const L of lines)for(const t of L.trains)stepTrain(t,dt);
+ stepStrain(dt);
+ recountPassengers()}
+
+/* ================= drawing ================= */
+function shapePath(g,x,y,r,shape){
+ g.beginPath();
+ if(shape==="circle")g.arc(x,y,r,0,TAU);
+ else if(shape==="square")g.rect(x-r*.9,y-r*.9,r*1.8,r*1.8);
+ else if(shape==="triangle"){g.moveTo(x,y-r*1.12);g.lineTo(x+r*1.02,y+r*.78);g.lineTo(x-r*1.02,y+r*.78);g.closePath()}
+ else if(shape==="diamond"){g.moveTo(x,y-r*1.15);g.lineTo(x+r*1.15,y);g.lineTo(x,y+r*1.15);g.lineTo(x-r*1.15,y);g.closePath()}
+ else if(shape==="plane"){
+  const p=[[0,-1.3],[0.26,-0.5],[1.25,0.35],[1.25,0.68],[0.24,0.34],[0.2,0.92],[0.58,1.28],[0.58,1.52],[0,1.32],[-0.58,1.52],[-0.58,1.28],[-0.2,0.92],[-0.24,0.34],[-1.25,0.68],[-1.25,0.35],[-0.26,-0.5]];
+  g.moveTo(x+p[0][0]*r,y+p[0][1]*r);
+  for(let i=1;i<p.length;i++)g.lineTo(x+p[i][0]*r,y+p[i][1]*r);
+  g.closePath()}
+ else{for(let i=0;i<10;i++){const rr=i%2?r*.5:r*1.2,a=-Math.PI/2+i*Math.PI/5;
+   const pxx=x+Math.cos(a)*rr,pyy=y+Math.sin(a)*rr;
+   if(i===0)g.moveTo(pxx,pyy);else g.lineTo(pxx,pyy)}
+  g.closePath()}}
+function strokeElbow(g,pts,r){
+ g.beginPath();g.moveTo(pts[0].x,pts[0].y);
+ if(pts.length===3){
+  const l1=dist(pts[0],pts[1]),l2=dist(pts[1],pts[2]);
+  g.arcTo(pts[1].x,pts[1].y,pts[2].x,pts[2].y,Math.min(r,l1*.45,l2*.45))}
+ g.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);g.stroke()}
+function polyPath(g,poly){g.beginPath();
+ poly.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath()}
+function riverPath(g,pts){g.beginPath();
+ pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]))}
+function drawWater(){
+ if(!city.waterPolys){
+  city.waterPolys=city.seas.slice();
+  for(const r of city.rivers)city.waterPolys.push(ribbon(r.pts,r.hw))}
+ const polys=city.waterPolys;
+ const rim="rgba(122,168,238,0.38)",body="#0d1526",glow="rgba(90,140,255,0.05)";
+ ctx.lineJoin="round";ctx.lineCap="round";
+ // soft halo, then expand every shape with a rim stroke, then flood the
+ // union body over the top so internal junction borders disappear
+ ctx.strokeStyle=glow;ctx.lineWidth=px(9);
+ for(const p of polys){polyPath(ctx,p);ctx.stroke()}
+ ctx.strokeStyle=rim;ctx.lineWidth=px(2.8);
+ for(const p of polys){polyPath(ctx,p);ctx.stroke()}
+ ctx.fillStyle=body;
+ for(const p of polys){polyPath(ctx,p);ctx.fill()}
+ // engineering-drawing hatch clipped to the unified waterbody
+ ctx.save();
+ ctx.beginPath();
+ for(const p of polys){
+  p.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath()}
+ ctx.clip();
+ ctx.strokeStyle="rgba(120,165,235,0.07)";ctx.lineWidth=px(1);
+ const sp=Math.max(px(7),1.2);
+ ctx.beginPath();
+ for(let x=-115;x<215;x+=sp){ctx.moveTo(x,-6);ctx.lineTo(x+116,110)}
+ ctx.stroke();
+ ctx.restore();
+ for(const poly of (city.islands||[])){
+  polyPath(ctx,poly);
+  ctx.fillStyle="#06080d";ctx.fill();
+  ctx.strokeStyle=rim;ctx.lineWidth=px(1.4);ctx.stroke()}}
+function drawGrid(){
+ ctx.fillStyle="rgba(150,185,235,0.05)";
+ const r=Math.max(px(0.9),0.06);
+ for(let x=2;x<100;x+=6)for(let y=2;y<100;y+=6){
+  ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill()}}
+function drawRidges(){
+ for(const poly of city.nobuild){
+  ctx.save();
+  polyPath(ctx,poly);
+  ctx.clip();
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const p of poly){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);
+   minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1])}
+  ctx.strokeStyle="rgba(190,212,255,0.05)";ctx.lineWidth=px(1);
+  ctx.beginPath();
+  for(let x=minX-(maxY-minY);x<maxX+4;x+=3){
+   ctx.moveTo(x,maxY);ctx.lineTo(x+(maxY-minY),minY)}
+  ctx.stroke();
+  ctx.restore();
+  polyPath(ctx,poly);
+  ctx.strokeStyle="rgba(190,212,255,0.07)";ctx.lineWidth=px(1);ctx.stroke()}}
+function drawRegions(){
+ if(!city.regions)return;
+ if(document.body.classList.contains("poster")&&!posterLabels)return;
+ ctx.fillStyle="rgba(150,178,215,0.22)";
+ ctx.font=px(12)+"px ui-monospace,monospace";
+ try{ctx.letterSpacing=px(4)+"px"}catch(e){}
+ for(const r of city.regions)ctx.fillText(r.t,r.x,r.y);
+ try{ctx.letterSpacing="0px"}catch(e){}}
+function lineWidthFor(li){
+ const w=clsOf(lines[li]).w;
+ return px(li===selLine?w+0.6:w)}
+function draw(){
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+ ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
+ ctx.setTransform(DPR*view.s,0,0,DPR*view.s,-view.x*view.s*DPR,-view.y*view.s*DPR);
+ drawGrid();
+ drawRidges();
+ drawWater();
+ if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
+ drawRegions();
+ if(showDensity&&densCanvas){ctx.save();ctx.globalCompositeOperation="screen";
+  ctx.drawImage(densCanvas,0,0,100,100);ctx.restore()}
+ const poster=document.body.classList.contains("poster");
+ // glow
+ ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineJoin="round";ctx.lineCap="round";
+ for(const pass of[[4.5,.09]]){
+  for(const L of lines){if(!lineShown(L)){continue}
+   ctx.strokeStyle=L.color;
+   ctx.globalAlpha=pass[1]*(L.express?1.8:1);
+   ctx.lineWidth=px(pass[0]);
+   for(const P of L.paths)strokeElbow(ctx,P.pts,3.2)}}
+ ctx.restore();
+ // cores
+ ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
+ for(const L of lines){
+  const CC=clsOf(L);
+  if(!lineShown(L)){ctx.strokeStyle="#2a303d";ctx.globalAlpha=0.35}
+  else{ctx.strokeStyle=L.color;ctx.globalAlpha=L.id===selLine?1:CC.alpha}
+  for(const P of L.paths){
+   if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
+   if(L.express){
+    ctx.lineWidth=px(L.id===selLine?1.3:1.05);
+    for(const sgn of[-1,1])strokeElbow(ctx,offsetElbow(P.pts,sgn*px(1.15)),3.2)}
+   else{
+    ctx.lineWidth=lineWidthFor(L.id);
+    strokeElbow(ctx,P.pts,3.2)}}
+  ctx.setLineDash([])}
+ ctx.globalAlpha=1;
+ // crossing hops: break the under line, carry the over line across
+ ctx.lineCap="butt";
+ for(const c of crossings){
+  const wOver=lineWidthFor(c.li);
+  const g=px(5.5),g2=px(7);
+  ctx.strokeStyle=inWater(c)?"#0d1526":"#06080d";
+  ctx.lineWidth=wOver+px(4.8);ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(c.x-c.dx*g,c.y-c.dy*g);ctx.lineTo(c.x+c.dx*g,c.y+c.dy*g);ctx.stroke();
+  ctx.strokeStyle=lines[c.li].color;
+  if(c.tunnel)ctx.setLineDash([px(7),px(4.5)]);
+  if(lines[c.li].express){
+   ctx.lineWidth=px(1.05);
+   const nx=-c.dy,ny=c.dx;
+   for(const sgn of[-1,1]){
+    const ox=nx*sgn*px(1.15),oy=ny*sgn*px(1.15);
+    ctx.beginPath();
+    ctx.moveTo(c.x-c.dx*g2+ox,c.y-c.dy*g2+oy);
+    ctx.lineTo(c.x+c.dx*g2+ox,c.y+c.dy*g2+oy);ctx.stroke()}}
+  else{
+   ctx.lineWidth=wOver;
+   ctx.beginPath();ctx.moveTo(c.x-c.dx*g2,c.y-c.dy*g2);ctx.lineTo(c.x+c.dx*g2,c.y+c.dy*g2);ctx.stroke()}
+  ctx.setLineDash([])}
+ ctx.lineCap="round";
+ // drag ghost
+ if(dragMode==="connect"&&dragFrom!=null&&dragW){
+  const A=stations[dragFrom],L=lines[selLine];
+  const T=snapSt!=null?stations[snapSt]:dragW;
+  ctx.strokeStyle=L?L.color:"#ffffff";ctx.globalAlpha=snapSt!=null?.85:.55;
+  ctx.setLineDash([px(5),px(4)]);ctx.lineWidth=px(1.8);
+  ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(T.x,T.y);ctx.stroke();
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  if(snapSt!=null){ctx.lineWidth=px(1.8);
+   ctx.beginPath();ctx.arc(T.x,T.y,px(10),0,TAU);ctx.stroke()}}
+ if(dragMode==="splice"&&dragFrom!=null&&dragW&&selLine>=0){
+  const L=lines[selLine],P=L?L.paths[dragFrom]:null;
+  if(P){const A=stations[P.aId],B=stations[P.bId];
+   const T=snapSt!=null?stations[snapSt]:dragW;
+   ctx.strokeStyle=L.color;ctx.globalAlpha=snapSt!=null?.85:.55;
+   ctx.setLineDash([px(5),px(4)]);ctx.lineWidth=px(1.8);
+   ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(T.x,T.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+   ctx.setLineDash([]);ctx.globalAlpha=1;
+   if(snapSt!=null){ctx.lineWidth=px(1.8);
+    ctx.beginPath();ctx.arc(T.x,T.y,px(10),0,TAU);ctx.stroke()}}}
+ if(dragMode==="pull"&&dragFrom!=null&&dragW&&selLine>=0){
+  const L=lines[selLine];const i=L.stops.indexOf(dragFrom);
+  if(i>=0){const n=L.stops.length;
+   const a=L.loop?L.stops[(i-1+n)%n]:(i>0?L.stops[i-1]:null);
+   const b=L.loop?L.stops[(i+1)%n]:(i<n-1?L.stops[i+1]:null);
+   ctx.setLineDash([px(4),px(3.5)]);ctx.lineWidth=px(1.6);
+   if(a!=null&&b!=null){ctx.strokeStyle=L.color;ctx.globalAlpha=.7;
+    ctx.beginPath();ctx.moveTo(stations[a].x,stations[a].y);
+    ctx.lineTo(stations[b].x,stations[b].y);ctx.stroke()}
+   ctx.strokeStyle="rgba(255,120,140,.85)";ctx.globalAlpha=.85;
+   ctx.beginPath();ctx.moveTo(stations[dragFrom].x,stations[dragFrom].y);
+   ctx.lineTo(dragW.x,dragW.y);ctx.stroke();
+   ctx.setLineDash([]);ctx.globalAlpha=1}}
+ // handles + end rings for selected line
+ if(selLine>=0&&!poster){const L=lines[selLine];
+  if(L){
+   for(let i=0;i<L.paths.length;i++){
+    const m=pointAt(L.paths[i].pts,L.paths[i].len/2);
+    const r=px(3.4);
+    ctx.lineWidth=px(1.4);
+    ctx.strokeStyle="rgba(255,255,255,0.6)";
+    ctx.beginPath();
+    ctx.moveTo(m.x,m.y-r);ctx.lineTo(m.x+r,m.y);ctx.lineTo(m.x,m.y+r);ctx.lineTo(m.x-r,m.y);
+    ctx.closePath();ctx.stroke()}
+   if(!L.loop&&L.stops.length){
+    for(const endId of[L.stops[0],L.stops[L.stops.length-1]]){
+     const e=stations[endId];
+     ctx.strokeStyle=L.color;ctx.lineWidth=px(1.3);
+     ctx.beginPath();ctx.arc(e.x,e.y,px(8),0,TAU);ctx.stroke()}}}}
+ // stations
+ for(const s of stations){
+  if(!s.emerged)continue;
+  const t=simS-s.emergeAt;
+  if(t<1.2){ctx.strokeStyle="rgba(220,235,255,"+((1-t/1.2)*0.7).toFixed(3)+")";
+   ctx.lineWidth=px(1.2);
+   ctx.beginPath();ctx.arc(s.x,s.y,px(5+t*24),0,TAU);ctx.stroke()}
+  const cap=s.inter?STRAIN_INTER:STRAIN_AT;
+  if(s.q.length>cap){const p=(Math.sin(simS*6)+1)/2;
+   ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
+   ctx.beginPath();ctx.arc(s.x,s.y,px(9),0,TAU);ctx.stroke()}
+  if(s.inter){const r=px(7);
+   ctx.strokeStyle="#eaf1fb";ctx.lineWidth=px(2);ctx.fillStyle="#06080d";
+   ctx.beginPath();
+   if(ctx.roundRect)ctx.roundRect(s.x-r,s.y-r,r*2,r*2,px(3));else ctx.rect(s.x-r,s.y-r,r*2,r*2);
+   ctx.fill();ctx.stroke()}
+  ctx.fillStyle="#06080d";
+  ctx.beginPath();ctx.arc(s.x,s.y,px(s.shape==="plane"?7.6:6.6),0,TAU);ctx.fill();
+  ctx.strokeStyle="#ccd6e4";ctx.lineWidth=px(1.8);
+  shapePath(ctx,s.x,s.y,px(s.shape==="plane"?5:4.4),s.shape);ctx.fill();ctx.stroke();
+  if(s.icOnly){ctx.lineWidth=px(0.9);
+   ctx.beginPath();ctx.arc(s.x,s.y,px(6.6),0,TAU);ctx.stroke()}
+  if(s.name&&(!poster||posterLabels)){
+   ctx.fillStyle="rgba(168,186,214,0.85)";
+   ctx.font=px(6.5)+"px ui-monospace,monospace";
+   ctx.fillText(s.name,s.x+px(9),s.y+px(10))}
+  if(!poster&&s.q.length&&symF()>0.62){
+   const show=Math.min(s.q.length,8);
+   ctx.fillStyle="rgba(196,210,230,0.85)";
+   for(let i=0;i<show;i++){
+    const col=i%4,row=Math.floor(i/4);
+    const gx=s.x+px(9.5)+col*px(5.2),gy=row?s.y-px(5.6):s.y;
+    shapePath(ctx,gx,gy,px(2),s.q[i].shape);ctx.fill()}
+   if(s.q.length>show){ctx.fillStyle="rgba(160,176,200,.8)";
+    ctx.font=px(8)+"px ui-monospace,monospace";
+    ctx.fillText("+"+(s.q.length-show),s.x+px(9.5)+4*px(5.2),s.y+px(2.5))}}}
+ // trains
+ if(!poster||posterTrains){
+  for(const L of lines){if(!lineShown(L))continue;
+  for(const t of L.trains){
+   const P=L.paths[t.seg];if(!P)continue;
+   const CC=clsOf(L);
+   const carL=px(L.cls==="tram"?10:13),carW=px(L.cls==="tram"?4.5:5.5),gapL=px(2.5);
+   const units=1+t.cars,base=t.f*P.len;
+   for(let u=0;u<units;u++){
+    const s=clamp(base-t.dir*u*(carL+gapL),0,P.len);
+    const p=pointAt(P.pts,s);
+    ctx.save();ctx.translate(p.x,p.y);
+    ctx.rotate(p.ang+(t.dir<0?Math.PI:0));
+    ctx.fillStyle="#06080d";
+    ctx.beginPath();
+    if(L.express&&u===0){
+     const ns=carL*0.34;
+     ctx.moveTo(-carL/2,-carW/2);
+     ctx.lineTo(carL/2-ns,-carW/2);
+     ctx.lineTo(carL/2,0);
+     ctx.lineTo(carL/2-ns,carW/2);
+     ctx.lineTo(-carL/2,carW/2);
+     ctx.closePath()}
+    else if(ctx.roundRect)ctx.roundRect(-carL/2,-carW/2,carL,carW,px(2.5));
+    else ctx.rect(-carL/2,-carW/2,carL,carW);
+    ctx.fill();
+    ctx.strokeStyle=L.color;ctx.lineWidth=px(1.6);ctx.stroke();
+    ctx.fillStyle="rgba(223,231,243,0.92)";
+    const cc=CC.carCap,cols=Math.ceil(cc/2);
+    const seat0=u*cc;
+    for(let k2=0;k2<cc;k2++){
+     const r=t.riders[seat0+k2];if(!r)break;
+     const cx=-carL/2+px(2.6)+(k2%cols)*px(4),cyy=k2<cols?-px(1.3):px(1.3);
+     shapePath(ctx,cx,cyy,px(1.1),r.shape);ctx.fill()}
+    ctx.restore()}}}}
+}
+
+/* ================= input ================= */
+const pointers=new Map();
+let pinchD=0,downP=null,moved=false,pinched=false,downT=0;
+let dragMode=null,dragFrom=null,dragW=null,snapSt=null;
+let midPan=null;
+function nearestSeg(wp,L,rad){
+ let bi=-1,bd=rad;
+ for(let i=0;i<L.paths.length;i++){
+  for(let j=1;j<L.paths[i].pts.length;j++){
+   const d=distToSeg(wp,[L.paths[i].pts[j-1].x,L.paths[i].pts[j-1].y],
+    [L.paths[i].pts[j].x,L.paths[i].pts[j].y]);
+   if(d<bd){bd=d;bi=i}}}
+ return bi}
+cv.addEventListener("pointerdown",e=>{
+ cv.setPointerCapture(e.pointerId);
+ if(e.button===1){e.preventDefault();midPan={x:e.clientX,y:e.clientY};userCam=true;return}
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pointers.size===1){
+  downP={x:e.clientX,y:e.clientY};moved=false;pinched=false;downT=Date.now();
+  dragMode=null;dragFrom=null;dragW=null;snapSt=null;
+  if(running&&!document.body.classList.contains("poster")&&!tool){
+   const wp=s2w(downP);
+   const hit=nearestStation(wp,pxr(16));
+   const Lsel=selLine>=0?lines[selLine]:null;
+   if(hit!=null){
+    if(Lsel&&!Lsel.loop&&(Lsel.stops.length===0||isEndOf(Lsel,hit))){
+     dragMode="connect";dragFrom=hit}
+    else if(Lsel&&Lsel.stops.includes(hit)){
+     dragMode="pull";dragFrom=hit}
+    else{
+     const ends=linesEndingAt(hit);
+     if(ends.length===1){
+      selLine=ends[0];rebuildGeometry();refreshUI();
+      dragMode="connect";dragFrom=hit}}}
+   else if(Lsel){
+    const si=nearestSeg(wp,Lsel,pxr(16));
+    if(si>=0){dragMode="splice";dragFrom=si}}}}
+ if(pointers.size===2){pinched=true;dragMode=null;dragFrom=null;dragW=null;snapSt=null;
+  const p=[...pointers.values()];pinchD=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}});
+cv.addEventListener("pointermove",e=>{
+ if(midPan){
+  view.x-=(e.clientX-midPan.x)/view.s;view.y-=(e.clientY-midPan.y)/view.s;
+  midPan={x:e.clientX,y:e.clientY};userCam=true;return}
+ if(!pointers.has(e.pointerId))return;
+ const prev=pointers.get(e.pointerId);
+ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pointers.size===2){
+  const p=[...pointers.values()];
+  const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+  const mid={x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2};
+  const dx2=(p[0].x+p[1].x)/2-([...pointers.values()][0].x+prev.x)/2;
+  userCam=true;
+  view.x-=(e.clientX-prev.x)/view.s;view.y-=(e.clientY-prev.y)/view.s;
+  if(pinchD>0){const f=d/pinchD;const wm=s2w(mid);
+   view.s=clamp(view.s*f,minZoom(),30);
+   view.x=wm.x-mid.x/view.s;view.y=wm.y-mid.y/view.s}
+  pinchD=d;return}
+ if(pointers.size===1&&downP){
+  const dx=e.clientX-downP.x,dy=e.clientY-downP.y;
+  if(Math.hypot(dx,dy)>7)moved=true;
+  if(moved){
+   if(dragMode==="connect"||dragMode==="splice"||dragMode==="pull"){
+    dragW=s2w({x:e.clientX,y:e.clientY});
+    if(dragMode!=="pull"){
+     let t=nearestStation(dragW,pxr(30));
+     if(dragMode==="connect"&&t===dragFrom)t=null;
+     if(t!==snapSt){snapSt=t;if(t!=null)buzz(8)}}}}}});
+function endPointer(e){
+ if(midPan){midPan=null;return}
+ const was=pointers.size;pointers.delete(e.pointerId);
+ if(was===1&&!pinched){
+  if(!moved&&Date.now()-downT<450){
+   const wp=s2w({x:e.clientX,y:e.clientY});
+   const Lsel=selLine>=0?lines[selLine]:null;
+   if(Lsel&&!tool){
+    const si=nearestSeg(wp,Lsel,pxr(16));
+    if(si>=0){
+     const k=edgeKey(Lsel.paths[si].aId,Lsel.paths[si].bId);
+     Lsel.flips[k]=!Lsel.flips[k];rebuildRouting();
+     return}}
+   tap(wp)}
+  else if(moved&&dragMode==="connect"&&dragFrom!=null){
+   const t=snapSt!=null?snapSt:nearestStation(s2w({x:e.clientX,y:e.clientY}),pxr(18));
+   if(t!=null&&t!==dragFrom)doConnect(dragFrom,t)}
+  else if(moved&&dragMode==="splice"&&dragFrom!=null){
+   const t=snapSt!=null?snapSt:nearestStation(s2w({x:e.clientX,y:e.clientY}),pxr(18));
+   if(t!=null)spliceAt(selLine,dragFrom,t)}
+  else if(moved&&dragMode==="pull"&&dragFrom!=null&&selLine>=0){
+   const w=s2w({x:e.clientX,y:e.clientY});
+   if(dist(w,stations[dragFrom])>pxr(26))detachAt(selLine,dragFrom)}}
+ if(pointers.size<2)pinchD=0;
+ if(pointers.size===0){downP=null;dragMode=null;dragFrom=null;dragW=null;snapSt=null}}
+cv.addEventListener("pointerup",endPointer);
+cv.addEventListener("pointercancel",endPointer);
+cv.addEventListener("wheel",e=>{
+ e.preventDefault();userCam=true;
+ if(e.ctrlKey){
+  const wm=s2w({x:e.clientX,y:e.clientY});
+  view.s=clamp(view.s*Math.exp(-e.deltaY*0.01),minZoom(),30);
+  view.x=wm.x-e.clientX/view.s;view.y=wm.y-e.clientY/view.s;
+ }else{
+  view.x+=e.deltaX/view.s;view.y+=e.deltaY/view.s;
+ }},{passive:false});
+function nearestStation(p,rad){
+ let best=null,bd=rad;
+ for(const s of stations){if(!s.emerged)continue;
+  const d=dist(p,s);if(d<bd){bd=d;best=s.id}}
+ return best}
+function distPtSegO(p,a,b){return distToSeg(p,[a.x,a.y],[b.x,b.y])}
+function lineAtPoint(p,rad){
+ let best=null,bd=rad;
+ for(const L of lines)for(const P of L.paths)
+  for(let i=1;i<P.pts.length;i++){
+   const d=distPtSegO(p,P.pts[i-1],P.pts[i]);
+   if(d<bd){bd=d;best=L.id}}
+ return best}
+function tap(p){
+ if(!running||document.body.classList.contains("poster"))return;
+ const hit=nearestStation(p,pxr(16));
+ if(hit!=null){
+  if(tool==="inter"){upgradeInter(hit);return}
+  if(tool==="detach"){
+   let li=selLine;
+   if(li<0||!lines[li]||!lines[li].stops.includes(hit)){
+    li=-1;for(const L of lines)if(L.stops.includes(hit)){li=L.id;break}}
+   tool=null;
+   if(li>=0)detachAt(li,hit);else{toast("NOT ON A LINE");refreshUI()}
+   return}
+  if(tool==="station"){toast("TAP EMPTY GROUND TO BUILD");return}
+  // tap a station to select (and cycle) the lines through it
+  const via=[];for(const L of lines)if(L.stops.includes(hit))via.push(L.id);
+  if(via.length){
+   const cur=via.indexOf(selLine);
+   selectLine(via[(cur+1)%via.length]);return}
+  toast("DRAG FROM A LINE END TO CONNECT");return}
+ if(tool==="station"){placeStation(p);return}
+ const li=lineAtPoint(p,pxr(9));
+ if(li!=null){selectLine(li);return}
+ if(selLine>=0)selectLine(-1)}
+
+/* ================= HUD / UI ================= */
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.opacity=1;
+ clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2100)}
+function cost(c){return isOp()?" $"+c:""}
+function refreshUI(){
+ const cr=$("chipRow");cr.innerHTML="";
+ const classes=city?city.classes||["metro","express"]:["metro"];
+ const localCls=classes.filter(c=>c!=="express");
+ const exCls=classes.filter(c=>c==="express");
+ const localUsed=lines.filter(L=>!L.express).length;
+ const xUsed=lines.filter(L=>L.express).length;
+ const clsN=k=>lines.filter(L=>(L.cls||(L.express?"express":"metro"))===k).length;
+ const capOf=k=>k==="express"?capX():(k==="tram"?capTram():capM());
+ // pool summary
+ const sum=document.createElement("div");sum.className="clsSum";
+ let st;
+ if(capTram()>0){
+  st=classes.filter(c=>capOf(c)>0).map(c=>'<span style="opacity:.85">'+clsIcon(c)+'</span> '+clsN(c)+"/"+capOf(c)).join("&nbsp;&nbsp;");
+ }else{
+  st='<span style="opacity:.85">'+clsIcon("metro")+'</span> '+localUsed+"/"+capM();
+  if(exCls.length&&capX()>0)st+="&nbsp;&nbsp;"+'<span style="opacity:.85">'+clsIcon("express")+'</span> '+xUsed+"/"+capX();
+ }
+ sum.innerHTML=st;
+ cr.appendChild(sum);
+ for(const cls of classes){
+  const isX=cls==="express";
+  const cap=capOf(cls);
+  if(cap<=0)continue;
+  const mine=lines.filter(L=>{
+   const lc=L.cls||(L.express?"express":"metro");
+   return lc===cls});
+  const row=document.createElement("div");row.className="clsRow";
+  const lbl=document.createElement("span");lbl.className="clsLbl";
+  lbl.innerHTML=clsIcon(cls);lbl.title=clsName(cls)+" · tap to hide/show";
+  lbl.style.color=(mine[0]&&mine[0].color)||"#8fa2bd";
+  lbl.style.cursor="pointer";
+  lbl.style.opacity=hiddenCls[cls]?"0.35":"0.95";
+  lbl.onclick=()=>{
+   hiddenCls[cls]=!hiddenCls[cls];
+   for(const L2 of lines){if(clsKeyOf(L2)===cls)L2.visible=!hiddenCls[cls]}
+   refreshUI()};
+  row.appendChild(lbl);
+  for(const L of mine){
+   const i=L.id;
+   const shown=(i===selLine)||!hiddenCls[cls];
+   const b=document.createElement("button");b.className="chip"+(i===selLine?" sel":"");
+   if(shown){b.style.color=L.color;b.style.borderColor=L.color;
+    b.style.background=i===selLine?L.color:"transparent";b.style.opacity="1"}
+   else{b.style.color="#3a4050";b.style.borderColor="#3a4050";b.style.background="transparent";b.style.opacity="0.6"}
+   if(cls==="express")b.style.borderRadius="5px";
+   if(cls==="tram")b.style.borderStyle="dashed";
+   b.onclick=()=>{selectLine(i)};row.appendChild(b)}
+  const poolFull=capTram()>0?(clsN(cls)>=capOf(cls)):(isX?xUsed>=capX():localUsed>=capM());
+  if(!poolFull){
+   const pb=document.createElement("button");pb.className="chip chipAdd";
+   pb.style.color="#8fa2bd";pb.style.borderColor="rgba(140,160,190,.5)";
+   if(cls==="tram")pb.style.borderStyle="dashed";
+   if(cls==="express")pb.style.borderRadius="5px";
+   pb.textContent="+";
+   pb.onclick=()=>createLine(cls);row.appendChild(pb)}
+  cr.appendChild(row)}
+ const tr=$("toolRow");tr.innerHTML="";
+ const ic=(d,vb)=>'<svg viewBox="'+(vb||"0 0 18 14")+'" width="19" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+ const mk=(html,fn,on,dis,bc,tt)=>{const b=document.createElement("button");
+  b.innerHTML=html+(bc?'<span class="bc">'+bc+'</span>':"");
+  if(tt)b.title=tt;
+  if(on)b.classList.add("on");if(dis)b.disabled=true;
+  b.onclick=fn;tr.appendChild(b);return b};
+ const hasLine=selLine>=0&&lines[selLine];
+ const exp=hasLine&&lines[selLine].express;
+ const co=n=>isOp()?"$"+n:"";
+ mk(ic('<rect x="1.5" y="4" width="11" height="6.5" rx="2.6"/><path d="M14.7 4.9v4.2M12.6 7h4.2"/>'),
+  addTrain,false,!hasLine,
+  co(hasLine?clsOf(lines[selLine]).trainCost:32)+
+   (hasLine&&segCountOf(lines[selLine])>0?" "+lines[selLine].trains.length+"/"+maxTrainsFor(lines[selLine]):""),
+  "Add train");
+ mk(ic('<rect x="3" y="4.7" width="8" height="5.3" rx="2.2"/><path d="M13.8 4.9v4.2M11.7 7h4.2"/>'),
+  addCar,false,!hasLine||(hasLine&&clsOf(lines[selLine]).maxCars===0),co(COST.car),"Add carriage");
+ mk(ic('<path d="M4.5 7a4.5 4.5 0 1 1 1.3 3.2M4.5 7V3.6M4.5 7h3.4"/>','0 0 14 14'),
+  undoStop,false,!hasLine||!lines[selLine].stops.length,"","Undo last stop");
+ mk(ic('<circle cx="6.5" cy="7" r="4"/><path d="M12.8 7h4"/>'),
+  ()=>{tool=tool==="detach"?null:"detach";
+   if(tool)toast("TAP A STOP TO LIFT IT OFF ITS LINE");refreshUI()},
+  tool==="detach",false,"","Detach a stop");
+ mk(ic('<path d="M2.8 11.2L11.2 2.8M2.8 2.8l8.4 8.4"/>','0 0 14 14'),
+  deleteLine,false,!hasLine,"","Clear line").classList.add("warn");
+ mk(ic('<circle cx="6.5" cy="7" r="4"/><path d="M12.8 7h4M14.8 5v4"/>'),
+  ()=>{tool=tool==="station"?null:"station";
+   if(tool)toast("TAP EMPTY GROUND TO BUILD");refreshUI()},
+  tool==="station",false,co(COST.station),"Build infill station");
+ mk(ic('<rect x="2.5" y="2.5" width="9" height="9" rx="2.7"/><circle cx="7" cy="7" r="1.2"/>','0 0 14 14'),
+  ()=>{tool=tool==="inter"?null:"inter";
+   if(tool)toast("TAP A STATION TO UPGRADE");refreshUI()},
+  tool==="inter",false,
+  co(COST.inter)+" "+stations.filter(s2=>s2.inter).length+"/"+capI(),"Interchange upgrade");
+}
+let mPrev={eff:-1,cov:-1,bud:-1},mDir={eff:0,cov:0,bud:0},mLastT=0;
+function trendSvg(dir){
+ if(!dir)return"";
+ const c=dir>0?"#5fd68b":"#e07272";
+ const d=dir>0?"M3.5 8V3.4M1.3 4.7L3.5 2.5L5.7 4.7":"M3.5 1V5.6M1.3 4.3L3.5 6.5L5.7 4.3";
+ return ' <svg width="7" height="9" viewBox="0 0 7 9" style="vertical-align:-1px"><path d="'+d+
+  '" stroke="'+c+'" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'}
+function mv(val,dir){
+ const cls=dir>0?"m-up":dir<0?"m-dn":"";
+ return '<span class="'+cls+'">'+val+trendSvg(dir)+'</span>'}
+function scaleRiders(n){
+ const p=(city&&city.pop)||16;
+ const r=n*p*212;
+ if(r>=1e6)return(r/1e6).toFixed(1)+"M";
+ if(r>=1e3)return Math.round(r/1e3)+"K";
+ return String(r)}
+function hudTick(){
+ $("hCity").textContent=city.name+" · "+(isOp()?"$":"∞");
+ const gm=Math.floor(simS*GM_PER_S),day=Math.floor(gm/1440)+1,
+  hh=String(Math.floor(gm%1440/60)).padStart(2,"0"),
+  mm2=String(gm%60).padStart(2,"0");
+ $("hClock").textContent="DAY "+day+" · "+hh+":"+mm2;
+ let cw=0,tw=0;
+ for(const s of stations){if(!s.emerged)continue;
+  const w=0.25+s.dens;tw+=w;
+  if((adj.get(s.id)||[]).length)cw+=w}
+ const cov=tw?Math.round(100*cw/tw):0;
+ const eff=Math.round(effAvg*100);
+ const bud=Math.floor(budget);
+ let tkm=0;for(const L of lines)for(const P of L.paths)tkm+=P.chord;
+ tkm=kms(tkm);
+ const now=performance.now();
+ if(now-mLastT>2000){
+  if(mPrev.eff>=0){
+   mDir.eff=eff>mPrev.eff?1:eff<mPrev.eff?-1:0;
+   mDir.cov=cov>mPrev.cov?1:cov<mPrev.cov?-1:0;
+   mDir.bud=bud>mPrev.bud+1?1:bud<mPrev.bud-1?-1:0}
+  mPrev={eff,cov,bud};mLastT=now}
+ if(isOp())
+  $("metrics").innerHTML="BUDGET $"+mv(bud,mDir.bud)+
+   "<br>RIDERSHIP "+scaleRiders(delivered)+
+   (lost?" · STRANDED "+scaleRiders(lost):"")+
+   "<br>"+Math.round(tkm)+" KM"+
+   " · EFF "+mv(eff+"%",mDir.eff)+
+   " · COV "+mv(cov+"%",mDir.cov);
+ else
+  $("metrics").innerHTML="RIDERSHIP "+scaleRiders(delivered)+
+   (lost?" · STRANDED "+scaleRiders(lost):"")+
+   "<br>"+Math.round(tkm)+" KM"+
+   " · EFF "+mv(eff+"%",mDir.eff)+
+   " · COV "+mv(cov+"%",mDir.cov)}
+$("bSpeed").onclick=()=>{speedIdx=(speedIdx+1)%SPEEDS.length;
+ $("bSpeed").textContent=SPEEDLBL[speedIdx]};
+function buildLegend(){
+ const el=$("iconLegend");if(!el)return;el.innerHTML="";
+ const cls=(city&&city.classes)||["metro","express"];
+ for(const c of cls){
+  const d=document.createElement("div");d.style.display="flex";d.style.alignItems="center";d.style.gap="6px";
+  d.innerHTML='<span style="color:#cfe0f5">'+clsIcon(c)+'</span> '+clsName(c);
+  el.appendChild(d)}
+ const nb=document.createElement("div");nb.style.cssText="flex-basis:100%;color:#8fa2bd;font-size:9px;margin-top:2px";
+ nb.textContent="Tap a line dot to select it and build. Tap the class icon to hide/show that whole layer.";
+ el.appendChild(nb)}
+$("bFit").onclick=()=>{fitView();userCam=false};
+$("bHelp").onclick=()=>{buildLegend();$("helpCard").style.display="flex"};
+$("helpOk").onclick=()=>{$("helpCard").style.display="none"};
+$("bMenu").onclick=()=>{const m=$("menuPop");
+ m.style.display=m.style.display==="flex"?"none":"flex"};
+$("mFit").onclick=()=>{fitView();$("menuPop").style.display="none"};
+$("mDensity").onclick=()=>{showDensity=!showDensity;
+ $("mDensity").textContent="DENSITY GLOW · "+(showDensity?"ON":"OFF")};
+$("mBuild").textContent="INTERCITY v"+VERSION;
+$("mRestart").onclick=()=>{$("menuPop").style.display="none";startGame()};
+$("mQuit").onclick=()=>{$("menuPop").style.display="none";running=false;
+ buildOverlay();$("overlay").style.display="flex"};
+$("bPoster").onclick=()=>{document.body.classList.add("poster");$("menuPop").style.display="none"};
+$("pExit").onclick=()=>document.body.classList.remove("poster");
+$("pLabels").onclick=()=>{posterLabels=!posterLabels;
+ $("pLabels").textContent="LABELS · "+(posterLabels?"ON":"OFF")};
+$("pStats").onclick=()=>{posterStats=!posterStats;
+ $("pStats").textContent="STATS · "+(posterStats?"ON":"OFF")};
+$("pTrains").onclick=()=>{posterTrains=!posterTrains;
+ $("pTrains").textContent="TRAINS · "+(posterTrains?"ON":"OFF")};
+$("pPng").onclick=()=>{
+ try{const url=cv.toDataURL("image/png");
+  const a=document.createElement("a");a.href=url;
+  a.download="intercity-"+cityId+"-day"+(Math.floor(simS/DAY_SECONDS)+1)+".png";
+  document.body.appendChild(a);a.click();a.remove();toast("POSTER EXPORTED")}
+ catch(err){toast("EXPORT BLOCKED IN THIS VIEWER")}};
+$("mSave").onclick=()=>{
+ $("menuPop").style.display="none";
+ const data={v:1,cityId,mode,seed,simS,budget,delivered,lost,journeySum,transferSum,effAvg,
+  emergePtr,nextEmergeAt,weekPaid,lineSlots,
+  stations:stations.map(s=>({x:s.x,y:s.y,shape:s.shape,district:s.district,dens:s.dens,
+   emerged:s.emerged,inter:s.inter,name:s.name,icOnly:!!s.icOnly,air:!!s.air,dead:!!s.dead})),
+  lines:lines.map(L=>({stops:L.stops,flips:L.flips,loop:L.loop,activeEnd:L.activeEnd,
+   express:!!L.express,visible:L.visible!==false,cls:L.cls||(L.express?"express":"metro"),
+   trains:L.trains.map(t=>({seg:t.seg,f:t.f,dir:t.dir,cars:t.cars}))}))};
+ try{const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="intercity-save.json";document.body.appendChild(a);a.click();a.remove();
+  toast("SAVE EXPORTED")}catch(err){toast("EXPORT BLOCKED IN THIS VIEWER")}};
+$("mLoad").onclick=()=>{$("menuPop").style.display="none";$("fileIn").click()};
+$("fileIn").onchange=e=>{
+ const f=e.target.files[0];if(!f)return;
+ const rd=new FileReader();
+ rd.onload=()=>{try{loadSave(JSON.parse(rd.result))}catch(err){toast("COULD NOT READ SAVE")}};
+ rd.readAsText(f);e.target.value=""};
+function loadSave(d){
+ cityId=d.cityId;mode=d.mode;seed=d.seed;city=CITIES[cityId];
+ simS=d.simS;budget=d.budget;delivered=d.delivered;lost=d.lost;
+ journeySum=d.journeySum;transferSum=d.transferSum;effAvg=d.effAvg!=null?d.effAvg:0.6;
+ emergePtr=d.emergePtr;nextEmergeAt=d.nextEmergeAt;weekPaid=d.weekPaid;
+ lineSlots=d.lineSlots||3;
+ stations=d.stations.map((s,i)=>({...s,id:i,q:[],acc:0,order:0,strainT:0,
+  emergeAt:s.emerged?-10:0}));
+ {const cl=city.cores||[city.core];
+  for(const s of stations){let bi=0,bd=1e9;
+   cl.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
+   s.region=bi}}
+ lines=d.lines.map((L,i)=>{const o=newLineObj(i);o.stops=L.stops;o.flips=L.flips||{};
+  o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;o.visible=L.visible!==false;o.cls=L.cls||(L.express?"express":"metro");
+  o.trains=(L.trains||[]).map(t=>({li:i,seg:t.seg,f:t.f||0,dir:t.dir,dwell:.3,
+   cars:t.cars,riders:[],v:0}));
+  if(o.loop)o.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
+  return o});
+ lines.forEach(L2=>{L2.homeRegion=(!L2.express&&L2.stops.length)?stations[L2.stops[0]].region:null});
+ hiddenCls={};
+ selLine=-1;tool=null;passengers=0;
+ computeMetroCap();buildDensityLayer();buildUrbanLayer();rebuildRouting();refreshUI();fitView();
+ $("overlay").style.display="none";$("offer").style.display="none";running=true;
+ toast("SAVE LOADED · "+city.name)}
+
+/* ================= start screen ================= */
+function paintCityIcon(cnv,cid){
+ const c=CITIES[cid],g=cnv.getContext("2d"),S=cnv.width,k=S/100;
+ g.clearRect(0,0,S,S);
+ g.fillStyle="#0d1524";g.fillRect(0,0,S,S);
+ g.lineJoin="round";g.lineCap="round";
+ for(const b of c.blobs){
+  const gr=g.createRadialGradient(b.x*k,b.y*k,0,b.x*k,b.y*k,b.r*1.9*k);
+  gr.addColorStop(0,"rgba(150,182,232,"+(0.15*b.w).toFixed(3)+")");
+  gr.addColorStop(1,"rgba(150,182,232,0)");
+  g.fillStyle=gr;g.beginPath();g.arc(b.x*k,b.y*k,b.r*1.9*k,0,TAU);g.fill()}
+ for(const poly of c.seas){g.beginPath();
+  poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
+  g.closePath();g.fillStyle="#26436f";g.fill()}
+ for(const r of c.rivers){g.beginPath();
+  r.pts.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
+  g.strokeStyle="#4d80d6";
+  g.lineWidth=Math.max(S*0.055,Math.min(S*0.16,r.hw*1.1*k));
+  g.stroke()}
+ for(const poly of (c.islands||[])){g.beginPath();
+  poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
+  g.closePath();g.fillStyle="#0d1524";g.fill()}
+ for(const poly of (c.nobuild||[])){g.beginPath();
+  poly.forEach((p,i)=>i?g.lineTo(p[0]*k,p[1]*k):g.moveTo(p[0]*k,p[1]*k));
+  g.closePath();g.fillStyle="rgba(200,220,255,0.08)";g.fill()}}
+const FEAT_CAT={sbahn:"VEHICLE",tram:"VEHICLE",tunnel:"TERRAIN",terrain:"TERRAIN",islands:"TERRAIN",ferry:"VEHICLE",air:"VEHICLE",ic:"VEHICLE",towns:"VEHICLE"};
+const FEAT={
+ ferry:{t:"Ferry links",d:'<path d="M1.5 8.5c1.8-1.6 3.6-1.6 5.5 0s3.7 1.6 5.5 0"/><path d="M4 3.5v5M4 3.5l3 1.8V8"/>'},
+ tunnel:{t:"Tunnel crossings",d:'<path d="M2.2 10V7.2a4.8 4.8 0 0 1 9.6 0V10"/><path d="M1 11.6h12" stroke-dasharray="2 1.7"/>'},
+ terrain:{t:"Ridge terrain",d:'<path d="M1.2 11L5 4.2l2.6 4.6L9.4 6l3.4 5"/>'},
+ air:{t:"Airport connections",d:'<path d="M7 1.6v8.8M2.6 6.2L7 4l4.4 2.2M4.8 11l2.2-1.2L9.2 11"/>'},
+ ic:{t:"Intercity expresses",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
+ tram:{t:"Tram / monorail",d:'<path d="M1.5 9.5h11"/><rect x="4.2" y="4" width="5.6" height="3.4" rx="1.3"/><path d="M7 7.4v2.1"/>'},
+ sbahn:{t:"S-Bahn network",d:'<path d="M1.4 5h11.2M1.4 8.2h11.2"/>'},
+ towns:{t:"Satellite towns",d:'<circle cx="7" cy="6.6" r="2"/><circle cx="7" cy="6.6" r="4.4"/>'},
+ islands:{t:"Island geography",d:'<path d="M3.2 7.6c0-1.9 1.6-3.2 3.8-3.2s3.8 1.3 3.8 3.2-1.7 2.9-3.8 2.9-3.8-1-3.8-2.9Z"/><path d="M1.6 11.4h10.8" stroke-dasharray="2 1.7"/>'}};
+function featLegend(feats){
+ const t=[],v=[];
+ for(const k of feats){const c=FEAT_CAT[k]||"OTHER";(c==="TERRAIN"?t:v).push(FEAT[k].t)}
+ let s="";if(t.length)s+="TERRAIN: "+t.join(", ");
+ if(v.length)s+=(s?"\n":"")+"VEHICLES: "+v.join(", ");return s}
+function featSvg(k){const f=FEAT[k];if(!f)return"";
+ return '<svg viewBox="0 0 14 13" width="15" height="14" fill="none" stroke="rgba(190,210,240,.8)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><title>'+f.t+'</title>'+f.d+'</svg>'}
+const MODE_BLURB={
+ op:"OPERATOR · Budgets, fares, tidal rush hours. The city grows; solvency shapes the map. No sudden death.",
+ at:"ATELIER · Endless and unpriced. Live efficiency and coverage metrics only. For the poster."};
+function toggleBlurb(elId,text,key){
+ const bl=$(elId);
+ const show=bl.dataset.k!==key||bl.style.display!=="block";
+ bl.textContent=text;bl.dataset.k=key;
+ bl.style.display=show?"block":"none"}
+function buildOverlay(){
+ const cc=$("cityCards");cc.innerHTML="";
+ for(const id in CITIES){
+  const d=document.createElement("div");
+  d.className="ccard"+(id===cityId?" sel":"");
+  const inf=document.createElement("button");inf.className="info";inf.textContent="i";
+  inf.onclick=e=>{e.stopPropagation();
+   const fl=featLegend(CITIES[id].features||[]);
+   toggleBlurb("blurbCity",CITIES[id].name+" · "+CITIES[id].blurb+(fl?"\n"+fl:""),id)};
+  const cv2=document.createElement("canvas");cv2.width=124;cv2.height=124;
+  const nm=document.createElement("b");nm.textContent=CITIES[id].name;
+  const ft=document.createElement("div");ft.className="feats";
+  ft.innerHTML=(CITIES[id].features||[]).map(featSvg).join("");
+  d.appendChild(inf);d.appendChild(cv2);d.appendChild(nm);
+  const ci=document.createElement("div");ci.className="feats";ci.style.marginTop="2px";
+  for(const c of (CITIES[id].classes||["metro","express"])){
+   const sp=document.createElement("span");sp.innerHTML=clsIcon(c);sp.style.opacity=".7";ci.appendChild(sp)}
+  d.appendChild(ci);d.appendChild(ft);
+  d.onclick=()=>{cityId=id;buildOverlay()};
+  cc.appendChild(d);
+  paintCityIcon(cv2,id)}
+ $("cardOp").classList.toggle("sel",mode==="operator");
+ $("cardAt").classList.toggle("sel",mode==="atelier");
+ $("seedVal").textContent="GROWTH SEED "+String(seed).slice(0,8)}
+$("infoMode").onclick=()=>toggleBlurb("blurbMode",MODE_BLURB.op+"\n"+MODE_BLURB.at,"both");
+$("cardOp").onclick=()=>{mode="operator";buildOverlay()};
+$("cardAt").onclick=()=>{mode="atelier";buildOverlay()};
+$("bSeed").onclick=()=>{seed=(Math.random()*1e9)|0;buildOverlay()};
+$("beginBtn").onclick=()=>{startGame();$("overlay").style.display="none";
+ if(!seenHelp){seenHelp=true;$("helpCard").style.display="flex"}};
+function startGame(){
+ city=CITIES[cityId];
+ lines=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};
+ budget=220;delivered=0;lost=0;journeySum=0;transferSum=0;
+ simS=0;weekPaid=0;passengers=0;
+ nextEmergeAt=DAY_SECONDS*0.7;
+ genStations();computeMetroCap();buildDensityLayer();buildUrbanLayer();rebuildRouting();
+ lines.push(newLineObj(0));selLine=0;
+ refreshUI();fitView();running=true;
+ $("offer").style.display="none"}
+buildOverlay();
+document.getElementById("bldTag").textContent="v"+VERSION;
+
+/* ================= main loop ================= */
+let lastT=performance.now();
+function frame(now){
+ const dt=clamp((now-lastT)/1000,0,0.05);lastT=now;
+ if(running){
+  if(!userCam){const tv=frameTarget();
+   view.s+=(tv.s-view.s)*0.045;view.x+=(tv.x-view.x)*0.045;view.y+=(tv.y-view.y)*0.045;
+   baseS=view.s}
+  if(Math.abs(view.s-lastGeomS)/Math.max(lastGeomS,.001)>0.05)rebuildGeometry();
+  update(dt);draw();drawPosterStats();hudTick()}
+ requestAnimationFrame(frame)}
+function drawPosterStats(){
+ if(!document.body.classList.contains("poster")||!posterStats)return;
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+ ctx.fillStyle="rgba(223,231,243,0.85)";
+ ctx.font="11px ui-monospace,monospace";
+ const gm=Math.floor(simS*GM_PER_S),day=Math.floor(gm/1440)+1;
+ let tkm=0;for(const L of lines)for(const P of L.paths)tkm+=P.chord;tkm=kms(tkm);
+ let cw=0,tw=0;for(const s of stations){if(!s.emerged)continue;
+  const w=0.25+s.dens;tw+=w;if((adj.get(s.id)||[]).length)cw+=w}
+ const cov=tw?Math.round(100*cw/tw):0;
+ const eff=Math.round(effAvg*100);
+ const txt=[city.name+" · DAY "+day,
+  "RIDERSHIP "+scaleRiders(delivered),
+  Math.round(tkm)+" KM · EFF "+eff+"% · COV "+cov+"%"];
+ const y0=H-48;
+ for(let i=0;i<txt.length;i++)ctx.fillText(txt[i],14,y0+i*16)}
+requestAnimationFrame(frame);
+document.addEventListener("keydown",e=>{
+ if(!running)return;
+ const k=e.key.toLowerCase();
+ if(k==="f"||k==="c"){fitView();userCam=false}
+ else if(k===" "||k==="p"){speedIdx=(speedIdx+1)%SPEEDS.length;$("bSpeed").textContent=SPEEDLBL[speedIdx];e.preventDefault()}
+ else if(k==="?"||k==="h"){buildLegend();$("helpCard").style.display="flex"}
+ else if(k==="escape"){if($("helpCard").style.display==="flex")$("helpCard").style.display="none";
+  else if($("menuPop").style.display==="flex")$("menuPop").style.display="none";
+  else if($("offer").style.display==="block"){}
+  else if(selLine>=0)selectLine(-1);
+  else if(document.body.classList.contains("poster"))document.body.classList.remove("poster")}
+ else if(k>="1"&&k<="9"){const i=parseInt(k)-1;if(i<lines.length)selectLine(i)}
+ else if(k==="["&&selLine>0)selectLine(selLine-1)
+ else if(k==="]"&&selLine<lines.length-1)selectLine(selLine+1)
+ else if(k==="m")$("menuPop").style.display=$("menuPop").style.display==="flex"?"none":"flex"
+});
+document.addEventListener("contextmenu",e=>e.preventDefault());
+</script>
+</body>
+</html>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>INTERCITY</title>
 <meta name="theme-color" content="#06080d">
