@@ -40,13 +40,12 @@ button:disabled{opacity:.32}
 .clsSum svg{vertical-align:-3px}
 .clsLbl{width:26px;min-width:26px;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0;opacity:.9}
 .chipAdd{opacity:.65}
-.chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid;display:flex;
+.chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:0;display:flex;
  align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
 .chip.sel{box-shadow:0 0 10px currentColor}
 .chip svg{width:100%;height:100%;display:block}
-.chip.tram{border-radius:5px}
-.chip.metro{border-radius:50%}
-.chip.express{border-radius:5px}
+.chip.metro{border:2px solid;border-radius:50%}
+.chip.lettered{border:2px solid;border-radius:50%}
 #toast{position:fixed;bottom:118px;left:50%;transform:translateX(-50%);z-index:9;
  background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:9px 14px;
  font-size:11px;letter-spacing:.1em;opacity:0;transition:opacity .25s;pointer-events:none;max-width:86vw;text-align:center}
@@ -200,7 +199,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.63";
+const VERSION="1.69";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -722,11 +721,29 @@ const CLSICON={
 function clsIcon(k){return CLSICON[k]||CLSICON.metro}
 function chipGlyph(cls,onSel){
  const col=onSel?"#0b0f18":"currentColor";
- if(cls==="tram")
-  return '<svg viewBox="0 0 20 20" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linecap="round"><rect x="6.5" y="4" width="7" height="7.5" rx="1.8"/><path d="M8.4 7h3.2"/><path d="M10 12.2V14"/><path d="M7.7 16h4.6"/></svg>';
- if(cls==="express")
-  return '<svg viewBox="0 0 20 20" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l4 4-4 4"/><path d="M10 6l4 4-4 4"/></svg>';
- return '<svg viewBox="0 0 20 20" fill="'+col+'" stroke="none"><circle cx="10" cy="10" r="3.1"/></svg>';}
+ // letter-roundel override (e.g. Paris: RER 'R', Metro 'M')
+ const lm=city&&city.chipLetters&&city.chipLetters[cls];
+ if(lm)
+  return '<svg viewBox="0 0 20 20" fill="none" stroke="'+col+'" stroke-width="1.6"><circle cx="10" cy="10" r="6.6"/><text x="10" y="13.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="9" fill="'+col+'" stroke="none">'+lm+'</text></svg>';
+ const S='<svg viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">';
+ // TRAM vs MONORAIL split by class name; both front view
+ if(cls==="tram"){
+  const tn=((city&&city.classNames&&city.classNames.tram)||"TRAM").toUpperCase();
+  if(tn.indexOf("MONORAIL")>=0)
+   // MONORAIL: front view straddling the beam
+   return S+'<rect x="7" y="4.5" width="10" height="9" rx="2.2"/><rect x="9" y="6.6" width="6" height="3.4" rx="0.8"/><path d="M11 13.5v3"/><path d="M13 13.5v3"/><path d="M9.5 19.5h5"/></svg>';
+  // TRAM: v1.67 narrow body + antennae, with a horizontal bar joining the antenna tops
+  return S+'<path d="M10 4.6v2.6M14 4.6v2.6M10 4.6h4"/><rect x="8.4" y="7.6" width="7.2" height="8.4" rx="2"/><rect x="10" y="9" width="4" height="2.7" rx="0.6"/><path d="M10 13.6h4"/><path d="M9.8 17.8l1.1-1.7M14.2 17.8l-1.1-1.7"/></svg>';
+ }
+ if(cls==="express"){
+  const nm=((city&&city.classNames&&city.classNames.express)||"").toUpperCase();
+  // CHINA intercity = bullet, SIDE profile (nose pointing right); regional = side car with speed line
+  if(nm.indexOf("INTERCITY")>=0||nm===""||nm.indexOf("CRH")>=0)
+   return S+'<path d="M3 18.5V6.5h9c4.4 0 8 2.7 8 6s-3.6 6-8 6z"/><rect x="5.2" y="9" width="2.6" height="2.6" rx="0.4"/><rect x="9" y="9" width="2.6" height="2.6" rx="0.4"/><path d="M3.5 19.7h16.5"/></svg>';
+  return S+'<path d="M4 14.5h13.5l2.5-3-2.5-3H8.5z" /><rect x="9.5" y="9.8" width="2.6" height="2.4" rx="0.4"/><rect x="13" y="9.8" width="2.6" height="2.4" rx="0.4"/><path d="M5.5 16.4h11" /><path d="M2 9.2l4 0" stroke-width="0.9"/></svg>';
+ }
+ // METRO: v1.64 front-face train, sits within the circle=tunnel
+ return S+'<rect x="5.5" y="4.5" width="13" height="12" rx="3"/><path d="M8.6 8.2h6.8v3.4H8.6z"/><circle cx="8.6" cy="14.4" r="0.9" fill="'+col+'"/><circle cx="15.4" cy="14.4" r="0.9" fill="'+col+'"/><path d="M8 19l1.6-2.2M16 19l-1.6-2.2"/></svg>';}
 function clsName(k){
  const d={metro:"METRO",tram:"TRAM",express:"INTERCITY"};
  return (city&&city.classNames&&city.classNames[k])||d[k]}
@@ -2236,15 +2253,17 @@ function refreshUI(){
    const i=L.id;
    const shown=(i===selLine)||!hiddenCls[cls];
    const b=document.createElement("button");b.className="chip "+cls+(i===selLine?" sel":"");
-   if(shown){b.style.color=L.color;b.style.borderColor=L.color;
-    b.style.background=i===selLine?L.color:"transparent";b.style.opacity="1"}
-   else{b.style.color="#3a4050";b.style.borderColor="#3a4050";b.style.background="transparent";b.style.opacity="0.6"}
-   b.innerHTML=chipGlyph(cls,i===selLine&&shown);
+   const lettered=!!(city&&city.chipLetters&&city.chipLetters[cls]);
+   if(lettered)b.classList.add("lettered");
+   if(shown){b.style.color=L.color;b.style.borderColor=(cls==="metro"||lettered)?L.color:"transparent";
+    b.style.background=(i===selLine&&(cls==="metro"||lettered))?L.color:"transparent";b.style.opacity="1"}
+   else{b.style.color="#3a4050";b.style.borderColor=(cls==="metro"||lettered)?"#3a4050":"transparent";b.style.background="transparent";b.style.opacity="0.6"}
+   b.innerHTML=chipGlyph(cls,i===selLine&&shown&&(cls==="metro"||lettered));
    b.onclick=()=>{selectLine(i)};row.appendChild(b)}
   const poolFull=capTram()>0?(clsN(cls)>=capOf(cls)):(isX?xUsed>=capX():localUsed>=capM());
   if(!poolFull){
    const pb=document.createElement("button");pb.className="chip "+cls+" chipAdd";
-   pb.style.color="#8fa2bd";pb.style.borderColor="rgba(140,160,190,.5)";
+   pb.style.color="#8fa2bd";pb.style.borderColor=(cls==="metro"||(city&&city.chipLetters&&city.chipLetters[cls]))?"rgba(140,160,190,.5)":"transparent";
    pb.textContent="+";
    pb.onclick=()=>createLine(cls);row.appendChild(pb)}
   cr.appendChild(row)}
