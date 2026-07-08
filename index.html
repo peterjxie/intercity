@@ -36,7 +36,7 @@ button:disabled{opacity:.32}
 .row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;align-items:center}
 .row::-webkit-scrollbar{display:none}
 .clsRow{display:flex;gap:4px;align-items:center;padding:1px 0}
-#clsLegendCard svg,.clsLbl svg{width:18px;height:18px;display:inline-block;vertical-align:middle}
+#clsLegendCard svg,.clsLbl svg{width:28px!important;height:28px!important;min-width:28px;display:inline-block;vertical-align:middle}
 .clsSum{font-size:9px;letter-spacing:.08em;color:var(--dim);opacity:.85;padding:0 0 2px;display:flex;align-items:center;gap:2px}
 .clsSum svg{vertical-align:-3px}
 .clsLbl{width:26px;min-width:26px;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0;opacity:.9}
@@ -200,7 +200,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.78";
+const VERSION="1.79";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -722,8 +722,8 @@ const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
 const IC_KM=250;
 const CLASSES={
- metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:4.6, alpha:0.85},
- tram:   {vmax:5.5,acc:6,  br:10, corner:6,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:4.0, alpha:0.9},
+ metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:3, alpha:0.9},
+ tram:   {vmax:5.5,acc:6,  br:10, corner:6,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:3, alpha:0.9},
  express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.8, alpha:1.0}};
 
 function clsOf(L){return CLASSES[L.cls||(L.express?"express":"metro")]}
@@ -2114,7 +2114,7 @@ function draw(){
  drawRidges();
  if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
  drawRegions();
- if(selLine>=0&&lines[selLine]&&(lines[selLine].cls||"metro")==="tram"&&city.tramCorridors){
+ if(city.tramCorridors){
   ctx.save();ctx.setLineDash([px(2.5),px(2.5)]);ctx.lineCap="butt";
   for(let c=0;c<city.tramCorridors.length;c++){
    ctx.strokeStyle="rgba(150,200,255,0.22)";
@@ -2417,6 +2417,7 @@ function endPointer(e){
  const was=pointers.size;pointers.delete(e.pointerId);
  if(was===1&&!pinched){
   if(!moved&&Date.now()-downT<450){
+   dragMode=null;dragFrom=null;dragW=null;snapSt=null;
    const wp=s2w({x:e.clientX,y:e.clientY});
    const Lsel=selLine>=0?lines[selLine]:null;
    if(Lsel&&!tool){
