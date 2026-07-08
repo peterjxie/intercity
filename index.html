@@ -39,7 +39,7 @@ button:disabled{opacity:.32}
 #clsLegendCard svg,.clsLbl svg{width:28px!important;height:28px!important;min-width:28px;display:inline-block;vertical-align:middle}
 .clsSum{font-size:9px;letter-spacing:.08em;color:var(--dim);opacity:.85;padding:0 0 2px;display:flex;align-items:center;gap:2px}
 .clsSum svg{vertical-align:-3px}
-.clsLbl{width:26px;min-width:26px;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0;opacity:.9}
+.clsLbl{width:32px;min-width:32px;display:flex;align-items:center;justify-content:flex-start;flex-shrink:0;opacity:.9;margin-right:2px}
 .chipAdd{opacity:.65}
 .chip{width:20px;height:20px;min-width:20px;border-radius:50%;border:0;display:flex;
  align-items:center;justify-content:center;font-size:11px;background:transparent;padding:0;letter-spacing:0}
@@ -200,7 +200,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.79";
+const VERSION="1.82";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -365,7 +365,7 @@ chongqing:{
   {pts:[[60.7,48.5],[68.0,51.3],[77.6,52.2]],w:0.8}
  ],
  core:{x:60.5,y:50.5},
- pop:32,popUnit:"M",kmScale:0.6,growCap:118,waterPad:0.5,tramMaxKm:45,
+ pop:32,popUnit:"M",kmScale:0.6,growCap:72,waterPad:0.5,tramMaxKm:45,
  landmark:{x:62,y:50,name:"CHAOTIANMEN"},
  features:["tunnel","terrain","air","tram"],
  specials:[
@@ -495,6 +495,7 @@ bangkok:{
  maxExpress:2,maxMetro:8,
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
+ classOverrides:{tram:{alpha:0.75}},
  features:["ferry","air","tram","ic"],
  pop:17,popUnit:"M",kmScale:0.5,tramRiverMax:0.6,spacing:{min:4.0,max:7.0},jitter:6,waterPad:0.4,tramMaxKm:30,
  seas:[],
@@ -547,7 +548,9 @@ amsterdam:{
  maxMetro:3,maxTram:9,maxExpress:1,
  classes:["tram","metro","express"],
  classNames:{metro:"METRO",tram:"TRAM",express:"SPRINTER"},
+ classOverrides:{tram:{w:3,alpha:0.9},metro:{w:2.8,alpha:0.85}},
  tram90:true,
+ growCap:1e9,
  features:["ferry","air","tram","ic"],
  pop:1.2,popUnit:"M",kmScale:0.0818,spacing:{min:4.5,max:9},jitter:5,
  symScale:0.68,
@@ -722,11 +725,19 @@ const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
 const MAX_LINES=7;
 const IC_KM=250;
 const CLASSES={
- metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:3, alpha:0.9},
- tram:   {vmax:5.5,acc:6,  br:10, corner:6,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:3, alpha:0.9},
+ metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:2.4, alpha:0.72},
+ tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:1.5, alpha:0.55},
  express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.8, alpha:1.0}};
 
-function clsOf(L){return CLASSES[L.cls||(L.express?"express":"metro")]}
+function clsOf(L){
+ const base=CLASSES[L.cls||(L.express?"express":"metro")];
+ if(!city||!city.classOverrides)return base;
+ const ov=city.classOverrides[L.cls||(L.express?"express":"metro")];
+ if(!ov)return base;
+ if(!base._merged){
+  const m=Object.assign({},base);Object.assign(m,ov);m._merged=true;
+  base._cache=base._cache||{};base._cache[cityId]=m}
+ return (base._cache&&base._cache[cityId])||base}
 const CLSICON={
  metro:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 5a3.5 3.5 0 0 1 7 0"/><rect x="7.5" y="5" width="5" height="6" rx="1.4"/><path d="M7.5 8h5"/><path d="M2.5 12.4h15"/></svg>',
  tram:'<svg viewBox="0 0 20 14" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3.4" width="11" height="7.4" rx="1.6"/><path d="M8.6 3.4L10 0.6L11.4 3.4"/><path d="M7.5 0.6h5"/><path d="M4.5 7.1h11"/><path d="M2.5 12.4h15"/></svg>',
@@ -779,7 +790,7 @@ function chipGlyph(cls,onSel){
   const nm=((city&&city.classNames&&city.classNames.express)||"").toUpperCase();
   // CHINA intercity = bullet, SIDE profile (nose pointing right); regional = side car with speed line
   if(nm.indexOf("INTERCITY")>=0||nm===""||nm.indexOf("CRH")>=0)
-   return S+'<path d="M3 18.5V6.5h9c4.4 0 8 2.7 8 6s-3.6 6-8 6z"/><rect x="5.2" y="9" width="2.6" height="2.6" rx="0.4"/><rect x="9" y="9" width="2.6" height="2.6" rx="0.4"/><path d="M3.5 19.7h16.5"/></svg>';
+   return S+'<path d="M2 16V8h4l4 1 4 1.5 4 2 3 1.5a.6.6 0 0 1 0 .8L18 15.6 14 16H2z"/><rect x="3" y="9.8" width="2" height="2" rx="0.3"/><path d="M2 17.5h18"/></svg>';
   return S+'<path d="M4 14.5h13.5l2.5-3-2.5-3H8.5z" /><rect x="9.5" y="9.8" width="2.6" height="2.4" rx="0.4"/><rect x="13" y="9.8" width="2.6" height="2.4" rx="0.4"/><path d="M5.5 16.4h11" /><path d="M2 9.2l4 0" stroke-width="0.9"/></svg>';
  }
  // METRO: v1.64 front-face train, sits within the circle=tunnel
@@ -857,8 +868,8 @@ function growBounds(){
  const m=6+9*growthG();
  let bw=maxX-minX+2*m,bh=maxY-minY+2*m;
  const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
- // hard ceiling only where a city opts in (Chongqing): elsewhere zoom-out follows growth freely
- const growCap=(city&&city.growCap)||1e9;
+ // global frame ceiling (long-standing); cities may override via growCap
+ const growCap=(city&&city.growCap!=null)?city.growCap:GROWBOUNDS_CAP;
  if(bw>growCap)bw=growCap;
  if(bh>growCap)bh=growCap;
  return{bw,bh,cx,cy}}
@@ -1142,11 +1153,16 @@ function isEndOf(L,id){return!L.loop&&L.stops.length>0&&
 function linesEndingAt(id){
  const r=[];for(const L of lines)if(isEndOf(L,id))r.push(L.id);return r}
 function tramElbow(a,b,flip){
- // gentle 90-degree L: axis-aligned, corner picked by flip; degenerate to straight when nearly aligned
+ // smooth Bézier arc instead of sharp 90° corner
  const dx=b.x-a.x,dy=b.y-a.y;
  if(Math.abs(dx)<.5||Math.abs(dy)<.5)return[{x:a.x,y:a.y},{x:b.x,y:b.y}];
- const c=flip?{x:a.x,y:b.y}:{x:b.x,y:a.y};
- return[{x:a.x,y:a.y},c,{x:b.x,y:b.y}]}
+ // control point at the L-corner; quadratic Bézier sampled to a smooth polyline
+ const cp=flip?{x:a.x,y:b.y}:{x:b.x,y:a.y};
+ const N=12,pts=[];
+ for(let i=0;i<=N;i++){
+  const t=i/N,u=1-t;
+  pts.push({x:u*u*a.x+2*u*t*cp.x+t*t*b.x, y:u*u*a.y+2*u*t*cp.y+t*t*b.y})}
+ return pts}
 function edgePtsFor(L,a,b,flip){
  // trams in tram90 cities route with 90-degree curves, not 45-degree elbows
  if(city&&city.tram90&&(L?(L.cls||"metro"):"tram")==="tram")return tramElbow(a,b,flip);
@@ -2114,13 +2130,7 @@ function draw(){
  drawRidges();
  if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
  drawRegions();
- if(city.tramCorridors){
-  ctx.save();ctx.setLineDash([px(2.5),px(2.5)]);ctx.lineCap="butt";
-  for(let c=0;c<city.tramCorridors.length;c++){
-   ctx.strokeStyle="rgba(150,200,255,0.22)";
-   ctx.lineWidth=0.3;
-   riverPath(ctx,city.tramCorridors[c]);ctx.stroke()}
-  ctx.setLineDash([]);ctx.restore()}
+ // corridors drawn after glow pass
  if(showDensity&&densCanvas){ctx.save();ctx.globalCompositeOperation="screen";
   ctx.drawImage(densCanvas,0,0,100,100);ctx.restore()}
  const poster=document.body.classList.contains("poster");
@@ -2134,6 +2144,14 @@ function draw(){
    const rad=(L.cls||"metro")==="tram"?2.4:4.6;
    for(const P of L.paths)strokeElbow(ctx,P.pts,rad)}}
  ctx.restore();
+ // corridors: tram-selected only, drawn after glow so no colour bleed
+ if(selLine>=0&&lines[selLine]&&(lines[selLine].cls||"metro")==="tram"&&city.tramCorridors){
+  ctx.save();ctx.setLineDash([px(2.5),px(2.5)]);ctx.lineCap="butt";
+  for(let c=0;c<city.tramCorridors.length;c++){
+   ctx.strokeStyle="rgba(150,200,255,0.22)";
+   ctx.lineWidth=0.3;
+   riverPath(ctx,city.tramCorridors[c]);ctx.stroke()}
+  ctx.setLineDash([]);ctx.restore()}
  // cores
  ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
  for(const L of lines){
@@ -2273,15 +2291,15 @@ function draw(){
   if(s.q.length>cap){const p=(Math.sin(simS*6)+1)/2;
    ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
    ctx.beginPath();ctx.arc(s.x,s.y,px(9),0,TAU);ctx.stroke()}
-  if(s.inter){const r=px(8.8);
+  if(s.inter){const r=px(7);
    ctx.strokeStyle="#eaf1fb";ctx.lineWidth=px(2);ctx.fillStyle="#06080d";
    ctx.beginPath();
    if(ctx.roundRect)ctx.roundRect(s.x-r,s.y-r,r*2,r*2,px(3));else ctx.rect(s.x-r,s.y-r,r*2,r*2);
    ctx.fill();ctx.stroke()}
   ctx.fillStyle="#06080d";
-  ctx.beginPath();ctx.arc(s.x,s.y,px(s.shape==="plane"?9.4:8.4),0,TAU);ctx.fill();
+  ctx.beginPath();ctx.arc(s.x,s.y,px(s.shape==="plane"?7.6:6.6),0,TAU);ctx.fill();
   ctx.strokeStyle="#ccd6e4";ctx.lineWidth=px(1.8);
-  shapePath(ctx,s.x,s.y,px(s.shape==="plane"?6.4:5.8),s.shape);ctx.fill();ctx.stroke();
+  shapePath(ctx,s.x,s.y,px(s.shape==="plane"?5:4.4),s.shape);ctx.fill();ctx.stroke();
   if(s.icOnly){ctx.lineWidth=px(0.9);
    ctx.beginPath();ctx.arc(s.x,s.y,px(6.6),0,TAU);ctx.stroke()}
   if(s.name&&(!poster||posterLabels)){
