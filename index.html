@@ -200,7 +200,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.87";
+const VERSION="1.90";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -553,6 +553,7 @@ amsterdam:{
  expressColor:"#7a5a9a",
  tram90:true,
  hubTramTol:8,
+ smoothTram:true,
  dimTexture:true,
  growCap:1e9,
  features:["ferry","air","tram","ic"],
@@ -974,10 +975,10 @@ function symF(){
 function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
 function zoomBump(){
  // anchored to the stable min-zoom (NOT baseS, which self-resets during auto-follow).
- // grows across the real play range so stations/lines visibly enlarge as you zoom in.
+ // grows across the real play range so lines/stations visibly enlarge as you zoom in.
  const mn=minZoom()||1;
  const r=view.s/mn;               // 1 at most-zoomed-out, larger as you zoom in
- return Math.min(2.0, Math.max(0.85, 0.72+0.42*Math.log2(r+0.5)));}
+ return Math.min(3.0, Math.max(0.85, 0.66+0.62*Math.log2(r+0.5)));}
 function pxr(v){return v/view.s}
 
 /* ================= density & districts ================= */
@@ -1360,9 +1361,49 @@ function rebuildGeometry(){
    else{const raw=edgePtsFor(L,stations[lo],stations[hi],!!L.flips[k]);pts=(raw.length===2?raw:offsetElbow(raw,d))}
    if(aI!==lo)pts=pts.slice().reverse();
    L.paths.push({pts,len:pathLen(pts),tunnel:pathCrossesWater(pts),
-    chord:dist(stations[aI],stations[bI]),aId:aI,bId:bI,
+    chord:dist(stations[aI],stations[bI]),aId:aI,bId:bI,lineId:L.id,
     cornerS:pts.length===3?dist(pts[0],pts[1]):null})}}
+ separateOverlaps(gap);
  computeCrossings()}
+// Push apart segments from DIFFERENT lines that share corridor geometry (parallel + overlapping)
+// but weren't caught by edge-key bundling (different station pairs on the same corridor).
+function separateOverlaps(gap){
+ // build a flat segment list with references; compute a per-endpoint offset vector safely,
+ // then apply cloned offsets so shared point objects aren't corrupted.
+ const segs=[];
+ for(const L of lines){for(let pi=0;pi<L.paths.length;pi++){const P=L.paths[pi];
+  for(let si=1;si<P.pts.length;si++){
+   const a=P.pts[si-1],b=P.pts[si];
+   const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+   segs.push({L,P,si,mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},nx:-dy/len,ny:dx/len,dir:{x:dx/len,y:dy/len}})}}}
+ const near=gap*1.4, used=new Array(segs.length).fill(false);
+ // accumulate desired offset per (path,pointIndex) so we can rebuild cleanly
+ const shift=new Map(); // key: path-unique -> {idx-> {x,y}}
+ const keyOf=P=>P;
+ for(let i=0;i<segs.length;i++){
+  if(used[i])continue;
+  const grp=[segs[i]];used[i]=true;
+  for(let j=i+1;j<segs.length;j++){
+   if(used[j]||segs[j].L===segs[i].L)continue;
+   const md=Math.hypot(segs[j].mid.x-segs[i].mid.x,segs[j].mid.y-segs[i].mid.y);
+   const par=Math.abs(segs[i].dir.x*segs[j].dir.x+segs[i].dir.y*segs[j].dir.y);
+   if(md<near&&par>0.8){grp.push(segs[j]);used[j]=true}}
+  if(grp.length<2)continue;
+  grp.sort((p,q)=>p.L.id-q.L.id);
+  const nrm=grp[0], n=grp.length;
+  for(let s=0;s<n;s++){
+   const off=(s-(n-1)/2)*gap, g=grp[s];
+   const vx=nrm.nx*off, vy=nrm.ny*off;
+   let pm=shift.get(g.P); if(!pm){pm=new Map();shift.set(g.P,pm)}
+   for(const idx of [g.si-1,g.si]){
+    const cur=pm.get(idx)||{x:0,y:0,ct:0};
+    cur.x+=vx; cur.y+=vy; cur.ct++; pm.set(idx,cur)}}}
+ // apply averaged shifts by cloning the pts array
+ for(const [P,pm] of shift){
+  P.pts=P.pts.map((p,idx)=>{const sh=pm.get(idx);
+   return sh?{x:p.x+sh.x/sh.ct,y:p.y+sh.y/sh.ct}:{x:p.x,y:p.y}});
+  P.len=pathLen(P.pts)}
+}
 function computeCrossings(){
  crossings=[];
  const legs=[];
@@ -2154,6 +2195,18 @@ function shapePath(g,x,y,r,shape){
    const pxx=x+Math.cos(a)*rr,pyy=y+Math.sin(a)*rr;
    if(i===0)g.moveTo(pxx,pyy);else g.lineTo(pxx,pyy)}
   g.closePath()}}
+function chaikin(pts,iters){
+ let p=pts;
+ for(let it=0;it<iters;it++){
+  if(p.length<3)break;
+  const out=[p[0]];
+  for(let i=0;i<p.length-1;i++){
+   const a=p[i],b=p[i+1];
+   out.push({x:a.x*0.75+b.x*0.25,y:a.y*0.75+b.y*0.25});
+   out.push({x:a.x*0.25+b.x*0.75,y:a.y*0.25+b.y*0.75})}
+  out.push(p[p.length-1]);
+  p=out}
+ return p}
 function strokeElbow(g,pts,r){
  g.beginPath();g.moveTo(pts[0].x,pts[0].y);
  for(let i=1;i<pts.length-1;i++){
@@ -2287,16 +2340,22 @@ function draw(){
  ctx.globalAlpha=1;ctx.lineJoin="round";ctx.lineCap="round";
  for(const L of lines){
   const CC=clsOf(L);
-  if(!lineShown(L)){ctx.strokeStyle="#3a4860";ctx.globalAlpha=0.22}
+  const _ghost=!lineShown(L);
+  if(_ghost){ctx.strokeStyle="#8b96a2";ctx.globalAlpha=0.72;ctx.shadowColor="#8b96a2";ctx.shadowBlur=px(2.2)}
   else{ctx.strokeStyle=L.color;ctx.globalAlpha=L.id===selLine?1:CC.alpha}
   for(const P of L.paths){
    if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
    if(L.express){
-    ctx.lineWidth=px(L.id===selLine?1.3:1.05);
-    for(const sgn of[-1,1])strokeElbow(ctx,offsetElbow(P.pts,sgn*px(1.15)),4.6)}
+    // DOUBLE LINE: two clearly-separated parallel rails
+    const zb=zoomBump();
+    ctx.lineWidth=px((L.id===selLine?1.5:1.25)*zb);
+    for(const sgn of[-1,1])strokeElbow(ctx,offsetElbow(P.pts,sgn*px(2.2*zb)),4.6)}
    else{
-    ctx.lineWidth=lineWidthFor(L.id);
-    strokeElbow(ctx,P.pts,(L.cls||"metro")==="tram"?2.4:4.6)}}
+    ctx.lineWidth=_ghost?px(clsOf(L).w*zoomBump()):lineWidthFor(L.id);
+    const isTram=(L.cls||"metro")==="tram";
+    const dpts=(isTram&&city.smoothTram&&P.pts.length>2)?chaikin(P.pts,2):P.pts;
+    strokeElbow(ctx,dpts,isTram?2.4:4.6)}}
+  if(_ghost){ctx.shadowBlur=0;ctx.shadowColor="transparent"}
   ctx.setLineDash([])}
  ctx.globalAlpha=1;
  // crossing hops: break the under line, carry the over line across
@@ -2423,7 +2482,7 @@ function draw(){
    ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
    ctx.beginPath();ctx.arc(s.x,s.y,px(9),0,TAU);ctx.stroke()}
   ctx.fillStyle="#06080d";
-  const _zb=1.2*zoomBump();
+  const _zb=1.28*zoomBump();
   ctx.beginPath();ctx.arc(s.x,s.y,px((s.shape==="plane"?7.6:6.6)*_zb),0,TAU);ctx.fill();
   ctx.strokeStyle="#ccd6e4";ctx.lineWidth=px(1.8*zoomBump());
   shapePath(ctx,s.x,s.y,px((s.shape==="plane"?5:4.4)*_zb),s.shape);ctx.fill();ctx.stroke();
@@ -2567,6 +2626,12 @@ cv.addEventListener("pointermove",e=>{
 function endPointer(e){
  if(midPan){midPan=null;return}
  const was=pointers.size;pointers.delete(e.pointerId);
+ // dropping from 2 fingers to 1: re-anchor the remaining finger as a clean pan, no residual zoom
+ if(was===2&&pointers.size===1){
+  const rp=[...pointers.values()][0];
+  downP={x:rp.x,y:rp.y};moved=true;pinched=false;pinchPrev=null;
+  dragMode=null;dragFrom=null;dragW=null;snapSt=null;
+  return}
  if(was===1&&!pinched){
   if(!moved&&Date.now()-downT<450){
    dragMode=null;dragFrom=null;dragW=null;snapSt=null;
