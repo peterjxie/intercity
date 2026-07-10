@@ -200,7 +200,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="1.90";
+const VERSION="1.92";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -554,6 +554,7 @@ amsterdam:{
  tram90:true,
  hubTramTol:8,
  smoothTram:true,
+ stationScale:1.0,
  dimTexture:true,
  growCap:1e9,
  features:["ferry","air","tram","ic"],
@@ -937,7 +938,7 @@ function lineShown(L){return L.id===selLine||!hiddenCls[clsKeyOf(L)]}
 const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 let DPR=1,W=0,H=0;
 const view={x:0,y:0,s:6};
-let baseS=3.5,userCam=false;
+let baseS=3.5,userCam=false,fitS0=0;
 function resize(){DPR=Math.min(2.5,window.devicePixelRatio||1);
  W=window.innerWidth;H=window.innerHeight;cv.width=W*DPR;cv.height=H*DPR;
  cv.style.width=W+"px";cv.style.height=H+"px"}
@@ -965,7 +966,7 @@ function frameTarget(){
  const s=clamp(Math.min(W/b.bw,H/b.bh),minZoom(),30);
  return{s,x:b.cx-(W/s)/2,y:b.cy-(H/s)/2}}
 function fitView(){const t=frameTarget();
- view.s=t.s;view.x=t.x;view.y=t.y;baseS=view.s;userCam=false}
+ view.s=t.s;view.x=t.x;view.y=t.y;baseS=view.s;userCam=false;if(!fitS0)fitS0=t.s}
 function s2w(p){return{x:p.x/view.s+view.x,y:p.y/view.s+view.y}}
 function symF(){
  // symbols are world objects with a pixel ceiling: constant when zoomed in
@@ -974,11 +975,12 @@ function symF(){
  return clamp(view.s/sRef,0.3,1)*((city&&city.symScale)||1)}
 function px(v){return v*symF()*((city&&city.symScale)||1)/view.s}
 function zoomBump(){
- // anchored to the stable min-zoom (NOT baseS, which self-resets during auto-follow).
- // grows across the real play range so lines/stations visibly enlarge as you zoom in.
- const mn=minZoom()||1;
- const r=view.s/mn;               // 1 at most-zoomed-out, larger as you zoom in
- return Math.min(3.0, Math.max(0.85, 0.66+0.62*Math.log2(r+0.5)));}
+ // anchored to the initial fitted zoom (fitS0), which is stable and matches where play begins.
+ // ~1.05 at the default fitted view, growing strongly toward max zoom so lines/cars/stations
+ // visibly enlarge across the range actually used in play.
+ const anchor=fitS0||view.s||1;
+ const r=view.s/anchor;           // 1 at the fitted start, >1 zoomed in, <1 zoomed out
+ return clamp(1.05+1.25*(r-1), 0.85, 3.2);}
 function pxr(v){return v/view.s}
 
 /* ================= density & districts ================= */
@@ -1197,6 +1199,15 @@ function genStations(){
   coreList.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
   s.region=bi});
  emergePtr=0;
+ // core-first ordering: named specials keep priority, then nearest-core unnamed stations first,
+ // so every city opens zoomed in on its inner core and expands outward as the city grows.
+ if(city&&city.core){
+  const cx=city.core.x,cy=city.core.y;
+  const named=stations.filter(s=>s.name);
+  const rest=stations.filter(s=>!s.name).sort((a,b)=>
+   ((a.x-cx)**2+(a.y-cy)**2)-((b.x-cx)**2+(b.y-cy)**2));
+  stations=named.concat(rest);
+  stations.forEach((s,i)=>s.id=i);}
  for(let i=0;i<Math.min(8,stations.length);i++)emergeStation(false)}
 function distToNetwork(p){
  let d=Infinity;
@@ -2195,6 +2206,12 @@ function shapePath(g,x,y,r,shape){
    const pxx=x+Math.cos(a)*rr,pyy=y+Math.sin(a)*rr;
    if(i===0)g.moveTo(pxx,pyy);else g.lineTo(pxx,pyy)}
   g.closePath()}}
+function strokeWetOnly(g,pts,r){
+ // stroke only the sub-segments whose midpoint lies in water (used to dash just the crossing)
+ for(let i=1;i<pts.length;i++){
+  const a=pts[i-1],b=pts[i];
+  const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  if(inWater(mid)){g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke()}}}
 function chaikin(pts,iters){
  let p=pts;
  for(let it=0;it<iters;it++){
@@ -2341,21 +2358,31 @@ function draw(){
  for(const L of lines){
   const CC=clsOf(L);
   const _ghost=!lineShown(L);
+  const _sel=(L.id===selLine&&!_ghost);
   if(_ghost){ctx.strokeStyle="#8b96a2";ctx.globalAlpha=0.72;ctx.shadowColor="#8b96a2";ctx.shadowBlur=px(2.2)}
-  else{ctx.strokeStyle=L.color;ctx.globalAlpha=L.id===selLine?1:CC.alpha}
+  else{ctx.strokeStyle=L.color;ctx.globalAlpha=_sel?1:CC.alpha*0.82;
+   if(_sel){ctx.shadowColor=L.color;ctx.shadowBlur=px(7*zoomBump())}else{ctx.shadowBlur=0;ctx.shadowColor="transparent"}}
   for(const P of L.paths){
-   if(P.tunnel)ctx.setLineDash([px(7),px(4.5)]);else ctx.setLineDash([]);
+   const zb=zoomBump();
    if(L.express){
-    // DOUBLE LINE: two clearly-separated parallel rails
-    const zb=zoomBump();
+    // DOUBLE LINE: two clearly-separated parallel rails, solid throughout
+    ctx.setLineDash([]);
     ctx.lineWidth=px((L.id===selLine?1.5:1.25)*zb);
-    for(const sgn of[-1,1])strokeElbow(ctx,offsetElbow(P.pts,sgn*px(2.2*zb)),4.6)}
+    for(const sgn of[-1,1]){
+     const rail=offsetElbow(P.pts,sgn*px(2.6*zb));
+     strokeElbow(ctx,rail,4.6);
+     if(P.tunnel){ctx.save();ctx.setLineDash([px(6*zb),px(4*zb)]);ctx.strokeStyle="#06080d";
+      strokeWetOnly(ctx,rail,4.6);ctx.restore()}}}
    else{
+    ctx.setLineDash([]);
     ctx.lineWidth=_ghost?px(clsOf(L).w*zoomBump()):lineWidthFor(L.id);
     const isTram=(L.cls||"metro")==="tram";
     const dpts=(isTram&&city.smoothTram&&P.pts.length>2)?chaikin(P.pts,2):P.pts;
-    strokeElbow(ctx,dpts,isTram?2.4:4.6)}}
-  if(_ghost){ctx.shadowBlur=0;ctx.shadowColor="transparent"}
+    strokeElbow(ctx,dpts,isTram?2.4:4.6);
+    // overlay dashes ONLY on the water-crossing sub-portion (rest stays solid)
+    if(P.tunnel){ctx.save();ctx.setLineDash([px(6*zb),px(4*zb)]);ctx.strokeStyle="#06080d";
+     strokeWetOnly(ctx,dpts,isTram?2.4:4.6);ctx.restore()}}}
+  if(_ghost||_sel){ctx.shadowBlur=0;ctx.shadowColor="transparent"}
   ctx.setLineDash([])}
  ctx.globalAlpha=1;
  // crossing hops: break the under line, carry the over line across
@@ -2482,7 +2509,7 @@ function draw(){
    ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
    ctx.beginPath();ctx.arc(s.x,s.y,px(9),0,TAU);ctx.stroke()}
   ctx.fillStyle="#06080d";
-  const _zb=1.28*zoomBump();
+  const _zb=1.28*zoomBump()*((city&&city.stationScale!=null)?city.stationScale:0.6);
   ctx.beginPath();ctx.arc(s.x,s.y,px((s.shape==="plane"?7.6:6.6)*_zb),0,TAU);ctx.fill();
   ctx.strokeStyle="#ccd6e4";ctx.lineWidth=px(1.8*zoomBump());
   shapePath(ctx,s.x,s.y,px((s.shape==="plane"?5:4.4)*_zb),s.shape);ctx.fill();ctx.stroke();
@@ -2515,7 +2542,9 @@ function draw(){
   for(const t of L.trains){
    const P=L.paths[t.seg];if(!P)continue;
    const CC=clsOf(L);
-   const carL=px(L.cls==="tram"?8.5:13),carW=px(L.cls==="tram"?3.8:5.5),gapL=px(2.5);
+   const _zc=zoomBump();
+   const _xp=(L.cls||"metro")==="express"||L.express;
+   const carL=px((L.cls==="tram"?8.5:_xp?18:13)*_zc),carW=px((L.cls==="tram"?3.8:_xp?7.5:5.5)*_zc),gapL=px(2.5*_zc);
    const units=1+t.cars,base=t.f*P.len;
    for(let u=0;u<units;u++){
     const s=clamp(base-t.dir*u*(carL+gapL),0,P.len);
@@ -2535,7 +2564,7 @@ function draw(){
     else if(ctx.roundRect)ctx.roundRect(-carL/2,-carW/2,carL,carW,px(2.5));
     else ctx.rect(-carL/2,-carW/2,carL,carW);
     ctx.fill();
-    ctx.strokeStyle=L.color;ctx.lineWidth=px(1.6);ctx.stroke();
+    ctx.strokeStyle=L.color;ctx.lineWidth=px(1.6*_zc);ctx.stroke();
     ctx.fillStyle="rgba(223,231,243,0.92)";
     const cc=CC.carCap,cols=Math.ceil(cc/2);
     const seat0=u*cc;
