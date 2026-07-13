@@ -200,7 +200,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="2.03";
+const VERSION="2.05";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -423,6 +423,7 @@ gba:{
  cores:[{x:44,y:13},{x:70,y:52},{x:66,y:82}],
  core:{x:44,y:13},
  classOverrides:{metro:{w:1.9,alpha:0.72}},stationScale:0.46,
+ fareMult:3,subsidyMult:3,subsidyKm:0.13,cashDrop:150,startBudget:1800,trainCostMult:0.6,expressCostMult:0.5,
  pop:72,popUnit:"M",kmScale:2.0,symScale:0.85,crossPairs:[[1,2]],classes:["metro","express"],
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
@@ -1678,7 +1679,7 @@ function commitSnapStart(L,A,B,cd){
  const wp=twp;
  const _b=railBlock(wp);if(_b){toast(_b);return}
  if(kms(railLen(wp))>lineMaxKm(L)){toast("TOO LONG FOR ONE LINE");return}
- const tc=clsOf(L).trainCost;
+ const tc=Math.round(clsOf(L).trainCost*((city&&city.trainCostMult)||1));
  if(!pay(railCost(wp)*exf(L)+tc))return;
  L.stops=[A,B];L.activeEnd="tail";
  L.railPaths[edgeKey(A,B)]=wp;
@@ -1749,11 +1750,11 @@ function pickTarget(origin){
 
 /* ================= economy ================= */
 function isOp(){return mode==="operator"}
-function exf(L){return L?clsOf(L).trackMult:1}
+function exf(L){if(!L)return 1;let m=clsOf(L).trackMult;if((L.cls||(L.express?"express":"metro"))==="express"&&city&&city.expressCostMult)m*=city.expressCostMult;return m}
 function buzz(ms){if(navigator.vibrate){try{navigator.vibrate(ms)}catch(e){}}}
 function pay(c){if(!isOp())return true;if(budget<c){toast("NEED $"+Math.ceil(c));return false}
  budget-=c;return true}
-function segCost(a,b,pts){let c=(pts&&pts.length>2?pathLen(pts):dist(stations[a],stations[b]))*COST.track;
+function segCost(a,b,pts){const tcm=(city&&city.trackCostMult)||1;let c=(pts&&pts.length>2?pathLen(pts):dist(stations[a],stations[b]))*COST.track*tcm;
  if(pathCrossesWater(pts||elbowPts(stations[a],stations[b],false)))c+=COST.tunnel;
  return c}
 
@@ -1875,7 +1876,7 @@ function doConnect(A,B){
   if((L.cls||"metro")==="tram"){
    const seg=edgePtsFor(L,stations[A],stations[B],false);
    {const _w=tramWaterBlock(seg);if(_w){toast(_w);return}}}
-  const tc=clsOf(L).trainCost;
+  const tc=Math.round(clsOf(L).trainCost*((city&&city.trainCostMult)||1));
   if(!pay(segCost(A,B)*exf(L)+tc))return;
   {const _b=crossingBlock(L,stations[A].x,stations[A].y,stations[B].x,stations[B].y);if(_b){toast(_b);return}}
   L.stops=[A,B];L.activeEnd="tail";
@@ -1966,7 +1967,7 @@ function addTrain(){
  const L=lines[selLine];if(!L||segCountOf(L)<1){toast("SELECT A LINE WITH TRACK");return}
  if(L.trains.length>=maxTrainsFor(L)){
   toast("LINE AT MAX TRAINS · "+maxTrainsFor(L)+" · EXTEND TO FIT MORE");return}
- if(!pay(clsOf(L).trainCost))return;
+ if(!pay(Math.round(clsOf(L).trainCost*((city&&city.trainCostMult)||1))))return;
  const dd=L.loop&&L.trains.length%2?-1:1;
  L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0})}
 function addCar(){
@@ -2017,7 +2018,7 @@ function exchange(t,L,arriveIdx){
     const ideal=crowD/TRAIN_SPEED+2.5+crowD*0.12;
     const act=Math.max(0.001,simS-r.spawn);
     effAvg=effAvg*0.985+clamp(ideal/act,0,1)*0.015}
-   if(isOp()){budget+=FARE-OPC;ecoInc+=FARE;ecoCost+=OPC}}
+   if(isOp()){const fm=(city&&city.fareMult)||1;budget+=FARE*fm-OPC;ecoInc+=FARE*fm;ecoCost+=OPC}}
   else kept.push(r)}
  t.riders=kept;
  const nx=nextAfter(L,arriveIdx,t.dir);
@@ -2119,6 +2120,13 @@ function busiestLine(needTrains){
   let q=0;for(const id of L.stops)q+=stations[id].q.length;
   if(q>bs){bs=q;best=L}}
  return best}
+function cashDropAmount(){
+ // scale weekly cash to network size so it's a meaningful recovery lever on large maps
+ let ukm=0;for(const L of lines)for(const P of L.paths)ukm+=P.chord;
+ const km=kms(ukm);
+ const base=(city&&city.cashDrop)||50;
+ // roughly a few days of track upkeep, so a struggling large network can recover
+ return Math.round((base+km*UPK.km*3)/10)*10;}
 function makeOffer(){
  const pool=[{k:"train",l:"+1 TRAIN"},{k:"car",l:"+1 CARRIAGE"},{k:"cash",l:"+$50"}];
  if(stations.filter(s2=>s2.inter).length<capI())pool.push({k:"inter",l:"+1 INTERCHANGE"});
@@ -2126,12 +2134,17 @@ function makeOffer(){
  const i=(Math.random()*pool.length)|0;
  let j=(Math.random()*pool.length)|0;
  while(j===i)j=(Math.random()*pool.length)|0;
+ let picks=[pool[i],pool[j]];
+ // cities with cashDrop always offer a meaningful cash option, scaled to network size
+ if(city&&city.cashDrop){
+  const amt=cashDropAmount();
+  picks=[{k:"cash",l:"+$"+amt,amt},pool[i].k==="cash"?pool[j]:pool[i]];}
  const bb=$("offerBtns");bb.innerHTML="";
- for(const o of[pool[i],pool[j]]){
+ for(const o of picks){
   const b=document.createElement("button");
-  b.textContent=o.l;b.onclick=()=>applyOffer(o.k);bb.appendChild(b)}
+  b.textContent=o.l;b.onclick=()=>applyOffer(o.k,o.amt);bb.appendChild(b)}
  $("offer").style.display="block"}
-function applyOffer(k){
+function applyOffer(k,amt){
  $("offer").style.display="none";
  if(k==="inter"){
   let best=null,bq=-1;
@@ -2141,10 +2154,10 @@ function applyOffer(k){
    const ct=stations.filter(s2=>s2.inter).length;
    toast("INTERCHANGE GRANTED · "+ct+"/"+capI())}
   else toast("NO ELIGIBLE STATION");return}
- if(k==="cash"){budget+=50;toast("+$50");return}
+ if(k==="cash"){const a=amt||(city&&city.cashDrop?cashDropAmount():50);budget+=a;toast("+$"+a);return}
  if(k==="line"){
   if(lineSlots<capTotal()){lineSlots++;toast("LINE SLOT ADDED")}
-  else{budget+=50;toast("+$50")}
+  else{const a=(city&&city.cashDrop?cashDropAmount():50);budget+=a;toast("+$"+a)}
   refreshUI();return}
  if(k==="train"){
   let L=null,bs=-1;
@@ -2178,8 +2191,11 @@ function update(dtReal){
    for(const P of L.paths)ukm+=P.chord}
   const upDay=UPK.train*tr+UPK.car*cc+UPK.km*kms(ukm);
   const dDay=dt/DAY_SECONDS;
-  budget+=(SUBSIDY_DAY-upDay)*dDay;
-  ecoInc+=SUBSIDY_DAY*dDay;ecoCost+=upDay*dDay;ecoT+=dDay;
+  let sub=SUBSIDY_DAY*((city&&city.subsidyMult)||1);
+  // optional per-city subsidy that scales with network size, so large maps stay solvent
+  if(city&&city.subsidyKm)sub+=kms(ukm)*city.subsidyKm;
+  budget+=(sub-upDay)*dDay;
+  ecoInc+=sub*dDay;ecoCost+=upDay*dDay;ecoT+=dDay;
   if(ecoT>=0.5){
    const ri=ecoInc/ecoT,rc=ecoCost/ecoT,pv=ecoSeries[ecoSeries.length-1];
    ecoSeries.push(pv?[pv[0]*0.55+ri*0.45,pv[1]*0.55+rc*0.45]:[ri,rc]);
@@ -3093,7 +3109,7 @@ $("beginBtn").onclick=()=>{startGame();$("overlay").style.display="none";
 function startGame(){
  city=CITIES[cityId];
  lines=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};
- budget=800;delivered=0;lost=0;journeySum=0;transferSum=0;
+ budget=(city&&city.startBudget)||800;delivered=0;lost=0;journeySum=0;transferSum=0;
  ecoInc=0;ecoCost=0;ecoT=0;ecoSeries=[];
  simS=0;weekPaid=0;passengers=0;
  nextEmergeAt=DAY_SECONDS*0.7;
