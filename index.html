@@ -192,6 +192,7 @@ body.poster #posterBar{display:flex}
    <span id="seedVal">GROWTH SEED —</span>
    <button id="bSeed">↺ NEW SEED</button>
   </div>
+  <button id="resumeBtn" style="display:none">RESUME</button>
   <button id="beginBtn">BEGIN</button>
  </div>
 </div>
@@ -200,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="2.05";
+const VERSION="2.06";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -366,7 +367,7 @@ chongqing:{
  ],
  core:{x:60.5,y:50.5},
  pop:32,popUnit:"M",kmScale:0.6,growCap:60,waterPad:0.5,tramMaxKm:45,
- spacing:{min:2.6,max:6.5},jitter:4.5,stationScale:0.5,coreZone:34,carScale:0.52,
+ spacing:{min:2.2,max:6.5},jitter:4.0,stationScale:0.4,coreZone:24,carScale:0.52,coreStopGap:2.0,
  landmark:{x:62,y:50,name:"CHAOTIANMEN"},
  features:["tunnel","terrain","air","tram"],
  specials:[
@@ -445,11 +446,11 @@ gba:{
 berlin:{
  name:"BERLIN",blurb:"U-Bahn holds the core; the Ring carries the rest.",
  palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
- maxExpress:3,maxMetro:7,
+ maxExpress:5,maxMetro:5,maxInter:5,
  classes:["metro","express"],
  classNames:{metro:"U-BAHN",express:"S-BAHN"},
  classOverrides:{express:{w:2.0,alpha:0.95},metro:{w:2.5,alpha:0.75}},
- expressCarScale:0.6,
+ expressCarScale:0.6,speedScale:{express:0.62},expressNose:0.10,
  features:["terrain","air","sbahn"],
  pop:4,popUnit:"M",kmScale:0.45,spacing:{min:4.2,max:7},jitter:6,
  seas:[
@@ -500,7 +501,7 @@ bangkok:{
  maxExpress:2,maxMetro:3,maxTram:8,
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
- classOverrides:{tram:{alpha:0.75}},
+ classOverrides:{tram:{alpha:0.75,maxCars:2}},
  stationScale:0.48,
  features:["ferry","air","tram","ic"],
  pop:17,popUnit:"M",kmScale:0.5,tramRiverMax:0.6,spacing:{min:2.8,max:6.2},jitter:4.5,waterPad:0.4,tramMaxKm:30,growCap:78,coreZone:32,carScale:0.55,
@@ -568,7 +569,7 @@ amsterdam:{
  symScale:0.68,
  ijBarrier:{y:26.5,coreClass:"metro"},tramRiverMax:0.3,
  speedScale:{tram:0.45},waterPad:0.25,tramMaxKm:10,
- coreStopGap:3.5,snapTol:2.5,
+ coreStopGap:2.0,snapTol:2.5,
  snapZone:[[45.2,22.1],[40.8,20.9],[36.9,23.0],[30.1,39.0],[29.3,42.9],[29.6,45.8],[33.5,56.0],[36.0,59.0],[39.0,60.4],[58.3,56.1],[66.9,48.9],[68.5,45.7],[67.7,41.6],[60.7,34.0],[45.2,22.1]],
  seas:[
   
@@ -817,7 +818,7 @@ const MAX_LINES=7;
 const IC_KM=250;
 const CLASSES={
  metro:  {vmax:8,  acc:7,  br:12, corner:5,  trainCost:32, trackMult:1,   carCap:6, maxCars:2, spacing:12, w:2.4, alpha:0.72},
- tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:0, spacing:9,  w:1.5, alpha:0.55},
+ tram:   {vmax:5.5,acc:6,  br:10, corner:4.5,trainCost:18, trackMult:0.6, carCap:4, maxCars:1, maxTrains:7, spacing:9,  w:1.5, alpha:0.55},
  express:{vmax:19, acc:5.5,br:9,  corner:6.5,trainCost:58, trackMult:2.2, carCap:6, maxCars:2, spacing:22, w:2.8, alpha:1.0}};
 
 function clsOf(L){
@@ -892,7 +893,7 @@ function clsName(k){
 function maxTrainsFor(L){
  let u=0;for(const P of L.paths)u+=P.chord;
  const c=clsOf(L);
- return clamp(Math.round(u/c.spacing),2,c.maxCars?6:7)}
+ return clamp(Math.round(u/c.spacing),2,c.maxTrains||(c.maxCars?6:7))}
 let metroCapKm=80;
 function kms(u){return u*((city&&city.kmScale)||1)}
 function computeMetroCap(){
@@ -2128,17 +2129,32 @@ function cashDropAmount(){
  // roughly a few days of track upkeep, so a struggling large network can recover
  return Math.round((base+km*UPK.km*3)/10)*10;}
 function makeOffer(){
- const pool=[{k:"train",l:"+1 TRAIN"},{k:"car",l:"+1 CARRIAGE"},{k:"cash",l:"+$50"}];
- if(stations.filter(s2=>s2.inter).length<capI())pool.push({k:"inter",l:"+1 INTERCHANGE"});
- if(lineSlots<capTotal()&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT"});
- const i=(Math.random()*pool.length)|0;
- let j=(Math.random()*pool.length)|0;
- while(j===i)j=(Math.random()*pool.length)|0;
- let picks=[pool[i],pool[j]];
+ // weighted pool: cash-led, assets rarer, and nothing offered that is already capped
+ const kOf=L=>L.cls||(L.express?"express":"metro");
+ const roomM=lines.filter(L=>kOf(L)==="metro").length<capM();
+ const roomT=lines.filter(L=>kOf(L)==="tram").length<capTram();
+ const roomX=lines.filter(L=>kOf(L)==="express").length<capX();
+ const anyLineRoom=roomM||roomT||roomX;
+ const carRoom=lines.some(L=>{const mc=clsOf(L).maxCars||0;return L.trains.some(t=>t.cars<mc)});
+ const trainRoom=lines.some(L=>segCountOf(L)>0&&L.trains.length<maxTrainsFor(L));
+ const pool=[{k:"cash",l:"+$50",w:4}];
+ if(trainRoom)pool.push({k:"train",l:"+1 TRAIN",w:2});
+ if(carRoom)pool.push({k:"car",l:"+1 CARRIAGE",w:1});
+ if(stations.filter(s2=>s2.inter).length<capI())pool.push({k:"inter",l:"+1 INTERCHANGE",w:1});
+ if(anyLineRoom&&lineSlots<capTotal()&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT",w:1});
+ const drawW=ex=>{const av=pool.filter(o=>o!==ex);
+  let tot=0;for(const o of av)tot+=o.w;
+  let r=Math.random()*tot;
+  for(const o of av){r-=o.w;if(r<=0)return o}
+  return av[av.length-1]};
+ const a1=drawW(null);
+ const a2=pool.length>1?drawW(a1):a1;
+ let picks=(a2&&a2!==a1)?[a1,a2]:[a1];
  // cities with cashDrop always offer a meaningful cash option, scaled to network size
  if(city&&city.cashDrop){
   const amt=cashDropAmount();
-  picks=[{k:"cash",l:"+$"+amt,amt},pool[i].k==="cash"?pool[j]:pool[i]];}
+  const other=picks.find(o=>o.k!=="cash");
+  picks=other?[{k:"cash",l:"+$"+amt,amt},other]:[{k:"cash",l:"+$"+amt,amt}];}
  const bb=$("offerBtns");bb.innerHTML="";
  for(const o of picks){
   const b=document.createElement("button");
@@ -2170,11 +2186,14 @@ function applyOffer(k,amt){
    L.trains.push({li:L.id,seg:0,f:dd>0?0:1,dir:dd,dwell:.4,cars:0,riders:[],v:0});
    toast("TRAIN DELIVERED · LINE "+(L.id+1))}
   return}
- if(k==="car"){const L=busiestLine(true);
-  let t=null;
-  if(L)t=L.trains.reduce((m,x)=>x.cars<m.cars?x:m,L.trains[0]);
-  if(!t||t.cars>=MAX_CARS){budget+=30;toast("+$30")}
-  else{t.cars++;toast("CARRIAGE DELIVERED · LINE "+(L.id+1))}}}
+ if(k==="car"){
+  // spread carriages evenly: pick the shortest train anywhere that is under its class cap
+  let bt=null,bL=null;
+  for(const L2 of lines){const mc=clsOf(L2).maxCars||0;
+   for(const t2 of L2.trains){if(t2.cars>=mc)continue;
+    if(!bt||t2.cars<bt.cars){bt=t2;bL=L2}}}
+  if(!bt){budget+=30;toast("ALL TRAINS AT MAX LENGTH · +$30")}
+  else{bt.cars++;toast("CARRIAGE DELIVERED · LINE "+(bL.id+1))}}}
 function update(dtReal){
  const dt=dtReal*SPEEDS[speedIdx];
  if(dt<=0)return;
@@ -2398,7 +2417,7 @@ function draw(){
     const xw=(clsOf(L).w||2.8)/2.8; // per-city express width factor (Berlin thinner etc)
     ctx.lineWidth=px((L.id===selLine?1.5:1.15)*zbX*xw);
     for(const sgn of[-1,1]){
-     const rail=offsetElbow(P.pts,sgn*px(2.6*zbX));
+     const rail=offsetElbow(P.pts,sgn*px(2.0*zbX));
      strokeElbow(ctx,rail,4.6);
      if(P.tunnel){ctx.save();ctx.setLineDash([px(6*zb),px(4*zb)]);ctx.strokeStyle="#06080d";
       strokeWetOnly(ctx,rail,4.6);ctx.restore()}}}
@@ -2586,7 +2605,7 @@ function draw(){
     ctx.fillStyle="#06080d";
     ctx.beginPath();
     if(L.express&&u===0){
-     const ns=carL*0.34;
+     const ns=carL*((city&&city.expressNose!=null)?city.expressNose:0.34);
      ctx.moveTo(-carL/2,-carW/2);
      ctx.lineTo(carL/2-ns,-carW/2);
      ctx.lineTo(carL/2,0);
@@ -2981,15 +3000,34 @@ $("pPng").onclick=()=>{
   a.download="intercity-"+cityId+"-day"+(Math.floor(simS/DAY_SECONDS)+1)+".png";
   document.body.appendChild(a);a.click();a.remove();toast("POSTER EXPORTED")}
  catch(err){toast("EXPORT BLOCKED IN THIS VIEWER")}};
-$("mSave").onclick=()=>{
- $("menuPop").style.display="none";
- const data={v:1,cityId,mode,seed,simS,budget,delivered,lost,journeySum,transferSum,effAvg,
+function snapshotGame(){
+ return {v:1,cityId,mode,seed,simS,budget,delivered,lost,journeySum,transferSum,effAvg,
   emergePtr,nextEmergeAt,weekPaid,lineSlots,
   stations:stations.map(s=>({x:s.x,y:s.y,shape:s.shape,district:s.district,dens:s.dens,
    emerged:s.emerged,inter:s.inter,name:s.name,icOnly:!!s.icOnly,air:!!s.air,dead:!!s.dead})),
   lines:lines.map(L=>({stops:L.stops,flips:L.flips,railPaths:L.railPaths||{},loop:L.loop,activeEnd:L.activeEnd,
    express:!!L.express,visible:L.visible!==false,cls:L.cls||(L.express?"express":"metro"),
-   trains:L.trains.map(t=>({seg:t.seg,f:t.f,dir:t.dir,cars:t.cars}))}))};
+   trains:L.trains.map(t=>({seg:t.seg,f:t.f,dir:t.dir,cars:t.cars}))}))}}
+/* ---- auto-persistence: survives Safari tab offload / reload without a manual save ---- */
+const AUTOKEY="intercity_autosave";
+let lastAuto=0;
+function autoSave(force){
+ if(!running||!stations.length)return;
+ const now=performance.now();
+ if(!force&&now-lastAuto<4000)return;
+ lastAuto=now;
+ try{localStorage.setItem(AUTOKEY,JSON.stringify({t:Date.now(),g:snapshotGame()}))}catch(e){}}
+function readAuto(){
+ try{const raw=localStorage.getItem(AUTOKEY);if(!raw)return null;
+  const o=JSON.parse(raw);return(o&&o.g&&o.g.stations&&o.g.stations.length)?o:null}catch(e){return null}}
+function clearAuto(){try{localStorage.removeItem(AUTOKEY)}catch(e){}}
+// flush on every event that can precede an offload/close
+document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSave(true)});
+window.addEventListener("pagehide",()=>autoSave(true));
+window.addEventListener("blur",()=>autoSave(true));
+$("mSave").onclick=()=>{
+ $("menuPop").style.display="none";
+ const data=snapshotGame();
  try{const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download="intercity-save.json";document.body.appendChild(a);a.click();a.remove();
@@ -3099,14 +3137,26 @@ function buildOverlay(){
   }
  $("cardOp").classList.toggle("sel",mode==="operator");
  $("cardAt").classList.toggle("sel",mode==="atelier");
- $("seedVal").textContent="GROWTH SEED "+String(seed).slice(0,8)}
+ $("seedVal").textContent="GROWTH SEED "+String(seed).slice(0,8);
+ // surface a one-tap resume when an autosave survives (Safari tab offload, reload, etc.)
+ const au=readAuto(),rb=$("resumeBtn");
+ if(au&&rb){const c=CITIES[au.g.cityId];
+  rb.style.display="block";
+  rb.textContent="RESUME "+((c&&c.name)||au.g.cityId)+" · DAY "+(Math.floor(au.g.simS/DAY_SECONDS)+1)}
+ else if(rb)rb.style.display="none"}
 $("infoMode").onclick=()=>toggleBlurb("blurbMode",MODE_BLURB.op+"\n"+MODE_BLURB.at,"both");
 $("cardOp").onclick=()=>{mode="operator";buildOverlay()};
 $("cardAt").onclick=()=>{mode="atelier";buildOverlay()};
 $("bSeed").onclick=()=>{seed=(Math.random()*1e9)|0;buildOverlay()};
+$("resumeBtn").onclick=()=>{
+ const o=readAuto();if(!o){toast("NO SAVED GAME");return}
+ try{loadSave(o.g);$("overlay").style.display="none";running=true;seenHelp=true;
+  toast("RESUMED · DAY "+(Math.floor(simS/DAY_SECONDS)+1))}
+ catch(e){toast("SAVED GAME UNREADABLE");clearAuto()}};
 $("beginBtn").onclick=()=>{startGame();$("overlay").style.display="none";
  if(!seenHelp){seenHelp=true;$("helpCard").style.display="flex"}};
 function startGame(){
+ seed=(Math.random()*1e9)|0;            // fresh growth each game (item 3)
  city=CITIES[cityId];
  lines=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};
  budget=(city&&city.startBudget)||800;delivered=0;lost=0;journeySum=0;transferSum=0;
@@ -3116,6 +3166,7 @@ function startGame(){
  genStations();computeMetroCap();buildUrbanLayer();rebuildRouting();
  lines.push(newLineObj(0));selLine=0;
  refreshUI();fitView();running=true;
+ clearAuto();autoSave(true);
  $("offer").style.display="none"}
 buildOverlay();
 document.getElementById("bldTag").textContent="v"+VERSION;
@@ -3129,7 +3180,7 @@ function frame(now){
    view.s+=(tv.s-view.s)*0.045;view.x+=(tv.x-view.x)*0.045;view.y+=(tv.y-view.y)*0.045;
    baseS=view.s}
   if(Math.abs(view.s-lastGeomS)/Math.max(lastGeomS,.001)>0.05)rebuildGeometry();
-  update(dt);draw();drawPosterStats();hudTick()}
+  update(dt);draw();drawPosterStats();hudTick();autoSave(false)}
  requestAnimationFrame(frame)}
 function drawPosterStats(){
  if(!document.body.classList.contains("poster")||!posterStats)return;
