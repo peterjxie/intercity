@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="2.07";
+const VERSION="2.08";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -952,6 +952,9 @@ function resize(){DPR=Math.min(2.5,window.devicePixelRatio||1);
  cv.style.width=W+"px";cv.style.height=H+"px"}
 window.addEventListener("resize",resize);resize();
 const GROWBOUNDS_CAP=118;
+// hidden-line ghost: visible but not intrusive, constant relative to the live line width
+const GHOST_W=1.15, GHOST_A=0.50, GHOST_COL="#7f8a97";
+const _labelBoxes=[];   // per-frame drawn-label rects, used to declutter overlapping names
 function growBounds(){
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9,n=0;
  for(const s of stations){if(!s.emerged)continue;n++;
@@ -2405,7 +2408,7 @@ function draw(){
   const CC=clsOf(L);
   const _ghost=!lineShown(L);
   const _sel=(L.id===selLine&&!_ghost);
-  if(_ghost){ctx.strokeStyle="#8b96a2";ctx.globalAlpha=0.72;ctx.shadowColor="#8b96a2";ctx.shadowBlur=px(2.2)}
+  if(_ghost){ctx.strokeStyle=GHOST_COL;ctx.globalAlpha=GHOST_A;ctx.shadowColor=GHOST_COL;ctx.shadowBlur=px(1.3)}
   else{ctx.strokeStyle=L.color;ctx.globalAlpha=_sel?1:CC.alpha*0.82;
    if(_sel){ctx.shadowColor=L.color;ctx.shadowBlur=px(7*zoomBump())}else{ctx.shadowBlur=0;ctx.shadowColor="transparent"}}
   for(const P of L.paths){
@@ -2425,7 +2428,7 @@ function draw(){
       strokeWetOnly(ctx,rail,4.6);ctx.restore()}}}
    else{
     ctx.setLineDash([]);
-    ctx.lineWidth=_ghost?px(clsOf(L).w*zoomBump()):lineWidthFor(L.id);
+    ctx.lineWidth=_ghost?px(clsOf(L).w*GHOST_W):lineWidthFor(L.id);
     const isTram=(L.cls||"metro")==="tram";
     const dpts=(isTram&&city.smoothTram&&P.pts.length>2)?chaikin(P.pts,2):P.pts;
     strokeElbow(ctx,dpts,isTram?2.4:4.6);
@@ -2548,6 +2551,7 @@ function draw(){
      ctx.strokeStyle=L.color;ctx.lineWidth=px(1.3);
      ctx.beginPath();ctx.arc(e.x,e.y,px(8),0,TAU);ctx.stroke()}}}}
  // stations
+ _labelBoxes.length=0;
  for(const s of stations){
   if(!s.emerged)continue;
   const t=simS-s.emergeAt;
@@ -2574,10 +2578,17 @@ function draw(){
   if(s.icOnly){ctx.lineWidth=px(0.9);
    ctx.beginPath();ctx.arc(s.x,s.y,px(6.6),0,TAU);ctx.stroke()}
   if(s.name&&(!poster||posterLabels)){
-   ctx.fillStyle="rgba(220,230,245,0.95)";
-   const fixedPx=13/view.s; // constant ~13 SCREEN px regardless of zoom (view.s cancels canvas scale)
-   ctx.font=fixedPx+"px ui-monospace,monospace";
-   ctx.fillText(s.name,s.x+px(9),s.y+px(10))}
+   const _r=view.s/(fitS0||view.s||1);          // 1 at the fitted view, >1 zoomed in
+   const _fp=clamp(8+5*(_r-1),8,13);            // 8 screen px zoomed out .. 13 zoomed in
+   ctx.fillStyle="rgba(220,230,245,"+(0.62+0.33*clamp(_r-1,0,1)).toFixed(2)+")";
+   ctx.font=(_fp/view.s)+"px ui-monospace,monospace";
+   const _lx=s.x+px(9),_ly=s.y+px(10);
+   const _lw=ctx.measureText(s.name).width,_lh=_fp/view.s;
+   let _clash=false;
+   for(const q of _labelBoxes){
+    if(_lx<q.x+q.w&&_lx+_lw>q.x&&_ly-_lh<q.y&&_ly>q.y-q.h){_clash=true;break}}
+   if(!_clash){_labelBoxes.push({x:_lx,y:_ly,w:_lw,h:_lh});
+    ctx.fillText(s.name,_lx,_ly)}}
   if(!poster&&s.q.length&&symF()>0.62){
    const show=Math.min(s.q.length,8);
    ctx.fillStyle="rgba(196,210,230,0.85)";
