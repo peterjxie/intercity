@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="2.08";
+const VERSION="2.09";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -425,6 +425,7 @@ gba:{
  core:{x:44,y:13},
  classOverrides:{metro:{w:1.9,alpha:0.72}},stationScale:0.46,
  fareMult:3,subsidyMult:3,subsidyKm:0.13,cashDrop:150,startBudget:1800,trainCostMult:0.6,expressCostMult:0.5,
+ speedScale:{express:1.35},
  pop:72,popUnit:"M",kmScale:2.0,symScale:0.85,crossPairs:[[1,2]],classes:["metro","express"],
  landmark:{x:46,y:22,name:"CANTON TOWER"},
  specials:[
@@ -449,9 +450,9 @@ berlin:{
  maxExpress:5,maxMetro:5,maxInter:5,
  classes:["metro","express"],
  classNames:{metro:"U-BAHN",express:"S-BAHN"},
- classOverrides:{express:{w:1.3,alpha:0.95},metro:{w:2.5,alpha:0.75}},
+ classOverrides:{express:{w:2.5,alpha:0.95},metro:{w:1.9,alpha:0.75}},
  expressCarScale:0.6,speedScale:{express:0.62},expressNose:0.10,
- expressRailGap:0.6,stationScale:0.42,interScale:0.86,
+ expressRailGap:0.8,stationScale:0.42,interScale:0.86,
  features:["terrain","air","sbahn"],
  pop:4,popUnit:"M",kmScale:0.45,spacing:{min:4.2,max:7},jitter:6,
  seas:[
@@ -503,9 +504,10 @@ bangkok:{
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
  classOverrides:{tram:{alpha:0.75,maxCars:2}},
+ speedScale:{express:1.25},
  stationScale:0.48,
  features:["ferry","air","tram","ic"],
- pop:17,popUnit:"M",kmScale:0.5,tramRiverMax:0.6,spacing:{min:2.8,max:6.2},jitter:4.5,waterPad:0.4,tramMaxKm:30,growCap:78,coreZone:32,carScale:0.55,
+ pop:17,popUnit:"M",kmScale:0.5,tramRiverMax:0.6,spacing:{min:2.8,max:6.2},jitter:4.5,waterPad:0.4,tramMaxKm:44,growCap:78,coreZone:32,carScale:0.55,
  seas:[],
  rivers:[
   {pts:[[38.0,8.0],[35.5,15.0],[33.4,21.5],[31.2,27.8],[29.9,29.3],[28.9,31.0],[28.4,32.3],[27.9,33.6],[27.4,34.8],[26.8,36.2],[25.9,37.6],[24.2,39.0],[23.2,40.2],[22.7,41.8],[22.7,43.8],[23.2,45.8],[24.0,46.9],[25.1,47.7],[27.1,48.4],[28.9,48.8],[30.2,49.3],[31.6,50.7],[32.2,52.1],[32.2,52.7],[32.5,53.6],[32.5,54.5],[32.5,56.1],[32.0,58.0],[31.4,58.9],[29.5,61.4],[27.5,62.8],[25.9,63.9],[24.0,65.1],[23.5,66.8],[25.5,68.5],[28.5,70.0],[31.3,69.8],[34.1,71.1],[36.7,72.8],[39.3,75.2],[42.1,76.5],[44.4,76.1],[46.8,73.8],[47.0,70.8],[46.9,66.6],[47.8,62.7],[50.4,61.4],[54.3,62.7],[59.0,64.1],[61.0,66.6],[62.5,67.8],[62.9,70.4],[61.7,74.6],[58.5,77.9],[56.0,81.2],[53.2,82.1],[51.1,83.1],[47.5,82.7],[45.0,81.3],[43.1,80.9],[41.6,82.9],[41.1,86.5],[42.1,89.8],[43.8,92.8],[46.4,96.0]],hw:0.9,smoothRiver:2},
@@ -2042,6 +2044,31 @@ function exchange(t,L,arriveIdx){
   else remain.push(r)}
  st.q=remain;
  return moved}
+// Mirrors exchange(): true only when NOTHING would board or alight at the next station,
+// so the train may run straight through at speed instead of braking to a halt.
+function willSkipNext(t,L){
+ const sc=segCountOf(L);if(sc<1)return false;
+ const n=L.stops.length;
+ let arriveIdx;
+ if(t.dir>0)arriveIdx=L.loop?(t.seg+1)%n:t.seg+1;
+ else arriveIdx=t.seg;
+ if(arriveIdx<0||arriveIdx>=n)return false;
+ if(!L.loop&&(arriveIdx>=n-1||arriveIdx<=0))return false;   // always stop at termini
+ const stId=L.stops[arriveIdx],st=stations[stId];
+ if(!st)return false;
+ // someone alights here?
+ for(const r of t.riders)if(r.shape===st.shape)return false;
+ const nx=nextAfter(L,arriveIdx,t.dir);
+ if(nx==null)return false;                                   // end of route: everyone off
+ const dHere=sh=>distByShape[sh]?distByShape[sh][stId]:Infinity;
+ const dNext=sh=>distByShape[sh]?distByShape[sh][nx]:Infinity;
+ // someone transfers off here?
+ for(const r of t.riders)if(!(dNext(r.shape)<dHere(r.shape)))return false;
+ // anyone waiting who would board?
+ const cap=(1+t.cars)*effCarCap(L);
+ if(t.riders.length<cap)
+  for(const r of st.q)if(dNext(r.shape)<dHere(r.shape))return false;
+ return true}
 function stepTrain(t,dt){
  const L=lines[t.li],sc=segCountOf(L);
  if(sc<1)return;
@@ -2055,7 +2082,9 @@ function stepTrain(t,dt){
  let s=t.f*P.len;
  const sdir=t.dir>0?s:P.len-s;
  const dStop=Math.max(0,P.len-sdir);
- let allowed=Math.min(vmax,Math.sqrt(2*br*dStop+0.01));
+ // look ahead: if the next station needs no exchange, run through it without braking
+ const _skip=willSkipNext(t,L);
+ let allowed=_skip?vmax:Math.min(vmax,Math.sqrt(2*br*dStop+0.01));
  if(P.cornerS!=null){
   const cs=t.dir>0?P.cornerS:P.len-P.cornerS;
   const dC=Math.abs(sdir-cs);
@@ -2077,20 +2106,22 @@ function stepTrain(t,dt){
   const arriveIdx=L.loop?(t.seg+1)%n:t.seg+1;
   const mv=exchange(t,L,arriveIdx);
   const st=stations[L.stops[arriveIdx]];
-  t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));
-  t.v=0;
+  const term=!L.loop&&arriveIdx>=n-1;
+  if(mv===0&&!term){t.dwell=0}          // nothing boarded or alighted: keep rolling
+  else{t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));t.v=0}
   if(L.loop){t.seg=(t.seg+1)%sc;t.f=0}
-  else if(arriveIdx>=n-1){t.dir=-1;t.f=1}
+  else if(term){t.dir=-1;t.f=1}
   else{t.seg++;t.f=0}
   return}
  if(t.dir<0&&t.f<=0){
   const arriveIdx=t.seg;
   const mv=exchange(t,L,arriveIdx);
   const st=stations[L.stops[arriveIdx]];
-  t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));
-  t.v=0;
+  const term=!L.loop&&arriveIdx<=0;
+  if(mv===0&&!term){t.dwell=0}          // nothing boarded or alighted: keep rolling
+  else{t.dwell=Math.min(2.6,(st.inter?0.35:0.7)+mv*(st.inter?0.03:0.06));t.v=0}
   if(L.loop){t.seg=(t.seg-1+sc)%sc;t.f=1}
-  else if(arriveIdx<=0){t.dir=1;t.f=0}
+  else if(term){t.dir=1;t.f=0}
   else{t.seg--;t.f=1}
   return}}
 function stepSpawns(dt){
@@ -2369,8 +2400,9 @@ function drawRegions(){
  for(const r of city.regions)ctx.fillText(r.t,r.x,r.y);
  try{ctx.letterSpacing="0px"}catch(e){}}
 function lineWidthFor(li){
- const w=clsOf(lines[li]).w;
- return px(li===selLine?w+0.6:w)}
+ const zbX=1+(zoomBump()-1)*0.55;   // same damped zoom the express rails use
+ const w=clsOf(lines[li]).w*zbX;
+ return px(li===selLine?w+0.6*zbX:w)}
 function draw(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
@@ -2428,7 +2460,7 @@ function draw(){
       strokeWetOnly(ctx,rail,4.6);ctx.restore()}}}
    else{
     ctx.setLineDash([]);
-    ctx.lineWidth=_ghost?px(clsOf(L).w*GHOST_W):lineWidthFor(L.id);
+    ctx.lineWidth=_ghost?px(clsOf(L).w*GHOST_W*(1+(zoomBump()-1)*0.55)):lineWidthFor(L.id);
     const isTram=(L.cls||"metro")==="tram";
     const dpts=(isTram&&city.smoothTram&&P.pts.length>2)?chaikin(P.pts,2):P.pts;
     strokeElbow(ctx,dpts,isTram?2.4:4.6);
@@ -2605,7 +2637,7 @@ function draw(){
   for(const t of L.trains){
    const P=L.paths[t.seg];if(!P)continue;
    const CC=clsOf(L);
-   const _zc=zoomBump();
+   const _zc=1+(zoomBump()-1)*0.45;   // damped: cars grow with zoom but never balloon
    const _xp=(L.cls||"metro")==="express"||L.express;
    const _xs=_xp?((city&&city.expressCarScale!=null)?city.expressCarScale:1):1;
    const _cs=(city&&city.carScale!=null)?city.carScale:1;
