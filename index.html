@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="3.04";
+const VERSION="3.05";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -604,7 +604,7 @@ paris:{
 },
 bangkok:{
  name:"BANGKOK",blurb:"The river bends past the old city; the monorail never touches it.",
- palette:["#4fae62","#2f7d5a","#4a63c8","#8a5cc8","#e5b84d","#e87aa0","#c23b3b","#3fa0b8","#d97b3f","#7a8fa6"],
+ palette:["#c38528","#388cd6","#d6cc38","#d63897","#38d6b7","#9d4d63","#38d638","#cea188","#2828c3","#8ebac7","#c32828","#a773e2","#739d4d"],
  maxExpress:2,maxMetro:3,maxTram:8,
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
@@ -1442,12 +1442,22 @@ function pathCrossesWater(pts){
  for(let i=0;i<=n;i++){if(inWater(pointAt(pts,L*i/n)))return true}
  return false}
 function pathCrossesMajorRiver(pts){
+ // TRUE only when the path actually gets to the far bank. Running along a bank, or
+ // clipping the water's edge, is allowed: it is a crossing test, not a "touches water" test.
  const minHW=(city&&city.tramRiverMax)||999;
  if(minHW>=999)return false;
- const L=pathLen(pts),n=Math.max(8,Math.ceil(L*1.4));
- for(let i=0;i<=n;i++){
-  const p=pointAt(pts,L*i/n);
-  for(const r of city.rivers)if(r.hw>minHW&&distToPolyline(p,r.pts)<r.hw)return true}
+ const EPS=0.05;   // a path passing through a river vertex still counts as a crossing
+ for(const r of city.rivers){
+  if(!(r.hw>minHW))continue;
+  for(let i=1;i<pts.length;i++){
+   const a=pts[i-1],b=pts[i];
+   for(let k=1;k<r.pts.length;k++){
+    const c={x:r.pts[k-1][0],y:r.pts[k-1][1]},d={x:r.pts[k][0],y:r.pts[k][1]};
+    if(segIntersect(a,b,c,d))return true}
+   // segIntersect is a strict interior test, so it misses the case where the path runs
+   // exactly through one of the river's vertices. Catch that separately.
+   for(const v of r.pts)
+    if(distToSeg({x:v[0],y:v[1]},[a.x,a.y],[b.x,b.y])<EPS)return true}}
  return false}
 const BRIDGE_FREE_SPAN=0.35,BRIDGE_SNAP=2.0;
 function nearBridgePt(p){
@@ -1455,6 +1465,14 @@ function nearBridgePt(p){
  const snap=(city.bridgeSnap!=null?city.bridgeSnap:BRIDGE_SNAP);
  for(const b of br)if(distToPolyline(p,b)<snap)return true;
  return false}
+function tramElbowOK(L,aId,bId){
+ // returns {ok,flip}. The 45-degree elbow can bend two ways; if the default bend clips
+ // across the river, try the mirror before refusing the connection outright.
+ for(const flip of [false,true]){
+  const seg=edgePtsFor(L,stations[aId],stations[bId],flip);
+  if(!tramWaterBlock(seg))return {ok:true,flip};
+ }
+ return {ok:false,flip:false}}
 function tramWaterBlock(pts){
  if(pathCrossesMajorRiver(pts))return "MONORAIL CANNOT CROSS THE RIVER";
  const br=city&&city.bridges;if(!br||!br.length)return null;
@@ -1945,8 +1963,9 @@ function appendAt(L,endName,X){
  if(edgeOnLine(L,end,X)){toast("EDGE ALREADY ON THIS LINE");return false}
  if(X===other&&L.stops.length>=3){
   if((L.cls||"metro")==="tram"){
-   const seg=edgePtsFor(L,stations[end],stations[X],false);
-   {const _w=tramWaterBlock(seg);if(_w){toast(_w);return false}}}
+   const _e=tramElbowOK(L,end,X);
+   if(!_e.ok){toast(tramWaterBlock(edgePtsFor(L,stations[end],stations[X],false)));return false}
+   if(_e.flip)L.flips[edgeKey(end,X)]=true;}
   if(!pay(segCost(end,X)*exf(L)))return false;
   L.loop=true;(L.hist=L.hist||[]).push({k:"loop"});buzz(14);
   L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
@@ -1959,8 +1978,9 @@ function appendAt(L,endName,X){
  lineU+=dist(stations[end],stations[X]);
  if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?clsX():clsName(L.cls||"metro"))+")");return false}
  if((L.cls||"metro")==="tram"){
-  const seg=edgePtsFor(L,stations[end],stations[X],false);
-  {const _w=tramWaterBlock(seg);if(_w){toast(_w);return false}}}
+  const _e=tramElbowOK(L,end,X);
+  if(!_e.ok){toast(tramWaterBlock(edgePtsFor(L,stations[end],stations[X],false)));return false}
+  if(_e.flip)L.flips[edgeKey(end,X)]=true;}
  {const _b=crossingBlock(L,stations[end].x,stations[end].y,stations[X].x,stations[X].y);if(_b){toast(_b);return false}}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
