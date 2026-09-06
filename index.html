@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="4.00";
+const VERSION="4.04";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -605,18 +605,19 @@ paris:{
 mumbai:{
  name:"MUMBAI",blurb:"A 60km spine on a narrow island. Everything funnels north to south.",
  palette:["#e0533f","#3f8fd6","#e8b23c","#57b85e","#a86bd1","#39b3a6","#d96fa8","#8fa63f","#c9754a","#5f77d6","#cf5470","#67b0d9"],
- maxMetro:7,maxExpress:3,maxTram:2,maxInter:6,
- classes:["metro","express","tram"],
- classNames:{metro:"METRO",express:"SUBURBAN",tram:"MONORAIL"},
- chipLetters:{metro:"M",express:"S",tram:"MO"},
- classOverrides:{express:{w:2.6,alpha:0.95,carCap:9,maxCars:3},metro:{w:1.9,alpha:0.75},tram:{w:1.5,alpha:0.8,maxCars:1}},
- expressCarScale:0.62,speedScale:{express:1.18,tram:0.55},expressNose:0.12,
+ maxMetro:8,maxExpress:3,maxInter:6,
+ classes:["metro","express"],
+ classNames:{metro:"METRO",express:"SUBURBAN"},
+ chipLetters:{metro:"M",express:"S"},
+ classOverrides:{express:{w:2.6,alpha:0.95,carCap:9,maxCars:3},metro:{w:1.9,alpha:0.75}},
+ expressCarScale:0.62,speedScale:{express:1.18},expressNose:0.12,
  expressRailGap:0.8,stationScale:0.44,interScale:0.86,carScale:0.66,
- features:["ferry","air","tram","sbahn"],
+ features:["ferry","air","sbahn"],
  pop:21,popUnit:"M",kmScale:0.75,spacing:{min:1.3,max:5.2},jitter:3.0,
  waterPad:0.35,growCap:92,coreZone:20,accZone:22,genRadius:30,
  minStopGap:2.3,stopGapFlat:9,stopGapZone:26,stopGapOuter:6.0,keepDry:true,
- spawnMult:1.35,
+ spawnMult:1.35,singleRegion:true,showCorridors:true,
+ landlocked:["metro"],landlockedMsg:"ONLY SUBURBAN RAIL CROSSES THE WATER",
  nobuildMsg:"THE NATIONAL PARK IS PROTECTED",
  seas:[
   [[35.07,90.3],[36.12,87.78],[35.98,86.6],[35.63,85.12],[35,83.49],[32.83,83.64],[32.9,82.3],[33.67,80.82],[34.44,79.19],[34.79,77.41],[35.07,75.49],[35.28,74.15],[36.47,73.12],[37.8,71.78],[38.71,70.74],[37.38,70.15],[35.91,70.23],[35.63,68.82],[36.05,66.89],[36.47,64.82],[36.75,62.15],[35.7,59.93],[34.44,57.56],[32.83,56.08],[32.62,54],[34.02,52.07],[35,50.15],[34.02,48.52],[32.55,46.89],[32.06,44.67],[31.71,42],[31.07,39.63],[30.79,36.96],[30.58,34.29],[30.23,31.48],[28.97,27.77],[28.27,21.85],[27.85,15.92],[27.29,8.51],[26.87,1.1],[26.59,-6.31],[26.59,-60],[-60,-60],[-60,160],[35.35,160],[35.35,91.71]],
@@ -1226,6 +1227,19 @@ function crossingBlock(L,ax,ay,bx,by){
   if(wet)return "ONLY THE METRO CROSSES THE IJ";}
  if(cls!=="metro"&&cls!=="express"&&segHitsNoBuild(ax,ay,bx,by))
   return (city&&city.nobuildMsg)||"ONLY THE METRO ENTERS THE OLD CORE";
+ // classes listed in landlocked cannot cross open water at all: the shoreline is a hard
+ // edge for them and only the exempt classes can bridge it.
+ const ll=(city&&city.landlocked)||null;
+ if(ll&&ll.indexOf(cls)>=0){
+  // only a genuine crossing counts: a run of open water longer than landlockedGap.
+  // Merely clipping a shoreline while hugging the coast stays legal.
+  const seg=Math.hypot(bx-ax,by-ay),N=Math.max(24,Math.ceil(seg*6));
+  const gap=(city.landlockedGap!=null)?city.landlockedGap:0.7;
+  let run=0,worst=0;
+  for(let i=0;i<=N;i++){const t=i/N;
+   if(inWater({x:ax+(bx-ax)*t,y:ay+(by-ay)*t},0)){run+=seg/N;if(run>worst)worst=run}
+   else run=0}
+  if(worst>gap)return (city&&city.landlockedMsg)||"THIS LINE CANNOT CROSS WATER";}
  return null}
 function buildUrbanLayer(g){
  if(g==null)g=growthG();
@@ -1420,10 +1434,7 @@ function genStations(){
    const idx=Math.min(cand.length,Math.floor(S.when*(cand.length+sp.length)));
    cand.splice(idx,0,st)}}
  stations=stations.concat(cand);
- stations.forEach((s,i)=>{s.id=i;
-  let bi=0,bd=1e9;
-  coreList.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
-  s.region=bi});
+ stations.forEach((s,i)=>{s.id=i;s.region=regionFor(s)});
  emergePtr=0;
  for(let i=0;i<Math.min(8,stations.length);i++)emergeStation(false)}
 function distToNetwork(p){
@@ -2101,6 +2112,12 @@ function reSnapEdge(L,a,b){
  if(Math.hypot(sB[0]-twp[twp.length-1][0],sB[1]-twp[twp.length-1][1])<=1.2)twp[twp.length-1]=sB;else twp.push(sB);
  const wp=twp;
  L.railPaths[edgeKey(a,b)]=wp}
+function regionFor(p){
+ if(city&&city.singleRegion)return 0;
+ const cl=(city&&city.regionCores)||(city&&city.cores)||[city.core];
+ let bi=0,bd=1e9;
+ cl.forEach((c,ci)=>{const d=dist(p,c);if(d<bd){bd=d;bi=ci}});
+ return bi}
 function regionOK(L,id){
  if(L.express||L.homeRegion==null)return true;
  const r=stations[id].region;
@@ -2321,9 +2338,8 @@ function placeStation(p){
  if(!pay(COST.station))return;
  const d=districtAt(p);
  const cl=city.cores||[city.core];
- let bi=0,bd=1e9;cl.forEach((c2,ci)=>{const d2=dist(p,c2);if(d2<bd){bd=d2;bi=ci}});
  const s={x:p.x,y:p.y,shape:shapeFor(d,mulberry32((Math.random()*1e9)|0)),district:d,
-  dens:densityAt(p),emerged:true,inter:false,q:[],acc:0,order:0,name:null,region:bi,
+  dens:densityAt(p),emerged:true,inter:false,q:[],acc:0,order:0,name:null,region:regionFor(p),
   strainT:0,emergeAt:simS,id:stations.length};
  stations.push(s);tool=null;rebuildRouting();refreshUI();toast("INFILL STATION OPENED")}
 function upgradeInter(idx){
@@ -2732,6 +2748,25 @@ function lineWidthFor(li){
  const zbX=1+(zoomBump()-1)*0.55;   // same damped zoom the express rails use
  const w=clsOf(lines[li]).w*zbX;
  return px(li===selLine?w+0.6*zbX:w)}
+function drawCorridors(){
+ // A faint hint of the natural transport spine: hairline dashes under everything else.
+ // Opt-in per city (city.showCorridors) so dense corridor sets stay hidden.
+ if(!city||!city.showCorridors||!city.corridors||!city.corridors.length)return;
+ if(document.body.classList.contains("poster"))return;
+ // strongest before you have built anything, easing back as the network fills in
+ const fade=clamp(1-(growthG()-0.12)*0.85,0.34,1);
+ ctx.save();
+ ctx.lineCap="round";ctx.lineJoin="round";
+ ctx.setLineDash([px(1.5),px(2.4)]);
+ let wMax=0;for(const c of city.corridors)wMax=Math.max(wMax,c.w||1);
+ for(const c of city.corridors){
+  const rel=(c.w||1)/(wMax||1);
+  ctx.strokeStyle="rgba(150,182,224,"+(0.17*(0.45+0.55*rel)*fade).toFixed(4)+")";
+  ctx.lineWidth=px(0.55+0.5*rel);
+  ctx.beginPath();ctx.moveTo(c.pts[0][0],c.pts[0][1]);
+  for(let i=1;i<c.pts.length;i++)ctx.lineTo(c.pts[i][0],c.pts[i][1]);
+  ctx.stroke()}
+ ctx.restore()}
 function draw(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
@@ -2741,6 +2776,7 @@ function draw(){
  drawRidges();
  if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
  drawRegions();
+ drawCorridors();
  // corridors drawn after glow pass
  if(showDensity&&densCanvas){ctx.save();ctx.globalCompositeOperation="screen";
   ctx.drawImage(densCanvas,0,0,100,100);ctx.restore()}
@@ -3015,6 +3051,7 @@ function nearestSeg(wp,L,rad){
    if(d<bd){bd=d;bi=i}}}
  return bi}
 cv.addEventListener("pointerdown",e=>{
+ if(e.isPrimary){pointers.clear();pinchPrev=null;pinched=false;midPan=null}
  try{cv.setPointerCapture(e.pointerId)}catch(_){}
  if(e.button===1){e.preventDefault();midPan={x:e.clientX,y:e.clientY};userCam=true;return}
  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -3112,6 +3149,7 @@ function endPointer(e){
  if(pointers.size===0){downP=null;dragMode=null;dragFrom=null;dragW=null;snapSt=null;snapTrail=[]}}
 cv.addEventListener("pointerup",endPointer);
 cv.addEventListener("pointercancel",endPointer);
+cv.addEventListener("lostpointercapture",endPointer);
 cv.addEventListener("wheel",e=>{
  e.preventDefault();userCam=true;
  if(e.ctrlKey){
@@ -3422,10 +3460,7 @@ function loadSave(d){
  ecoInc=0;ecoCost=0;ecoT=0;ecoSeries=[];
  stations=d.stations.map((s,i)=>({...s,id:i,q:[],acc:0,order:0,strainT:0,
   emergeAt:s.emerged?-10:0}));
- {const cl=city.cores||[city.core];
-  for(const s of stations){let bi=0,bd=1e9;
-   cl.forEach((c2,ci)=>{const d2=dist(s,c2);if(d2<bd){bd=d2;bi=ci}});
-   s.region=bi}}
+ for(const s of stations)s.region=regionFor(s);
  lines=d.lines.map((L,i)=>{const o=newLineObj(i);o.stops=L.stops;o.flips=L.flips||{};o.railPaths=L.railPaths||{};
   o.loop=!!L.loop;o.activeEnd=L.activeEnd||"tail";o.express=!!L.express;o.visible=L.visible!==false;o.cls=L.cls||(L.express?"express":"metro");
   o.trains=(L.trains||[]).map(t=>({li:i,seg:t.seg,f:t.f||0,dir:t.dir,dwell:.3,
