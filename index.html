@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="4.04";
+const VERSION="4.05";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -681,7 +681,7 @@ mumbai:{
   {pts:[[36.12,57.26],[40.19,57.41],[42.99,57.41],[47.2,58.89],[50,60.37]],w:0.7},
   {pts:[[47.2,67.48],[44.39,70.74],[41.87,74],[41.59,75.93],[37.38,79.63]],w:0.6}
  ],
- cores:[{x:38.11,y:85.55},{x:39.29,y:73.9},{x:42.95,y:66.86},{x:39.68,y:58.93},{x:41.13,y:42.74},{x:57.71,y:49.11}],
+ cores:[{x:38.11,y:85.55},{x:39.29,y:73.9},{x:42.95,y:66.86},{x:39.68,y:58.93},{x:41.13,y:42.74}],
  core:{x:39.29,y:73.9},
  landmark:{x:38.04,y:88.23,name:"GATEWAY"},
  specials:[
@@ -1215,7 +1215,29 @@ function segHitsNoBuild(ax,ay,bx,by){
  for(let i=0;i<=12;i++){const t=i/12;
   if(inNoBuild({x:ax+(bx-ax)*t,y:ay+(by-ay)*t}))return true}
  return false}
-function crossingBlock(L,ax,ay,bx,by){
+function waterRunOnPath(pts){
+ // longest unbroken run of open water along a path, in grid units
+ let worst=0,run=0;
+ for(let k=1;k<pts.length;k++){
+  const a=pts[k-1],c=pts[k];
+  const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(10,Math.ceil(seg*6));
+  for(let q=0;q<=N;q++){const t=q/N;
+   if(inWater({x:a.x+(c.x-a.x)*t,y:a.y+(c.y-a.y)*t},0)){run+=seg/N;if(run>worst)worst=run}
+   else run=0}}
+ return worst}
+// The 45-degree elbow can bend two ways. Try both before refusing: bending inland is
+// almost always available where bending seaward is not.
+function pickRoute(L,aId,bId){
+ const A=stations[aId],B=stations[bId];
+ let msg=null;
+ for(const flip of [false,true]){
+  const pts=edgePtsFor(L,A,B,flip);
+  const bl=crossingBlock(L,A.x,A.y,B.x,B.y,pts);
+  if(bl){msg=msg||bl;continue}
+  if((L.cls||"metro")==="tram"){const w=tramWaterBlock(pts);if(w){msg=msg||w;continue}}
+  return {ok:true,flip,msg:null}}
+ return {ok:false,flip:false,msg:msg||"CANNOT ROUTE HERE"}}
+function crossingBlock(L,ax,ay,bx,by,pts){
  const cls=L.cls||(L.express?"express":"metro");
  const bar=city&&city.ijBarrier;
  // express tunnels under the IJ (like metro): never barred.
@@ -1233,13 +1255,9 @@ function crossingBlock(L,ax,ay,bx,by){
  if(ll&&ll.indexOf(cls)>=0){
   // only a genuine crossing counts: a run of open water longer than landlockedGap.
   // Merely clipping a shoreline while hugging the coast stays legal.
-  const seg=Math.hypot(bx-ax,by-ay),N=Math.max(24,Math.ceil(seg*6));
   const gap=(city.landlockedGap!=null)?city.landlockedGap:0.7;
-  let run=0,worst=0;
-  for(let i=0;i<=N;i++){const t=i/N;
-   if(inWater({x:ax+(bx-ax)*t,y:ay+(by-ay)*t},0)){run+=seg/N;if(run>worst)worst=run}
-   else run=0}
-  if(worst>gap)return (city&&city.landlockedMsg)||"THIS LINE CANNOT CROSS WATER";}
+  const path=pts||[{x:ax,y:ay},{x:bx,y:by}];
+  if(waterRunOnPath(path)>gap)return (city&&city.landlockedMsg)||"THIS LINE CANNOT CROSS WATER";}
  return null}
 function buildUrbanLayer(g){
  if(g==null)g=growthG();
@@ -1325,8 +1343,16 @@ function genStations(){
    emerged:false,inter:false,q:[],acc:0,order:dCore+(rng()-0.5)*16,name:null,strainT:0,emergeAt:0})}
  const icPts=(city.specials||[]).filter(sp=>sp.kind==="ic");
  const nearIC=p2=>{for(const q of icPts)if(dist(p2,q)<9)return true;return false};
+ const gapN=(city.namedClear!=null)?city.namedClear:
+   ((city.minStopGap!=null)?city.minStopGap*0.9:4.0);
+ const fixedPts=(city.specials||[]).map(sp=>({x:sp.x,y:sp.y})).concat([{x:lm.x,y:lm.y}]);
+ const nearNamed=p2=>{for(const f of fixedPts)if(dist(p2,f)<gapN)return true;return false};
  const regOf=p2=>{let bi=0,bd=1e9;coreList.forEach((c2,ci)=>{const d2=dist(p2,c2);if(d2<bd){bd=d2;bi=ci}});return bi};
  for(let ci=cand.length-1;ci>=0;ci--)if(nearIC(cand[ci]))cand.splice(ci,1);
+ // named stations are spliced in regardless of spacing, so clear room around them:
+ // otherwise a hub (and its interchange ring) lands on top of a generated stop.
+ for(let ci=cand.length-1;ci>=0;ci--)
+  if(!cand[ci].name&&nearNamed(cand[ci]))cand.splice(ci,1);
  // accretion: sprawl off existing candidates until the roster is full
  let guard=0;
  while(cand.length<city.count-1&&guard<city.count*80){
@@ -1343,7 +1369,7 @@ function genStations(){
   if(inWater(p,(city.waterPad!=null?city.waterPad:1.2))||inNoBuild(p))continue;
   const d=densityAt(p);
   if(d<0.1&&rng()>0.35)continue;
-  if(nearIC(p))continue;
+  if(nearIC(p)||nearNamed(p))continue;
   if(cand.length&&regOf(p)!==regOf(parent))continue;
   const dCore=dCores(p);
   if(city.genRadius&&dCore>city.genRadius)continue;   // keep the city compact and coverable
@@ -2068,10 +2094,9 @@ function appendAt(L,endName,X){
  if(X===end)return false;
  if(edgeOnLine(L,end,X)){toast("EDGE ALREADY ON THIS LINE");return false}
  if(X===other&&L.stops.length>=3){
-  if((L.cls||"metro")==="tram"){
-   const _e=tramElbowOK(L,end,X);
-   if(!_e.ok){toast(tramWaterBlock(edgePtsFor(L,stations[end],stations[X],false)));return false}
-   if(_e.flip)L.flips[edgeKey(end,X)]=true;}
+  {const _r=pickRoute(L,end,X);
+   if(!_r.ok){toast(_r.msg);return false}
+   if(_r.flip)L.flips[edgeKey(end,X)]=true;}
   if(!pay(segCost(end,X)*exf(L)))return false;
   L.loop=true;(L.hist=L.hist||[]).push({k:"loop"});buzz(14);
   L.trains.forEach((t,i)=>{t.dir=i%2===0?1:-1});
@@ -2083,11 +2108,9 @@ function appendAt(L,endName,X){
  let lineU=0;for(const P of L.paths)lineU+=P.chord;
  lineU+=dist(stations[end],stations[X]);
  if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?clsX():clsName(L.cls||"metro"))+")");return false}
- if((L.cls||"metro")==="tram"){
-  const _e=tramElbowOK(L,end,X);
-  if(!_e.ok){toast(tramWaterBlock(edgePtsFor(L,stations[end],stations[X],false)));return false}
-  if(_e.flip)L.flips[edgeKey(end,X)]=true;}
- {const _b=crossingBlock(L,stations[end].x,stations[end].y,stations[X].x,stations[X].y);if(_b){toast(_b);return false}}
+ {const _r=pickRoute(L,end,X);
+  if(!_r.ok){toast(_r.msg);return false}
+  if(_r.flip)L.flips[edgeKey(end,X)]=true;}
  if(!pay(segCost(end,X)*exf(L)))return false;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
@@ -2767,6 +2790,20 @@ function drawCorridors(){
   for(let i=1;i<c.pts.length;i++)ctx.lineTo(c.pts[i][0],c.pts[i][1]);
   ctx.stroke()}
  ctx.restore()}
+function drawBarrier(){
+ const L=(selLine>=0)?lines[selLine]:null;
+ if(!L||!city||!city.landlocked||!city.waterPolys)return;
+ const cls=L.cls||(L.express?"express":"metro");
+ if(city.landlocked.indexOf(cls)<0)return;
+ if(document.body.classList.contains("poster"))return;
+ const pulse=0.5+0.5*Math.sin(simS*2.2);
+ ctx.save();
+ ctx.lineJoin="round";ctx.lineCap="round";
+ ctx.strokeStyle="rgba(240,158,124,"+(0.42+0.20*pulse).toFixed(3)+")";
+ ctx.lineWidth=px(2.0);
+ ctx.setLineDash([px(3.2),px(2.6)]);
+ for(const poly of city.waterPolys){polyPath(ctx,poly);ctx.stroke()}
+ ctx.restore()}
 function draw(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
@@ -2777,6 +2814,7 @@ function draw(){
  if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
  drawRegions();
  drawCorridors();
+ drawBarrier();
  // corridors drawn after glow pass
  if(showDensity&&densCanvas){ctx.save();ctx.globalCompositeOperation="screen";
   ctx.drawImage(densCanvas,0,0,100,100);ctx.restore()}
@@ -2952,9 +2990,11 @@ function draw(){
  for(const s of stations){
   if(!s.emerged)continue;
   const t=simS-s.emergeAt;
-  if(t<1.2){ctx.strokeStyle="rgba(220,235,255,"+((1-t/1.2)*0.7).toFixed(3)+")";
+  // guard: a negative or NaN age would give arc() a negative radius and kill the whole
+  // render loop, freezing the game
+  if(t>=0&&t<1.2){ctx.strokeStyle="rgba(220,235,255,"+((1-t/1.2)*0.7).toFixed(3)+")";
    ctx.lineWidth=px(1.2);
-   ctx.beginPath();ctx.arc(s.x,s.y,px(5+t*24),0,TAU);ctx.stroke()}
+   ctx.beginPath();ctx.arc(s.x,s.y,Math.max(0,px(5+t*24)),0,TAU);ctx.stroke()}
   const cap=s.inter?STRAIN_INTER:STRAIN_AT;
   if(s.q.length>cap){const p=(Math.sin(simS*6)+1)/2;
    ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
@@ -2971,7 +3011,7 @@ function draw(){
    ctx.strokeStyle="#eaf1fb";ctx.lineWidth=px(2.2*zoomBump()*_is);
    ctx.beginPath();ctx.arc(s.x,s.y,rr,0,TAU);ctx.stroke();
    ctx.strokeStyle="#06080d";ctx.lineWidth=px(0.9*zoomBump()*_is);
-   ctx.beginPath();ctx.arc(s.x,s.y,rr-px(1.6*zoomBump()*_is),0,TAU);ctx.stroke();}
+   ctx.beginPath();ctx.arc(s.x,s.y,Math.max(0,rr-px(1.6*zoomBump()*_is)),0,TAU);ctx.stroke();}
   if(s.icOnly){ctx.lineWidth=px(0.9);
    ctx.beginPath();ctx.arc(s.x,s.y,px(6.6),0,TAU);ctx.stroke()}
   if(s.name&&(!poster||posterLabels)){
