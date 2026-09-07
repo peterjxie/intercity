@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="4.05";
+const VERSION="4.10";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -618,6 +618,13 @@ mumbai:{
  minStopGap:2.3,stopGapFlat:9,stopGapZone:26,stopGapOuter:6.0,keepDry:true,
  spawnMult:1.35,singleRegion:true,showCorridors:true,
  landlocked:["metro"],landlockedMsg:"ONLY SUBURBAN RAIL CROSSES THE WATER",
+ barrierMinHw:0.4,crossingMsg:"SUBURBAN RAIL CROSSES ONLY AT THE BRIDGES",
+ crossings:[
+  {x:56.31,y:67.04,r:5.0,name:"VASHI BRIDGE"},
+  {x:59.53,y:52.67,r:5.0,name:"AIROLI BRIDGE"},
+  {x:60.51,y:46.3,r:5.0,name:"KALWA BRIDGE"},
+  {x:37.8,y:25.55,r:5.0,name:"VASAI CREEK BRIDGE"}
+ ],
  nobuildMsg:"THE NATIONAL PARK IS PROTECTED",
  seas:[
   [[35.07,90.3],[36.12,87.78],[35.98,86.6],[35.63,85.12],[35,83.49],[32.83,83.64],[32.9,82.3],[33.67,80.82],[34.44,79.19],[34.79,77.41],[35.07,75.49],[35.28,74.15],[36.47,73.12],[37.8,71.78],[38.71,70.74],[37.38,70.15],[35.91,70.23],[35.63,68.82],[36.05,66.89],[36.47,64.82],[36.75,62.15],[35.7,59.93],[34.44,57.56],[32.83,56.08],[32.62,54],[34.02,52.07],[35,50.15],[34.02,48.52],[32.55,46.89],[32.06,44.67],[31.71,42],[31.07,39.63],[30.79,36.96],[30.58,34.29],[30.23,31.48],[28.97,27.77],[28.27,21.85],[27.85,15.92],[27.29,8.51],[26.87,1.1],[26.59,-6.31],[26.59,-60],[-60,-60],[-60,160],[35.35,160],[35.35,91.71]],
@@ -1215,6 +1222,42 @@ function segHitsNoBuild(ax,ay,bx,by){
  for(let i=0;i<=12;i++){const t=i/12;
   if(inNoBuild({x:ax+(bx-ax)*t,y:ay+(by-ay)*t}))return true}
  return false}
+function isBarrierWater(p){
+ // seas always; rivers only at or above the city's barrier width. Anything narrower is an
+ // ordinary bridged creek and blocks nobody.
+ if(!city)return false;
+ for(const poly of (city.islands||[]))if(pointInPoly(p,poly))return false;
+ for(const poly of (city.seas||[]))if(pointInPoly(p,poly))return true;
+ const mh=(city.barrierMinHw!=null)?city.barrierMinHw:1e9;
+ for(const r of (city.rivers||[]))if(r.hw>=mh&&distToPolyline(p,r.pts)<r.hw)return true;
+ return false}
+// Landlocked classes never cross major water. Other classes may cross only where the city
+// lists a real rail bridge.
+function barrierBlock(L,pts){
+ if(!city)return null;
+ const cls=L.cls||(L.express?"express":"metro");
+ const ll=city.landlocked||[],gates=city.crossings||[];
+ if(!ll.length&&!gates.length)return null;
+ const gap=(city.landlockedGap!=null)?city.landlockedGap:0.7;
+ const atGate=p=>{for(const g of gates)if(Math.hypot(p.x-g.x,p.y-g.y)<=(g.r||3.2))return true;return false};
+ // track the longest run of barrier water and where its middle lies: a crossing counts as
+ // being "at a bridge" when the water is traversed at the bridge, not when every last
+ // metre of it happens to fall inside the circle.
+ let run=0,worst=0,curPts=[],worstPts=[];
+ for(let k=1;k<pts.length;k++){
+  const a=pts[k-1],c=pts[k];
+  const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(18,Math.ceil(seg*16));
+  for(let q=0;q<=N;q++){const t=q/N;
+   const pt={x:a.x+(c.x-a.x)*t,y:a.y+(c.y-a.y)*t};
+   if(isBarrierWater(pt)){run+=seg/N;curPts.push(pt);
+    if(run>worst){worst=run;worstPts=curPts.slice()}}
+   else{run=0;curPts=[]}}}
+ if(worst<=gap)return null;
+ if(ll.indexOf(cls)>=0)return city.landlockedMsg||"THIS LINE CANNOT CROSS WATER";
+ if(gates.length){
+  const mid=worstPts[Math.floor(worstPts.length/2)];
+  if(mid&&!atGate(mid))return city.crossingMsg||"CROSS ONLY AT THE RAIL BRIDGES";}
+ return null}
 function waterRunOnPath(pts){
  // longest unbroken run of open water along a path, in grid units
  let worst=0,run=0;
@@ -1251,13 +1294,7 @@ function crossingBlock(L,ax,ay,bx,by,pts){
   return (city&&city.nobuildMsg)||"ONLY THE METRO ENTERS THE OLD CORE";
  // classes listed in landlocked cannot cross open water at all: the shoreline is a hard
  // edge for them and only the exempt classes can bridge it.
- const ll=(city&&city.landlocked)||null;
- if(ll&&ll.indexOf(cls)>=0){
-  // only a genuine crossing counts: a run of open water longer than landlockedGap.
-  // Merely clipping a shoreline while hugging the coast stays legal.
-  const gap=(city.landlockedGap!=null)?city.landlockedGap:0.7;
-  const path=pts||[{x:ax,y:ay},{x:bx,y:by}];
-  if(waterRunOnPath(path)>gap)return (city&&city.landlockedMsg)||"THIS LINE CANNOT CROSS WATER";}
+ {const bb=barrierBlock(L,pts||[{x:ax,y:ay},{x:bx,y:by}]);if(bb)return bb}
  return null}
 function buildUrbanLayer(g){
  if(g==null)g=growthG();
@@ -2804,6 +2841,28 @@ function drawBarrier(){
  ctx.setLineDash([px(3.2),px(2.6)]);
  for(const poly of city.waterPolys){polyPath(ctx,poly);ctx.stroke()}
  ctx.restore()}
+function drawCrossings(){
+ // the sanctioned water crossings: shown whenever a line that could use them is selected
+ if(!city||!city.crossings||!city.crossings.length)return;
+ if(document.body.classList.contains("poster"))return;
+ const L=(selLine>=0)?lines[selLine]:null;if(!L)return;
+ const cls=L.cls||(L.express?"express":"metro");
+ if((city.landlocked||[]).indexOf(cls)>=0)return;      // this class can't cross anywhere
+ const pulse=0.5+0.5*Math.sin(simS*2.0);
+ ctx.save();ctx.lineJoin="round";ctx.lineCap="round";
+ for(const g of city.crossings){
+  ctx.setLineDash([px(2.4),px(2.4)]);
+  ctx.strokeStyle="rgba(150,226,168,"+(0.34+0.20*pulse).toFixed(3)+")";
+  ctx.lineWidth=px(1.6);
+  ctx.beginPath();ctx.arc(g.x,g.y,Math.max(0,px(9)),0,TAU);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle="rgba(150,226,168,"+(0.55+0.25*pulse).toFixed(3)+")";
+  ctx.beginPath();ctx.arc(g.x,g.y,Math.max(0,px(1.7)),0,TAU);ctx.fill();
+  if(g.name&&view.s>7){
+   ctx.fillStyle="rgba(178,236,196,0.85)";
+   ctx.font=(9/view.s)+"px ui-monospace,monospace";
+   ctx.fillText(g.name,g.x+px(11),g.y+px(3))}}
+ ctx.restore()}
 function draw(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
@@ -2815,6 +2874,7 @@ function draw(){
  drawRegions();
  drawCorridors();
  drawBarrier();
+ drawCrossings();
  // corridors drawn after glow pass
  if(showDensity&&densCanvas){ctx.save();ctx.globalCompositeOperation="screen";
   ctx.drawImage(densCanvas,0,0,100,100);ctx.restore()}
