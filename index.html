@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="4.10";
+const VERSION="4.12";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -620,10 +620,10 @@ mumbai:{
  landlocked:["metro"],landlockedMsg:"ONLY SUBURBAN RAIL CROSSES THE WATER",
  barrierMinHw:0.4,crossingMsg:"SUBURBAN RAIL CROSSES ONLY AT THE BRIDGES",
  crossings:[
-  {x:56.31,y:67.04,r:5.0,name:"VASHI BRIDGE"},
-  {x:59.53,y:52.67,r:5.0,name:"AIROLI BRIDGE"},
-  {x:60.51,y:46.3,r:5.0,name:"KALWA BRIDGE"},
-  {x:37.8,y:25.55,r:5.0,name:"VASAI CREEK BRIDGE"}
+  {x:55.72,y:67.16,r:5.0,name:"VASHI BRIDGE",path:[[60.56,66.14],[55.72,67.16],[50.88,68.19]]},
+  {x:60,y:53.07,r:5.0,name:"AIROLI BRIDGE",path:[[57.21,52.05],[60,53.07],[62.8,54.09]]},
+  {x:59.65,y:47.72,r:5.0,name:"KALWA BRIDGE",path:[[62.2,46],[59.65,47.72],[57.1,49.44]]},
+  {x:40.39,y:28.53,r:5.0,name:"VASAI CREEK BRIDGE",path:[[39.65,27.25],[40.39,28.53],[41.13,29.81]]}
  ],
  nobuildMsg:"THE NATIONAL PARK IS PROTECTED",
  seas:[
@@ -1270,6 +1270,37 @@ function waterRunOnPath(pts){
  return worst}
 // The 45-degree elbow can bend two ways. Try both before refusing: bending inland is
 // almost always available where bending seaward is not.
+function bridgeRoute(L,aId,bId){
+ // A link that must cross barrier water is routed over the real bridge deck rather than
+ // wherever the straight elbow happens to fall. Approaches keep the 45-degree protocol.
+ const gates=(city&&city.crossings)||[];
+ if(!gates.length)return null;
+ const cls=L.cls||(L.express?"express":"metro");
+ if((city.landlocked||[]).indexOf(cls)>=0)return null;
+ const A=stations[aId],B=stations[bId];
+ let wet=false;
+ for(let q=0;q<=40&&!wet;q++){const t=q/40;
+  if(isBarrierWater({x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t}))wet=true}
+ if(!wet)return null;
+ let best=null,bd=1e9;
+ for(const g of gates){
+  if(!g.path||g.path.length<2)continue;
+  const p0={x:g.path[0][0],y:g.path[0][1]};
+  const p1={x:g.path[g.path.length-1][0],y:g.path[g.path.length-1][1]};
+  const d1=dist(A,p0)+dist(B,p1),d2=dist(A,p1)+dist(B,p0);
+  const d=Math.min(d1,d2);
+  if(d<bd){bd=d;best={g,rev:d2<d1}}}
+ if(!best)return null;
+ const deck=best.rev?best.g.path.slice().reverse():best.g.path;
+ const entry={x:deck[0][0],y:deck[0][1]};
+ const exit={x:deck[deck.length-1][0],y:deck[deck.length-1][1]};
+ const out=[];
+ const push=p=>{const q=[+p.x.toFixed(3),+p.y.toFixed(3)];
+  if(!out.length||Math.hypot(out[out.length-1][0]-q[0],out[out.length-1][1]-q[1])>1e-6)out.push(q)};
+ for(const p of elbowPts(A,entry,false))push(p);
+ for(const p of deck)push({x:p[0],y:p[1]});
+ for(const p of elbowPts(exit,B,false))push(p);
+ return out.length>2?out:null}
 function pickRoute(L,aId,bId){
  const A=stations[aId],B=stations[bId];
  let msg=null;
@@ -1657,6 +1688,11 @@ function tramWaterBlock(pts){
     return clsName("tram")+" MUST CROSS AT A BRIDGE";
    s=-1}}
  return null}
+function gateOfPath(rp){
+ const gates=(city&&city.crossings)||[];
+ for(const g of gates)for(const q of rp)
+  if(Math.hypot(q[0]-g.x,q[1]-g.y)<1.2)return g.name;
+ return null}
 function offsetPolyline(pts,d){
  if(Math.abs(d)<1e-6)return pts.map(p=>({x:p.x,y:p.y}));
  const n=pts.length,out=[];
@@ -1684,23 +1720,30 @@ function bundleGap(){return clamp(px(4.2),0.4,3)}
 function rebuildGeometry(){
  lastGeomS=view.s;
  const reg={};
+ const bundleOf=(L,k)=>{
+  const rp=L.railPaths&&L.railPaths[k];
+  if(rp){const g=gateOfPath(rp);if(g)return "gate:"+g}
+  return k};
  for(const L of lines){const sc=segCountOf(L);
   for(let i=0;i<sc;i++){const a=L.stops[i],b=L.stops[(i+1)%L.stops.length];
-   const k=edgeKey(a,b);(reg[k]=reg[k]||[]).push(L.id)}}
+   const bk=bundleOf(L,edgeKey(a,b));(reg[bk]=reg[bk]||[]).push(L.id)}}
  for(const k in reg)reg[k]=[...new Set(reg[k])].sort((a,b)=>a-b);
  const gap=bundleGap();
  for(const L of lines){const sc=segCountOf(L);L.paths=[];
   for(let i=0;i<sc;i++){
    const aI=L.stops[i],bI=L.stops[(i+1)%L.stops.length];
    const lo=Math.min(aI,bI),hi=Math.max(aI,bI),k=edgeKey(aI,bI);
-   const slot=reg[k].indexOf(L.id),n=reg[k].length;
+   const bk=bundleOf(L,k);
+   const slot=reg[bk].indexOf(L.id),n=reg[bk].length;
    const d=(slot-(n-1)/2)*gap;
    const rp=L.railPaths&&L.railPaths[k];
+   const onBridge=!!(rp&&gateOfPath(rp));
    let pts;
    if(rp){pts=offsetPolyline(rp.map(q=>({x:q[0],y:q[1]})),d)}
    else{const raw=edgePtsFor(L,stations[lo],stations[hi],!!L.flips[k]);pts=(raw.length===2?raw:offsetElbow(raw,d))}
    if(aI!==lo)pts=pts.slice().reverse();
-   L.paths.push({pts,len:pathLen(pts),tunnel:pathCrossesWater(pts),
+   // a bridge rides ABOVE the water, so it must not be dashed out like a tunnel
+   L.paths.push({pts,len:pathLen(pts),bridge:onBridge,tunnel:onBridge?false:pathCrossesWater(pts),
     chord:dist(stations[aI],stations[bI]),aId:aI,bId:bI,lineId:L.id,
     cornerS:pts.length===3?dist(pts[0],pts[1]):null})}}
  separateOverlaps(gap);
@@ -1712,6 +1755,7 @@ function separateOverlaps(gap){
  // then apply cloned offsets so shared point objects aren't corrupted.
  const segs=[];
  for(const L of lines){for(let pi=0;pi<L.paths.length;pi++){const P=L.paths[pi];
+  if(P.bridge)continue;   // already fanned out by the shared-bridge bundle; do not re-offset
   for(let si=1;si<P.pts.length;si++){
    const a=P.pts[si-1],b=P.pts[si];
    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
@@ -2145,10 +2189,15 @@ function appendAt(L,endName,X){
  let lineU=0;for(const P of L.paths)lineU+=P.chord;
  lineU+=dist(stations[end],stations[X]);
  if(kms(lineU)>maxKm){toast("LINE AT MAX · "+maxKm+" KM ("+(L.express?clsX():clsName(L.cls||"metro"))+")");return false}
- {const _r=pickRoute(L,end,X);
+ let _wp=null;
+ {const br=bridgeRoute(L,end,X);
+  if(br&&!crossingBlock(L,stations[end].x,stations[end].y,stations[X].x,stations[X].y,
+       br.map(q=>({x:q[0],y:q[1]}))))_wp=br;}
+ if(!_wp){const _r=pickRoute(L,end,X);
   if(!_r.ok){toast(_r.msg);return false}
   if(_r.flip)L.flips[edgeKey(end,X)]=true;}
- if(!pay(segCost(end,X)*exf(L)))return false;
+ if(!pay((_wp?railCost(_wp):segCost(end,X))*exf(L)))return false;
+ if(_wp)L.railPaths[edgeKey(end,X)]=_wp;
  if(endName==="tail")L.stops.push(X);
  else{L.stops.unshift(X);for(const t of L.trains)t.seg++}
  (L.hist=L.hist||[]).push({k:"add",end:endName});
@@ -2205,12 +2254,19 @@ function doConnect(A,B){
    if(snapEdgeStart(L,A,B)!=="free")return}
   if(kms(dist(stations[A],stations[B]))>lineMaxKm(L)){
    toast("TOO LONG FOR ONE LINE");return}
-  if((L.cls||"metro")==="tram"){
-   const seg=edgePtsFor(L,stations[A],stations[B],false);
-   {const _w=tramWaterBlock(seg);if(_w){toast(_w);return}}}
+  // decide the route BEFORE charging: a blocked link used to take the fare anyway
+  let _wp0=null;
+  {const br=bridgeRoute(L,A,B);
+   if(br&&!crossingBlock(L,stations[A].x,stations[A].y,stations[B].x,stations[B].y,
+        br.map(q=>({x:q[0],y:q[1]}))))_wp0=br;}
+  let _fl0=false;
+  if(!_wp0){const _r=pickRoute(L,A,B);
+   if(!_r.ok){toast(_r.msg);return}
+   _fl0=_r.flip}
   const tc=Math.round(clsOf(L).trainCost*((city&&city.trainCostMult)||1));
-  if(!pay(segCost(A,B)*exf(L)+tc))return;
-  {const _b=crossingBlock(L,stations[A].x,stations[A].y,stations[B].x,stations[B].y);if(_b){toast(_b);return}}
+  if(!pay((_wp0?railCost(_wp0):segCost(A,B))*exf(L)+tc))return;
+  if(_wp0)L.railPaths[edgeKey(A,B)]=_wp0;
+  else if(_fl0)L.flips[edgeKey(A,B)]=true;
   L.stops=[A,B];L.activeEnd="tail";
   L.homeRegion=L.express?null:stations[A].region;
   buzz(12);
