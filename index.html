@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="4.12";
+const VERSION="4.13";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -1704,6 +1704,10 @@ function offsetPolyline(pts,d){
 function offsetElbow(raw,d){
  if(Math.abs(d)<1e-6)return raw.map(p=>({x:p.x,y:p.y}));
  const P=raw;
+ // Only a plain 2- or 3-point elbow can be mitred. Anything longer is a real corridor
+ // (bridge deck, tram corridor) and must be offset point-by-point, or every point past
+ // the third is silently thrown away and the rail flies off.
+ if(P.length>3)return offsetPolyline(P,d);
  if(P.length===2){
   let ux=P[1].x-P[0].x,uy=P[1].y-P[0].y;const m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
   const nx=-uy*d,ny=ux*d;
@@ -1714,7 +1718,12 @@ function offsetElbow(raw,d){
  const den=u1x*u2y-u1y*u2x;
  let C;
  if(Math.abs(den)<1e-6)C={x:P[1].x-u1y*d,y:P[1].y+u1x*d};
- else{const t=((B.x-A.x)*u2y-(B.y-A.y)*u2x)/den;C={x:A.x+u1x*t,y:A.y+u1y*t}}
+ else{const t=((B.x-A.x)*u2y-(B.y-A.y)*u2x)/den;
+  C={x:A.x+u1x*t,y:A.y+u1y*t};
+  // a near-parallel pair gives an enormous mitre spike: fall back to a simple offset
+  const lim=Math.abs(d)*6+Math.hypot(P[1].x-P[0].x,P[1].y-P[0].y)+Math.hypot(P[2].x-P[1].x,P[2].y-P[1].y);
+  if(!isFinite(C.x)||!isFinite(C.y)||Math.hypot(C.x-P[1].x,C.y-P[1].y)>lim)
+   C={x:P[1].x-u1y*d,y:P[1].y+u1x*d}}
  return[A,C,B]}
 function bundleGap(){return clamp(px(4.2),0.4,3)}
 function rebuildGeometry(){
