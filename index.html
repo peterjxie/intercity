@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="4.13";
+const VERSION="4.14";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -1246,7 +1246,7 @@ function barrierBlock(L,pts){
  let run=0,worst=0,curPts=[],worstPts=[];
  for(let k=1;k<pts.length;k++){
   const a=pts[k-1],c=pts[k];
-  const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(18,Math.ceil(seg*16));
+  const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(24,Math.ceil(seg*28));
   for(let q=0;q<=N;q++){const t=q/N;
    const pt={x:a.x+(c.x-a.x)*t,y:a.y+(c.y-a.y)*t};
    if(isBarrierWater(pt)){run+=seg/N;curPts.push(pt);
@@ -1278,19 +1278,39 @@ function bridgeRoute(L,aId,bId){
  const cls=L.cls||(L.express?"express":"metro");
  if((city.landlocked||[]).indexOf(cls)>=0)return null;
  const A=stations[aId],B=stations[bId];
- let wet=false;
- for(let q=0;q<=40&&!wet;q++){const t=q/40;
-  if(isBarrierWater({x:A.x+(B.x-A.x)*t,y:A.y+(B.y-A.y)*t}))wet=true}
- if(!wet)return null;
+ const gap=(city.landlockedGap!=null)?city.landlockedGap:0.7;
+ // Only divert to a bridge when the ordinary 45-degree elbow genuinely cannot avoid the
+ // water. Otherwise a link that merely grazes a shoreline gets sent miles to a crossing.
+ let needs=true;
+ for(const flip of [false,true]){
+  let run=0,worst=0;
+  const pts=edgePtsFor(L,A,B,flip);
+  for(let k=1;k<pts.length&&worst<=gap;k++){
+   const a=pts[k-1],c=pts[k];
+   const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(18,Math.ceil(seg*16));
+   for(let q=0;q<=N;q++){const t=q/N;
+    if(isBarrierWater({x:a.x+(c.x-a.x)*t,y:a.y+(c.y-a.y)*t})){run+=seg/N;if(run>worst)worst=run}
+    else run=0}}
+  if(worst<=gap){needs=false;break}}
+ if(!needs)return null;
+ // choose the gate giving the shortest total route, not merely the nearest endpoints
  let best=null,bd=1e9;
  for(const g of gates){
   if(!g.path||g.path.length<2)continue;
   const p0={x:g.path[0][0],y:g.path[0][1]};
   const p1={x:g.path[g.path.length-1][0],y:g.path[g.path.length-1][1]};
-  const d1=dist(A,p0)+dist(B,p1),d2=dist(A,p1)+dist(B,p0);
+  let deck=0;
+  for(let k=1;k<g.path.length;k++)
+   deck+=Math.hypot(g.path[k][0]-g.path[k-1][0],g.path[k][1]-g.path[k-1][1]);
+  const d1=dist(A,p0)+deck+dist(B,p1),d2=dist(A,p1)+deck+dist(B,p0);
   const d=Math.min(d1,d2);
   if(d<bd){bd=d;best={g,rev:d2<d1}}}
  if(!best)return null;
+ // and refuse a grotesque detour: a crossing that costs many times the direct distance is
+ // not a sensible route, so leave it to the ordinary rules (which will refuse it properly)
+ const maxDet=(city.bridgeDetourMax!=null)?city.bridgeDetourMax:2.6;
+ const detourCap=Math.max(dist(A,B)*maxDet,dist(A,B)+12);
+ if(bd>detourCap)return null;
  const deck=best.rev?best.g.path.slice().reverse():best.g.path;
  const entry={x:deck[0][0],y:deck[0][1]};
  const exit={x:deck[deck.length-1][0],y:deck[deck.length-1][1]};
@@ -1300,7 +1320,11 @@ function bridgeRoute(L,aId,bId){
  for(const p of elbowPts(A,entry,false))push(p);
  for(const p of deck)push({x:p[0],y:p[1]});
  for(const p of elbowPts(exit,B,false))push(p);
- return out.length>2?out:null}
+ if(out.length<=2)return null;
+ let tot=0;
+ for(let k=1;k<out.length;k++)tot+=Math.hypot(out[k][0]-out[k-1][0],out[k][1]-out[k-1][1]);
+ if(tot>detourCap)return null;      // the built route, not just the estimate
+ return out}
 function pickRoute(L,aId,bId){
  const A=stations[aId],B=stations[bId];
  let msg=null;
