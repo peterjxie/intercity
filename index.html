@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="5.01";
+const VERSION="5.03";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -728,7 +728,8 @@ newyork:{
   {x:51.86,y:51.67,r:2.8,name:"DOWNTOWN TUNNELS",path:[[50.93,50.39],[51.86,51.67],[52.78,52.94]]},
   {x:63.7,y:26,r:3.0,name:"HARLEM R BRIDGES",path:[[62.37,26],[63.7,26],[65.02,26]]},
   {x:66.59,y:14.27,r:2.4,name:"BROADWAY BR",path:[[65.71,14.27],[66.59,14.27],[67.46,14.27]]},
-  {x:48.24,y:46.22,r:2.6,name:"HUDSON TUBES",path:[[46.02,46.22],[48.24,46.22],[50.47,46.22]],cls:["express"]}
+  {x:48.24,y:46.22,r:2.6,name:"HUDSON TUBES",path:[[46.02,46.22],[48.24,46.22],[50.47,46.22]],cls:["express"]},
+{x:43.54,y:71.80,r:2.8,name:"NARROWS TUNNEL",path:[[45.8,70.98],[43.54,71.8],[41.29,72.62]]}
  ],
  seas:[
   [[-60,-60],[160,-60],[160,160],[-60,160]]
@@ -1443,14 +1444,39 @@ function bridgeRoute(L,aId,bId){
  const detourCap=Math.max(dist(A,B)*maxDet,dist(A,B)+12);
  if(bd>detourCap)return null;
  const deck=best.rev?best.g.path.slice().reverse():best.g.path;
- const entry={x:deck[0][0],y:deck[0][1]};
- const exit={x:deck[deck.length-1][0],y:deck[deck.length-1][1]};
+ let entry={x:deck[0][0],y:deck[0][1]};
+ let exit={x:deck[deck.length-1][0],y:deck[deck.length-1][1]};
+ // The deck carries a short landing past each shoreline. If a station sits INSIDE that
+ // landing the approach would have to double back on itself, drawing a hook. Trim the
+ // landing back to the station's projection so the approach always runs forward.
+ {const ax=exit.x-entry.x,ay=exit.y-entry.y,al=Math.hypot(ax,ay)||1,ux=ax/al,uy=ay/al;
+  const lead=0.8,keep=0.12;
+  const tA=(A.x-entry.x)*ux+(A.y-entry.y)*uy;
+  if(tA>0){const tr=Math.min(tA,lead-keep);entry={x:entry.x+ux*tr,y:entry.y+uy*tr}}
+  const tB=(B.x-exit.x)*(-ux)+(B.y-exit.y)*(-uy);
+  if(tB>0){const tr=Math.min(tB,lead-keep);exit={x:exit.x-ux*tr,y:exit.y-uy*tr}}}
  const out=[];
  const push=p=>{const q=[+p.x.toFixed(3),+p.y.toFixed(3)];
   if(!out.length||Math.hypot(out[out.length-1][0]-q[0],out[out.length-1][1]-q[1])>1e-6)out.push(q)};
- for(const p of elbowPts(A,entry,false))push(p);
- for(const p of deck)push({x:p[0],y:p[1]});
- for(const p of elbowPts(exit,B,false))push(p);
+ // The elbow can bend two ways. Pick the bend whose leg meeting the deck runs WITH the
+ // deck's direction, so the join is a gentle 45 rather than a sharp turn or a fold.
+ const dux=(exit.x-entry.x),duy=(exit.y-entry.y),dul=Math.hypot(dux,duy)||1;
+ const ux2=dux/dul,uy2=duy/dul;
+ const appr=(from,to,useLast)=>{
+  if(dist(from,to)<0.4)return [from,to];
+  let best=null,bs=-2;
+  for(const f of [false,true]){
+   const e=elbowPts(from,to,f);
+   const a=useLast?e[e.length-2]:e[0],c=useLast?e[e.length-1]:e[1];
+   const vx=c.x-a.x,vy=c.y-a.y,vl=Math.hypot(vx,vy)||1;
+   const s=(vx*ux2+vy*uy2)/vl;
+   if(s>bs){bs=s;best=e}}
+  return best};
+ for(const p of appr(A,entry,true))push(p);
+ push(entry);
+ for(let k=1;k<deck.length-1;k++)push({x:deck[k][0],y:deck[k][1]});
+ push(exit);
+ for(const p of appr(exit,B,false))push(p);
  if(out.length<=2)return null;
  let tot=0;
  for(let k=1;k<out.length;k++)tot+=Math.hypot(out[k][0]-out[k-1][0],out[k][1]-out[k-1][1]);
