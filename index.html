@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="5.00";
+const VERSION="5.01";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -1376,7 +1376,7 @@ function barrierBlock(L,pts){
  let run=0,worst=0,curPts=[],worstPts=[];
  for(let k=1;k<pts.length;k++){
   const a=pts[k-1],c=pts[k];
-  const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(24,Math.ceil(seg*28));
+  const seg=Math.hypot(c.x-a.x,c.y-a.y),N=Math.max(32,Math.ceil(seg*44));
   for(let q=0;q<=N;q++){const t=q/N;
    const pt={x:a.x+(c.x-a.x)*t,y:a.y+(c.y-a.y)*t};
    if(isBarrierWater(pt)){run+=seg/N;curPts.push(pt);
@@ -1890,7 +1890,9 @@ function rebuildGeometry(){
   return k};
  for(const L of lines){const sc=segCountOf(L);
   for(let i=0;i<sc;i++){const a=L.stops[i],b=L.stops[(i+1)%L.stops.length];
-   const bk=bundleOf(L,edgeKey(a,b));(reg[bk]=reg[bk]||[]).push(L.id)}}
+   const k=edgeKey(a,b),bk=bundleOf(L,k),tok=L.id+"|"+k;
+   const arr=(reg[bk]=reg[bk]||[]);
+   if(arr.indexOf(tok)<0)arr.push(tok)}}
  for(const k in reg)reg[k]=[...new Set(reg[k])].sort((a,b)=>a-b);
  const gap=bundleGap();
  for(const L of lines){const sc=segCountOf(L);L.paths=[];
@@ -1898,7 +1900,7 @@ function rebuildGeometry(){
    const aI=L.stops[i],bI=L.stops[(i+1)%L.stops.length];
    const lo=Math.min(aI,bI),hi=Math.max(aI,bI),k=edgeKey(aI,bI);
    const bk=bundleOf(L,k);
-   const slot=reg[bk].indexOf(L.id),n=reg[bk].length;
+   const slot=Math.max(0,reg[bk].indexOf(L.id+"|"+k)),n=reg[bk].length;
    const d=(slot-(n-1)/2)*gap;
    const rp=L.railPaths&&L.railPaths[k];
    const onBridge=!!(rp&&gateOfPath(rp));
@@ -1919,11 +1921,14 @@ function separateOverlaps(gap){
  // then apply cloned offsets so shared point objects aren't corrupted.
  const segs=[];
  for(const L of lines){for(let pi=0;pi<L.paths.length;pi++){const P=L.paths[pi];
-  if(P.bridge)continue;   // already fanned out by the shared-bridge bundle; do not re-offset
   for(let si=1;si<P.pts.length;si++){
    const a=P.pts[si-1],b=P.pts[si];
    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
-   segs.push({L,P,si,mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},nx:-dy/len,ny:dx/len,dir:{x:dx/len,y:dy/len}})}}}
+   const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+   // the deck itself is already fanned out by the shared-crossing bundle, so leave those
+   // segments alone; the approaches on either side still get separated normally
+   if(P.bridge&&(city.crossings||[]).some(g=>Math.hypot(mid.x-g.x,mid.y-g.y)<=(g.r||3.2)))continue;
+   segs.push({L,P,si,mid,nx:-dy/len,ny:dx/len,dir:{x:dx/len,y:dy/len}})}}}
  const near=gap*1.4, used=new Array(segs.length).fill(false);
  // accumulate desired offset per (path,pointIndex) so we can rebuild cleanly
  const shift=new Map(); // key: path-unique -> {idx-> {x,y}}
