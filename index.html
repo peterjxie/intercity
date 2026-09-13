@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="6.12";
+const VERSION="6.13";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -840,7 +840,7 @@ sydney:{
  chipLetters:{metro:"T",express:"M",tram:"L"},
  classOverrides:{express:{w:2.6,alpha:0.95,carCap:8,maxCars:3},metro:{w:2.0,alpha:0.78,carCap:7,maxCars:3},tram:{w:1.5,alpha:0.8,maxCars:2}},
  expressCarScale:0.62,speedScale:{express:1.55,tram:0.6},expressNose:0.12,expressCostMult:1.9,
- expressRailGap:0.8,stationScale:0.44,interScale:0.86,carScale:0.62,
+ expressRailGap:0.8,stationScale:0.33,interScale:0.86,carScale:0.62,
  features:["ferry","air","tram","sbahn","terrain"],
  pop:5.3,popUnit:"M",kmScale:0.65,spacing:{min:1.3,max:3.2},jitter:1.0,
  waterPad:0.2,growCap:94,coreZone:20,accZone:22,genRadius:48,
@@ -856,7 +856,7 @@ sydney:{
   {x:65.55,y:42.67,r:2.4,name:"MEADOWBANK BRIDGE",path:[[65.85,41.49],[65.55,42.67],[65.25,43.86]],cls:["metro", "express"]},
   {x:62.26,y:70.76,r:2.4,name:"COMO BRIDGE",path:[[62.26,69.56],[62.26,70.76],[62.26,71.96]],cls:["metro"]},
   {x:51.26,y:63.96,r:2.4,name:"EAST HILLS BRIDGE",path:[[51.39,62.77],[51.26,63.96],[51.14,65.15]],cls:["metro"]},
-  {x:87.42,y:38.45,r:2.6,name:"SPIT TUNNEL",path:[[88.34,36.97],[87.42,38.45],[86.49,39.94]],cls:["express"]},
+  {x:87.42,y:38.45,r:4.2,name:"SPIT TUNNEL",path:[[88.34,36.97],[87.42,38.45],[86.49,39.94]],cls:["express"]},
   {x:75.23,y:49.35,r:2.6,name:"IRON COVE TUNNEL",path:[[73.5,49.1],[75.23,49.35],[76.96,49.59]],cls:["express"]}
  ],
  seas:[
@@ -1611,11 +1611,35 @@ function bridgeRoute(L,aId,bId){
    const s=(vx*ux2+vy*uy2)/vl;
    if(s>bs){bs=s;best=e}}
   return best};
- for(const p of appr(A,entry,true))push(p);
- push(entry);
- for(let k=1;k<deck.length-1;k++)push({x:deck[k][0],y:deck[k][1]});
- push(exit);
- for(const p of appr(exit,B,false))push(p);
+ // Both approaches can bend either way. Try every combination and keep the first whose
+ // whole route is legal: the deck is fine but an approach can clip other water entirely.
+ const mid=[];
+ for(let k=1;k<deck.length-1;k++)mid.push([deck[k][0],deck[k][1]]);
+ const legs=(from,to)=>{
+  if(dist(from,to)<0.4)return [[from,to]];
+  return [elbowPts(from,to,false),elbowPts(from,to,true)]};
+ const preOpts=legs(A,entry),postOpts=legs(exit,B);
+ const order=[];
+ for(let i=0;i<preOpts.length;i++)for(let j=0;j<postOpts.length;j++)order.push([i,j]);
+ // prefer the bend that runs with the deck, as before
+ const align=(e,useLast)=>{
+  const a=useLast?e[e.length-2]:e[0],c=useLast?e[e.length-1]:e[1];
+  const vx=c.x-a.x,vy=c.y-a.y,vl=Math.hypot(vx,vy)||1;
+  const dux=exit.x-entry.x,duy=exit.y-entry.y,dl=Math.hypot(dux,duy)||1;
+  return (vx*dux/dl+vy*duy/dl)/vl};
+  order.sort((u,v)=>(align(postOpts[v[1]],false)+align(preOpts[v[0]],true))-
+                    (align(postOpts[u[1]],false)+align(preOpts[u[0]],true)));
+ let chosen=null;
+ for(const [i,j] of order){
+  out.length=0;
+  for(const p of preOpts[i])push(p);
+  push(entry);
+  for(const m of mid)push({x:m[0],y:m[1]});
+  push(exit);
+  for(const p of postOpts[j])push(p);
+  if(out.length<=2)continue;
+  if(!barrierBlock(L,out.map(q=>({x:q[0],y:q[1]})))){chosen=true;break}}
+ if(!chosen)return null;
  if(out.length<=2)return null;
  let tot=0;
  for(let k=1;k<out.length;k++)tot+=Math.hypot(out[k][0]-out[k-1][0],out[k][1]-out[k-1][1]);
@@ -1977,7 +2001,10 @@ function edgePtsFor(L,a,b,flip){
  return elbowPts(a,b,flip)}
 function elbowPts(a,b,flip){
  const dx=b.x-a.x,dy=b.y-a.y,adx=Math.abs(dx),ady=Math.abs(dy);
- if(adx<.5||ady<.5||Math.abs(adx-ady)<.5)return[{x:a.x,y:a.y},{x:b.x,y:b.y}];
+ // straight only when the pair is genuinely axis-aligned or genuinely diagonal; anything else
+ // gets an elbow so no leg ever runs at an awkward shallow angle
+ const EPS=0.08;
+ if(adx<EPS||ady<EPS||Math.abs(adx-ady)<EPS)return[{x:a.x,y:a.y},{x:b.x,y:b.y}];
  const sx=Math.sign(dx),sy=Math.sign(dy);let c;
  if(adx>ady)c=flip?{x:a.x+sx*(adx-ady),y:a.y}:{x:a.x+sx*ady,y:a.y+sy*ady};
  else c=flip?{x:a.x,y:a.y+sy*(ady-adx)}:{x:a.x+sx*adx,y:a.y+sy*adx};
@@ -2041,14 +2068,24 @@ function gateOfPath(rp){
 function offsetPolyline(pts,d){
  if(Math.abs(d)<1e-6)return pts.map(p=>({x:p.x,y:p.y}));
  const n=pts.length,out=[];
+ // cumulative length, so the offset can be faded out near each end
+ const cum=[0];let tot=0;
+ for(let i=1;i<n;i++){tot+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);cum.push(tot)}
+ const fade=Math.min(1.1,tot*0.28);
  for(let i=0;i<n;i++){
   const a=pts[Math.max(0,i-1)],b=pts[i],c=pts[Math.min(n-1,i+1)];
   let ux=c.x-a.x,uy=c.y-a.y;const m=Math.hypot(ux,uy)||1;ux/=m;uy/=m;
-  out.push({x:b.x-uy*d,y:b.y+ux*d})}
+  const e=Math.min(cum[i],tot-cum[i]);
+  const k=(fade>1e-6)?clamp(e/fade,0,1):1;
+  out.push({x:b.x-uy*d*k,y:b.y+ux*d*k})}
  return out}
 function offsetElbow(raw,d){
  if(Math.abs(d)<1e-6)return raw.map(p=>({x:p.x,y:p.y}));
  const P=raw;
+ // short legs offset better point-by-point, which also gives them the end taper
+ if(P.length===3){
+  const l1=Math.hypot(P[1].x-P[0].x,P[1].y-P[0].y),l2=Math.hypot(P[2].x-P[1].x,P[2].y-P[1].y);
+  if(Math.min(l1,l2)<Math.abs(d)*4)return offsetPolyline(P,d)}
  // Only a plain 2- or 3-point elbow can be mitred. Anything longer is a real corridor
  // (bridge deck, tram corridor) and must be offset point-by-point, or every point past
  // the third is silently thrown away and the rail flies off.
@@ -3234,13 +3271,22 @@ function drawCorridors(){
  ctx.lineCap="round";ctx.lineJoin="round";
  ctx.setLineDash([px(1.5),px(2.4)]);
  let wMax=0;for(const c of city.corridors)wMax=Math.max(wMax,c.w||1);
+ // where many corridors converge the hint layer turns to mush, so thin it by how many
+ // pass near the core
+ let conv=0;
+ for(const c of city.corridors)if(distToPolyline(city.core,c.pts)<2.5)conv++;
+ const crowd=clamp(3/Math.max(1,conv),0.34,1);
  for(const c of city.corridors){
   const rel=(c.w||1)/(wMax||1);
-  ctx.strokeStyle="rgba(150,182,224,"+(0.17*(0.45+0.55*rel)*fade).toFixed(4)+")";
+  ctx.strokeStyle="rgba(150,182,224,"+(0.17*(0.45+0.55*rel)*fade*crowd).toFixed(4)+")";
   ctx.lineWidth=px(0.55+0.5*rel);
-  ctx.beginPath();ctx.moveTo(c.pts[0][0],c.pts[0][1]);
-  for(let i=1;i<c.pts.length;i++)ctx.lineTo(c.pts[i][0],c.pts[i][1]);
-  ctx.stroke()}
+  // draw segment by segment so the part running through the core can be faded out
+  for(let i=1;i<c.pts.length;i++){
+   const mx=(c.pts[i-1][0]+c.pts[i][0])/2,my=(c.pts[i-1][1]+c.pts[i][1])/2;
+   const dc=Math.hypot(mx-city.core.x,my-city.core.y);
+   ctx.globalAlpha=clamp(0.3+0.7*(dc/7),0.3,1);
+   ctx.beginPath();ctx.moveTo(c.pts[i-1][0],c.pts[i-1][1]);ctx.lineTo(c.pts[i][0],c.pts[i][1]);ctx.stroke()}
+  ctx.globalAlpha=1}
  ctx.restore()}
 function drawBarrier(){
  const L=(selLine>=0)?lines[selLine]:null;
@@ -3478,7 +3524,14 @@ function draw(){
    ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
    ctx.beginPath();ctx.arc(s.x,s.y,px(9),0,TAU);ctx.stroke()}
   ctx.fillStyle="#06080d";
-  const _zb=1.28*zoomBump()*((city&&city.stationScale!=null)?city.stationScale:0.6);
+  // Station symbols are a constant SCREEN size, so zooming out inflates them in world terms
+  // until neighbouring stops merge into a chain. Cap the world-space radius against the
+  // city's own stop spacing so a gap always remains between adjacent stations.
+  let _zb=1.28*zoomBump()*((city&&city.stationScale!=null)?city.stationScale:0.6);
+  {const gapU=(city&&city.minStopGap!=null)?city.minStopGap:4.5;
+   const maxWorldR=gapU*0.55;
+   const worldR=px(6.6*_zb);
+   if(worldR>maxWorldR)_zb*=maxWorldR/worldR;}
   ctx.beginPath();ctx.arc(s.x,s.y,px((s.shape==="plane"?7.6:6.6)*_zb),0,TAU);ctx.fill();
   ctx.strokeStyle="#ccd6e4";ctx.lineWidth=px(0.9*zoomBump());
   shapePath(ctx,s.x,s.y,px((s.shape==="plane"?5:4.4)*_zb),s.shape);ctx.fill();ctx.stroke();
