@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="5.03";
+const VERSION="6.01";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -377,7 +377,7 @@ chongqing:{
 },
 gba:{
  name:"GREATER BAY",blurb:"Three cities, one delta; intercity is the only thread between them.",
- palette:["#d8b45a","#5a86e0","#e8853f","#3cb46e","#e05252","#5bc8d8","#9a6ee0","#e0d08a","#7cc4e8","#c87ae0","#93a7c2","#6ee0b0","#e07a9a","#b0c85a","#8a7ae0"],
+ palette:["#739d4d","#b273e2","#38d6c6","#c32847","#38d638","#a74479","#38d687","#af8ec7","#d1d638","#3195b9","#c35628","#3156b9","#c38a28","#d138d6","#c7a38e","#2828c3","#9d554d"],
  maxExpress:3,maxMetro:14,
  features:["tunnel","islands","air","ic","towns"],
  regions:[
@@ -707,7 +707,7 @@ mumbai:{
 newyork:{
  name:"NEW YORK",blurb:"Express and local share one spine; the rivers decide where you may cross.",
  palette:["#e0533f","#3f8fd6","#e8b23c","#57b85e","#a86bd1","#39b3a6","#d96fa8","#8fa63f","#c9754a","#5f77d6","#cf5470","#67b0d9","#7fbf4a"],
- maxMetro:10,maxExpress:3,maxInter:7,
+ maxMetro:9,maxExpress:4,maxInter:7,
  classes:["metro","express"],
  classNames:{metro:"SUBWAY",express:"COMMUTER"},
  chipLetters:{metro:"S",express:"C"},
@@ -828,6 +828,125 @@ newyork:{
   {x:85.27,y:51.78,name:"JAMAICA",kind:"hub",when:0.66},
   {x:88.31,y:64.67,name:"JFK",kind:"air",when:0.74},
   {x:22.66,y:44.44,name:"NEWARK",kind:"air",when:0.84}
+ ],
+ count:300
+},
+sydney:{
+ name:"SYDNEY",blurb:"A sprawling city pinned between the ocean and the mountains, with one bridge over the harbour.",
+ palette:["#d5ab81","#2828c3","#7b9d4d","#c638d6","#c36628","#38d643","#286bc3","#c39f28","#d581d2","#38d697","#9d4d68","#b7d638","#c3283d","#28a4c3"],
+ maxMetro:8,maxExpress:3,maxTram:3,maxInter:6,
+ classes:["metro","express","tram"],
+ classNames:{metro:"SUBURBAN",express:"METRO",tram:"LIGHT RAIL"},
+ chipLetters:{metro:"T",express:"M",tram:"L"},
+ classOverrides:{express:{w:2.6,alpha:0.95,carCap:8,maxCars:3},metro:{w:2.0,alpha:0.78,carCap:7,maxCars:3},tram:{w:1.5,alpha:0.8,maxCars:2}},
+ expressCarScale:0.62,speedScale:{express:1.55,tram:0.6},expressNose:0.12,expressCostMult:1.9,
+ expressRailGap:0.8,stationScale:0.44,interScale:0.86,carScale:0.62,
+ features:["ferry","air","tram","sbahn","terrain"],
+ pop:5.3,popUnit:"M",kmScale:0.65,spacing:{min:1.3,max:5.6},jitter:2.8,
+ waterPad:0.2,growCap:94,coreZone:20,accZone:22,genRadius:40,
+ minStopGap:1.9,stopGapFlat:9,stopGapZone:34,stopGapOuter:6.5,keepDry:true,
+ singleRegion:true,showCorridors:true,
+ landlocked:["tram"],landlockedMsg:"LIGHT RAIL DOES NOT CROSS THE HARBOUR",
+ barrierMinHw:0.2,crossingMsg:"RAIL CROSSES ONLY AT THE BRIDGES AND THE METRO TUNNEL",
+ nobuildMsg:"PROTECTED BUSHLAND",
+ crossings:[
+  {x:82.8,y:46.82,r:2.4,name:"HARBOUR BRIDGE",path:[[83.18,45.32],[82.8,46.82],[82.43,48.33]],cls:["metro"]},
+  {x:82.17,y:46.86,r:2.4,name:"METRO HARBOUR TUNNEL",path:[[82.23,45.16],[82.17,46.86],[82.11,48.56]],cls:["express"]},
+  {x:65.6,y:42.56,r:2.4,name:"MEADOWBANK BRIDGE",path:[[65.81,41.33],[65.6,42.56],[65.38,43.79]],cls:["metro", "express"]},
+  {x:61.87,y:70.38,r:2.4,name:"COMO BRIDGE",path:[[61.35,69.33],[61.87,70.38],[62.38,71.44]],cls:["metro"]},
+  {x:51.36,y:64.51,r:2.4,name:"EAST HILLS BRIDGE",path:[[51.61,63.34],[51.36,64.51],[51.11,65.69]],cls:["metro"]}
+ ],
+ seas:[
+  [[98.35,14.1],[95.5,24.35],[94.08,34.61],[94.93,40.25],[93.51,42.82],[92.94,45.21],[92.8,48.29],[92.38,53.42],[90.67,57.69],[89.82,63.68],[88.39,68.81],[85.55,73.94],[77.02,79.06],[74.88,82.48],[71.33,85.9],[65.64,92.74],[160,92.74],[160,-60],[99.77,-60],[99.77,2.13]],
+  [[73.04,44.53],[73.32,45.21],[73.61,45.9],[74.17,46.58],[75.03,47.26],[74.17,48.63],[74.46,50],[75.6,50.34],[76.73,48.63],[77.59,47.61],[79.15,46.92],[80.29,47.69],[79.44,48.63],[78.44,49.66],[78.87,49.49],[79.29,48.8],[79.58,49.4],[78.3,50],[77.94,51.2],[79.01,49.83],[79.65,51.2],[79.93,50],[80.5,48.89],[80.93,50],[81.14,50.68],[81.28,48.8],[81.71,47.95],[82.63,47.52],[82.85,48.46],[83.56,48.63],[84.7,49.15],[85.55,51.2],[86.12,50],[86.97,51.03],[88.39,49.15],[91.24,50],[92.66,46.24],[92.94,45.21],[93.51,42.82],[94.08,40.25],[92.09,38.03],[90.53,39.74],[88.82,38.89],[85.83,36.32],[82.99,33.93],[83.56,35.64],[84.84,38.03],[88.11,39.74],[90.1,40.6],[89.82,42.31],[89.25,44.87],[87.82,46.67],[86.69,44.02],[85.55,44.87],[84.13,45.21],[83.42,46.24],[82.71,46.07],[81.85,45.9],[80.72,45.38],[79.86,44.87],[77.87,43.67],[75.88,42.99],[74.46,43.85]],
+  [[85.55,73.94],[88.39,68.81],[84.13,67.44],[81.99,66.24],[80.43,65.39],[80.29,67.52],[77.3,67.52],[77.3,64.7],[75.6,65.05],[74.17,66.24],[72.75,67.95],[72.75,70.52],[74.17,75.65],[79.86,77.36]]
+ ],
+ rivers:[
+  {pts:[[73.32,44.87],[69.91,44.02],[67.06,43.16],[62.8,41.45],[57.11,40.6],[55.4,40.43]],hw:0.42},
+  {pts:[[72.75,67.44],[67.06,68.81],[61.38,70.52],[55.69,67.1],[50,63.68],[45.73,60.26]],hw:0.36},
+  {pts:[[77.02,64.02],[72.75,60.26],[69.91,57.69],[67.06,55.13]],hw:0.14},
+  {pts:[[84.13,-4.71],[68.49,-8.13],[47.16,-11.55],[27.25,-4.71],[10.18,3.84]],hw:0.7},
+  {pts:[[75.88,42.99],[74.17,41.45],[72.75,39.4],[71.33,37.18]],hw:0.25},
+  {pts:[[71.33,85.9],[65.64,84.19],[59.95,85.9]],hw:0.35}
+ ],
+ islands:[],
+ nobuild:[
+  [[-46.7,-30.36],[5.21,-30.36],[3.07,24.35],[3.79,51.71],[4.78,89.32],[5.21,140.61],[-46.7,140.61]],
+  [[74.17,0.42],[95.5,0.42],[95.5,12.39],[86.97,22.64],[75.6,22.64]],
+  [[59.95,82.48],[67.77,84.19],[68.49,92.74],[64.22,106.42],[52.84,106.42],[50,85.9]],
+  [[45.73,67.1],[58.53,67.1],[58.53,82.48],[45.73,82.48]],
+  [[79.86,24.35],[89.82,24.35],[88.39,32.9],[81.28,32.9]]
+ ],
+ blobs:[
+  {x:82.28,y:50,r:2.4,w:1.0,t:"cbd"},
+  {x:80.57,y:50.34,r:2.4,w:1.0,t:"cbd"},
+  {x:84.55,y:50.51,r:2.4,w:1.0,t:"cbd"},
+  {x:83.42,y:52.56,r:2.4,w:0.82,t:"cbd"},
+  {x:78.3,y:54.45,r:2.4,w:0.76,t:"cbd"},
+  {x:74.88,y:56.84,r:2.4,w:0.67,t:"res"},
+  {x:88.11,y:53.08,r:2.4,w:0.64,t:"res"},
+  {x:91.24,y:53.42,r:3.4,w:0.61,t:"res"},
+  {x:87.26,y:57.52,r:3.4,w:0.61,t:"res"},
+  {x:79.86,y:52.22,r:2.4,w:0.7,t:"cbd"},
+  {x:78.72,y:48.63,r:3.4,w:0.58,t:"res"},
+  {x:82.28,y:44.7,r:3.4,w:0.58,t:"res"},
+  {x:84.13,y:43.16,r:3.4,w:0.52,t:"res"},
+  {x:78.58,y:37.52,r:3.4,w:0.46,t:"res"},
+  {x:92.66,y:37.52,r:3.4,w:0.46,t:"res"},
+  {x:93.37,y:29.48,r:3.4,w:0.34,t:"res"},
+  {x:66.21,y:50.34,r:3.4,w:0.46,t:"res"},
+  {x:67.63,y:51.2,r:3.4,w:0.49,t:"res"},
+  {x:72.75,y:47.78,r:3.4,w:0.43,t:"res"},
+  {x:67.77,y:40.6,r:3.4,w:0.37,t:"res"},
+  {x:53.55,y:40.94,r:3.4,w:0.43,t:"res"},
+  {x:48.58,y:38.03,r:4.6,w:0.31,t:"res"},
+  {x:59.95,y:46.58,r:3.4,w:0.37,t:"res"},
+  {x:57.54,y:58.21,r:3.4,w:0.37,t:"res"},
+  {x:42.18,y:59.4,r:4.6,w:0.31,t:"res"},
+  {x:39.62,y:32.9,r:4.6,w:0.29,t:"res"},
+  {x:9.33,y:29.48,r:4.6,w:0.23,t:"res"},
+  {x:24.4,y:26.06,r:4.6,w:0.25,t:"res"},
+  {x:66.92,y:21.28,r:4.6,w:0.25,t:"res"},
+  {x:55.69,y:26.06,r:4.6,w:0.24,t:"res"},
+  {x:45.73,y:22.64,r:4.6,w:0.26,t:"res"},
+  {x:67.06,y:66.75,r:3.4,w:0.37,t:"res"},
+  {x:61.09,y:77.7,r:4.6,w:0.28,t:"res"},
+  {x:74.46,y:81.8,r:3.4,w:0.37,t:"res"},
+  {x:26.39,y:83.17,r:4.6,w:0.2,t:"res"},
+  {x:77.02,y:63.68,r:3.4,w:0.34,t:"res"},
+  {x:81.28,y:59.4,r:3.4,w:0.52,t:"res"},
+  {x:50,y:68.81,r:4.6,w:0.25,t:"res"}
+ ],
+ corridors:[
+  {pts:[[82.14,52.39],[78.44,53.08],[66.21,50.34],[59.95,46.58],[55.4,43.5],[53.55,40.94],[48.58,38.03],[39.62,32.9],[27.25,27.77],[9.33,29.48]],w:1.6},
+  {pts:[[82.14,52.39],[82.85,48.46],[82.71,46.07],[82.28,44.7],[81,41.96],[78.58,37.52],[74.17,32.9],[69.91,26.92],[66.92,21.28]],w:1.5},
+  {pts:[[82.14,52.39],[78.44,53.08],[67.63,51.2],[59.95,46.58],[54.27,44.02],[50,50],[42.18,59.4],[25.83,67.95]],w:1.2},
+  {pts:[[82.14,52.39],[74.88,56.84],[66.07,58.21],[57.54,58.21],[59.95,46.58]],w:1.0},
+  {pts:[[88.11,53.08],[82.14,52.39],[74.88,56.84],[71.33,61.11],[67.06,66.75],[62.8,72.23],[61.09,77.7],[74.46,81.8]],w:1.3},
+  {pts:[[82.14,52.39],[79.86,58.55],[77.02,61.11],[73.46,61.97],[64.22,64.02],[55.69,65.39],[50,68.81],[37.2,77.36],[26.39,83.17]],w:1.2},
+  {pts:[[82.14,52.39],[66.21,50.34],[65.64,43.16],[66.35,39.74],[64.22,33.25],[67.06,26.92],[66.92,21.28]],w:1.0},
+  {pts:[[39.62,32.9],[48.58,38.03],[53.55,40.94],[54.27,46.58],[50,50],[42.18,59.4]],w:0.7},
+  {pts:[[45.73,22.64],[55.69,26.06],[64.22,33.25],[78.58,37.52],[81,41.96],[82.28,44.7],[82.85,48.46],[82.28,50.51],[82.14,52.39],[74.88,56.84],[66.07,58.21],[57.54,58.21]],w:1.3},
+  {pts:[[82.28,50],[80.57,50.34],[78.72,48.63],[72.75,46.58],[64.22,45.73],[53.55,40.94]],w:0.9},
+  {pts:[[82.14,52.39],[80.57,50.34],[79.01,51.03],[77.02,52.22],[73.46,55.13],[72.47,55.81]],w:0.7},
+  {pts:[[82.85,48.46],[82.28,50.51],[82.14,52.39],[84.13,55.13],[87.26,57.52],[84.84,59.4]],w:0.8},
+  {pts:[[48.58,38.03],[53.55,40.94],[57.11,39.74],[59.95,36.32]],w:0.5}
+ ],
+ cores:[{x:82.28,y:50.51},{x:53.55,y:40.94},{x:78.58,y:37.52},{x:88.11,y:53.08},{x:66.21,y:50.34}],
+ core:{x:82.28,y:50.51},
+ landmark:{x:83.46,y:47.74,name:"OPERA HOUSE"},
+ specials:[
+  {x:82.14,y:52.39,name:"CENTRAL",kind:"hub",when:0.1},
+  {x:82.28,y:50.51,name:"TOWN HALL",kind:"hub",when:0.16},
+  {x:82.85,y:48.46,name:"CIRCULAR QUAY",kind:"hub",when:0.22},
+  {x:66.21,y:50.34,name:"STRATHFIELD",kind:"hub",when:0.3},
+  {x:53.55,y:40.94,name:"PARRAMATTA",kind:"hub",when:0.38},
+  {x:78.58,y:37.52,name:"CHATSWOOD",kind:"hub",when:0.46},
+  {x:88.11,y:53.08,name:"BONDI JUNCTION",kind:"hub",when:0.54},
+  {x:78.44,y:62.99,name:"SYDNEY AIRPORT",kind:"air",when:0.62},
+  {x:66.92,y:21.28,name:"HORNSBY",kind:"ic",when:0.72},
+  {x:26.39,y:83.17,name:"CAMPBELLTOWN",kind:"ic",when:0.82},
+  {x:9.33,y:29.48,name:"PENRITH",kind:"ic",when:0.9}
  ],
  count:300
 },
@@ -1289,7 +1408,7 @@ function resize(){DPR=Math.min(2.5,window.devicePixelRatio||1);
 window.addEventListener("resize",resize);resize();
 const GROWBOUNDS_CAP=118;
 // hidden-line ghost: visible but not intrusive, constant relative to the live line width
-const GHOST_W=0.75, GHOST_A=0.46, GHOST_COL="#7f8a97";
+const GHOST_W=0.75, GHOST_A=0.36, GHOST_COL="#78828e";
 const _labelBoxes=[];   // per-frame drawn-label rects, used to declutter overlapping names
 function growBounds(){
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9,n=0;
@@ -3154,7 +3273,7 @@ function draw(){
   const CC=clsOf(L);
   const _ghost=!lineShown(L);
   const _sel=(L.id===selLine&&!_ghost);
-  if(_ghost){ctx.strokeStyle=GHOST_COL;ctx.globalAlpha=GHOST_A;ctx.shadowColor=GHOST_COL;ctx.shadowBlur=px(1.3)}
+  if(_ghost){ctx.strokeStyle=GHOST_COL;ctx.globalAlpha=GHOST_A;ctx.shadowBlur=0;ctx.shadowColor="transparent"}
   else{ctx.strokeStyle=L.color;ctx.globalAlpha=_sel?1:CC.alpha*0.82;
    if(_sel){ctx.shadowColor=L.color;ctx.shadowBlur=px(7*zoomBump())}else{ctx.shadowBlur=0;ctx.shadowColor="transparent"}}
   for(const P of L.paths){
