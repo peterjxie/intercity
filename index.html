@@ -201,7 +201,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="6.11";
+const VERSION="6.12";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -1574,8 +1574,14 @@ function bridgeRoute(L,aId,bId){
  // and refuse a grotesque detour: a crossing that costs many times the direct distance is
  // not a sensible route, so leave it to the ordinary rules (which will refuse it properly)
  const maxDet=(city.bridgeDetourMax!=null)?city.bridgeDetourMax:2.6;
- const detourCap=Math.max(dist(A,B)*maxDet,dist(A,B)+12);
+ let deckLen=0;
+ for(let k=1;k<best.g.path.length;k++)
+  deckLen+=Math.hypot(best.g.path[k][0]-best.g.path[k-1][0],best.g.path[k][1]-best.g.path[k-1][1]);
+ const detourCap=Math.max(dist(A,B)*maxDet,dist(A,B)+deckLen+3);
  if(bd>detourCap)return null;
+ // two stations closer together than the crossing is wide are almost certainly on the same
+ // bank: sending them over the deck and back is what produces a splayed detour
+ if(dist(A,B)<deckLen*0.95)return null;
  const deck=best.rev?best.g.path.slice().reverse():best.g.path;
  let entry={x:deck[0][0],y:deck[0][1]};
  let exit={x:deck[deck.length-1][0],y:deck[deck.length-1][1]};
@@ -1614,6 +1620,18 @@ function bridgeRoute(L,aId,bId){
  let tot=0;
  for(let k=1;k<out.length;k++)tot+=Math.hypot(out[k][0]-out[k-1][0],out[k][1]-out[k-1][1]);
  if(tot>detourCap)return null;      // the built route, not just the estimate
+ // lateral wander: a route that bows far off the straight line reads as a splayed fan even
+ // when its total length is acceptable
+ {const lim=Math.max(dist(A,B)*0.9,deckLen*0.75+1.5);
+  for(const q of out)
+   if(distToSeg({x:q[0],y:q[1]},[A.x,A.y],[B.x,B.y])>lim)return null}
+ // final shape check: reject any route that folds back on itself. Cheaper and more reliable
+ // than predicting every geometry that could cause one.
+ for(let k=1;k<out.length-1;k++){
+  const a1=Math.atan2(out[k][1]-out[k-1][1],out[k][0]-out[k-1][0]);
+  const a2=Math.atan2(out[k+1][1]-out[k][1],out[k+1][0]-out[k][0]);
+  let dd=Math.abs(a2-a1);if(dd>Math.PI)dd=2*Math.PI-dd;
+  if(dd>2.44)return null}
  return out}
 function pickRoute(L,aId,bId){
  const A=stations[aId],B=stations[bId];
