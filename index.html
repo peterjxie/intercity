@@ -106,6 +106,8 @@ body.poster #offer,body.poster #lineKind{display:none!important}
 #seedVal{color:var(--dim);font-size:10px;letter-spacing:.2em}
 .hidden{display:none!important}
 body.poster #topL,body.poster #topR,body.poster #bottom{display:none}
+body.posterLight #posterBar{background:rgba(250,248,242,.93);border-color:rgba(20,24,33,.18)}
+body.posterLight #posterBar button{color:#141821;border-color:rgba(20,24,33,.22)}
 body.poster #posterBar{display:flex}
 #wormBox{margin-top:5px;pointer-events:none}
 #wormT{pointer-events:auto;background:transparent;border:none;color:var(--dim);font-size:8px;letter-spacing:.18em;padding:2px 0}
@@ -149,6 +151,8 @@ body.poster #posterBar{display:flex}
  <button id="pLabels">LABELS · ON</button>
  <button id="pStats">STATS · OFF</button>
  <button id="pTrains">TRAINS · ON</button>
+ <button id="pStyle">STYLE · MAP</button>
+ <button id="pTheme">DARK</button>
  <button id="pPng">EXPORT PNG</button>
  <button id="pExit">RETURN</button>
 </div>
@@ -201,7 +205,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="7.10";
+const VERSION="7.20";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -272,7 +276,7 @@ function pointAlongPoly(pl,t){
 const CITIES={
 istanbul:{
  name:"ISTANBUL",blurb:"Two continents, one strait.",
- palette:["#e04b4b","#37b46e","#4db8e8","#e0559f","#9a6ee0","#d8b45a","#e08a6a","#8a9bb8"],
+ palette:["#e354aa","#54e354","#549ce3","#cea022","#1d1daf","#af1d1d","#54e3d0"],
  seas:[
   [[-5,74],[14,74],[20,68],[34,68],[40,74],[50,74],[52,72],[58,72],[62,76],[78,76],[84,70],[105,70],[105,105],[-5,105]]
  ],
@@ -310,7 +314,7 @@ istanbul:{
 },
 chongqing:{
  name:"CHONGQING",blurb:"Two rivers, one peninsula. Monorail on the bridges, metro under the ridge.",
- palette:["#e05252","#3cb46e","#5a86e0","#d8b45a","#5bc8d8","#e06ab0","#9a6ee0","#a8c85a"],
+ palette:["#8d9dec","#decd35","#e354c7","#1daf1d","#af1d3a","#54e3d0","#1d1daf","#876d45"],
  maxMetro:6,maxTram:2,maxExpress:0,
  classes:["metro","tram"],
  classNames:{tram:"MONORAIL"},
@@ -379,7 +383,7 @@ chongqing:{
 },
 gba:{
  name:"GREATER BAY",blurb:"Three cities, one delta. Only intercity rail ties them together.",
- palette:["#739d4d","#b273e2","#38d6c6","#c32847","#38d638","#a74479","#38d687","#af8ec7","#d1d638","#3195b9","#c35628","#3156b9","#c38a28","#d138d6","#c7a38e","#2828c3","#9d554d"],
+ palette:["#bbaf7c","#e354e3","#54b8e3","#af971d","#e35484","#45876d","#1d1daf","#875b45","#546ce3","#66af1d","#bb74c3","#54e3da","#af2b1d","#454887","#e38d54","#54e39c","#dd9dae"],
  maxExpress:3,maxMetro:14,
  features:["tunnel","islands","air","ic","towns"],
  regions:[
@@ -448,7 +452,7 @@ gba:{
 },
 berlin:{
  name:"BERLIN",blurb:"U-Bahn holds the core. The Ring carries the rest.",
- palette:["#8fbf5a","#e0563a","#3fa66a","#e5c24d","#a0704a","#9a7ec2","#4db8e8","#5a86e0","#e8853f","#4fae62","#c05a8a","#7a8fa6"],
+ palette:["#5f8745","#de54e3","#ce5b22","#54e354","#5d4587","#e3de54","#e35484","#73d8e8","#1d1daf","#c89e93"],
  maxExpress:5,maxMetro:5,maxInter:5,
  classes:["metro","express"],
  classNames:{metro:"U-BAHN",express:"S-BAHN"},
@@ -502,7 +506,7 @@ berlin:{
 },
 paris:{
  name:"PARIS",blurb:"Twenty arrondissements packed tight. The RER runs out to the airports.",
- palette:["#f2c045","#2f6fc4","#4faf62","#c2417f","#e07b3a","#8a5cc8","#3fb0b8","#d94f4f","#9aab3a","#c07a4a","#5a86e0","#e0699a"],
+ palette:["#d7b6a2","#1d1daf","#af1d3a","#54e3e3","#af7a1d","#1d57af","#4e8745","#e354e3","#dee354","#457187","#54e354","#c88dce"],
  maxMetro:9,maxExpress:3,maxInter:6,
  classes:["metro","express"],
  classNames:{metro:"METRO",express:"RER"},
@@ -609,7 +613,7 @@ paris:{
 },
 mumbai:{
  name:"MUMBAI",blurb:"A 60 km spine on a narrow island. Everything funnels north to south.",
- palette:["#e0533f","#3f8fd6","#e8b23c","#57b85e","#a86bd1","#39b3a6","#d96fa8","#8fa63f","#c9754a","#5f77d6","#cf5470","#67b0d9"],
+ palette:["#54e3c2","#c52b78","#438f3d","#454a87","#dee354","#d554e3","#af7a1d","#1d1daf","#af211d","#64aad3","#54e354","#bb7e7c"],
  maxMetro:8,maxExpress:4,maxInter:6,
  classes:["metro","express"],
  classNames:{metro:"METRO",express:"SUBURBAN"},
@@ -713,7 +717,7 @@ mumbai:{
 },
 newyork:{
  name:"NEW YORK",blurb:"Express and local share one spine. The rivers decide where you cross.",
- palette:["#e0533f","#3f8fd6","#e8b23c","#57b85e","#a86bd1","#39b3a6","#d96fa8","#8fa63f","#c9754a","#5f77d6","#cf5470","#67b0d9","#7fbf4a"],
+ palette:["#af611d","#54e3e3","#e354e3","#bb977c","#1d1daf","#648745","#2d579f","#e3e354","#457c87","#af1d57","#22ce89","#bb7cb1","#61af1d"],
  maxMetro:9,maxExpress:4,maxInter:7,
  classes:["metro","express"],
  classNames:{metro:"SUBWAY",express:"COMMUTER"},
@@ -841,7 +845,7 @@ newyork:{
 },
 sydney:{
  name:"SYDNEY",blurb:"The 2035 network. One bridge, three tunnels. Metro goes where rail cannot, at a price.",
- palette:["#26addf","#df6326","#2649ba","#e0cc8a","#c31d8c","#9ccebf","#df26df","#d1db4d","#4a5e96","#c3911d","#cf84e6","#69964a","#df265d","#26df26","#964a6e","#26dfa7","#ec827e","#2626df","#96704a"],
+ palette:["#9dc5dd","#e3e354","#5475e3","#877345","#e354e3","#e7ce92","#7a3597","#45875f","#af1d1d","#1d7eaf","#e38854","#1d1daf","#874548","#a0e792","#af1d61","#af8d1d","#bb7cb5","#1daf3f","#e2989a"],
  maxMetro:8,maxExpress:6,maxTram:5,maxInter:7,
  classes:["metro","express","tram"],
  classNames:{metro:"SUBURBAN",express:"METRO",tram:"LIGHT RAIL"},
@@ -977,7 +981,7 @@ sydney:{
 },
 mexicocity:{
  name:"MEXICO CITY",blurb:"A lake bed ringed by mountains. Rail stops at the ridges; the cable car does not.",
- palette:["#739d4d","#b273e2","#38d6c6","#c32847","#38d638","#a74479","#38d687","#af8ec7","#d1d638","#3195b9","#c35628","#3156b9","#c38a28","#d138d6","#c7a38e","#2828c3","#9d554d"],
+ palette:["#519e70","#546ce3","#e2da98","#6a4587","#af7e1d","#e354b3","#54e362","#bb887c","#1d1daf","#457a87","#e3e354","#b354e3","#af1d1d","#549ce3","#719f2d","#973556","#54d5e3"],
  maxMetro:12,maxExpress:2,maxTram:3,maxInter:6,
  classes:["metro","express","tram"],
  classBlurbs:{metro:"Twelve lines under a lake bed. Dense, cheap, and stops at the sierras.",express:"Suburbano to the northern towns. Long reach, few stops.",tram:"Cablebus. The only mode that climbs a ridge. Slow, small cars, short lines."},
@@ -1101,7 +1105,7 @@ mexicocity:{
 },
 bangkok:{
  name:"BANGKOK",blurb:"The river bends past the old city. The monorail never touches it.",
- palette:["#c38528","#388cd6","#d6cc38","#d63897","#38d6b7","#9d4d63","#38d638","#cea188","#2828c3","#8ebac7","#c32828","#a773e2","#739d4d"],
+ palette:["#af6b1d","#1d6baf","#54e354","#e873d8","#598745","#1d1daf","#73d8e8","#af1d44","#e3de54"],
  maxExpress:2,maxMetro:4,maxTram:3,
  classes:["metro","tram","express"],
  classNames:{metro:"BTS · MRT",tram:"MONORAIL",express:"AIRPORT LINK"},
@@ -1157,7 +1161,7 @@ bangkok:{
 },
 amsterdam:{
  name:"AMSTERDAM",blurb:"Canals ring a core no tram may enter. Only the metro dives under.",
- palette:["#e03a3a","#f0a020","#3a9a4a","#3060c0","#b060d0","#e070a0","#20b0a0","#a05020","#8fd040","#d0d040","#7040e0","#40c0f0","#f08040"],
+ palette:["#456f87","#e3de54","#d598e2","#54e3a5","#4851a8","#628745","#d054e3","#54dae3","#e3548d","#54e354","#af611d","#1d1daf","#bb807c"],
  maxMetro:3,maxTram:9,maxExpress:1,
  classes:["tram","metro","express"],
  classNames:{metro:"METRO",tram:"TRAM",express:"SPRINTER"},
@@ -1568,6 +1572,51 @@ let tool=null;                    // null | 'station' | 'inter' | 'detach'
 let hiddenCls={};                 // per-class layer-hide state; tap a class icon to toggle
 let crossings=[];
 let showDensity=false, posterTrains=true, posterLabels=true, posterStats=false, running=false, seenHelp=false;
+let posterSchematic=false, posterTheme="dark", schemPos=null, _schemLive=false, _schemSave=null;
+const THEMES={
+ dark:{bg:"#06080d",ink:"#dfe7f3",stn:"#06080d",dim:"rgba(223,231,243,0.55)",faint:"rgba(223,231,243,0.30)"},
+ light:{bg:"#f2efe6",ink:"#141821",stn:"#ffffff",dim:"rgba(20,24,33,0.62)",faint:"rgba(20,24,33,0.34)"}};
+function TH(){return THEMES[posterTheme]||THEMES.dark}
+function isPoster(){return document.body.classList.contains("poster")}
+// Schematic (Beck) layout: snap every served station to a grid, nearest-first from the core,
+// resolving collisions outward. Edges then fall on the existing 45-degree elbow logic.
+function buildSchematic(){
+ const used=new Set();
+ for(const L of lines)for(const s of L.stops)used.add(s);
+ if(used.size<2){schemPos=null;return}
+ let tot=0,n=0;
+ for(const L of lines)for(let i=1;i<L.stops.length;i++){
+  tot+=dist(stations[L.stops[i-1]],stations[L.stops[i]]);n++}
+ const g=Math.max(1.1,(n?tot/n:4)*0.62);
+ const ids=[...used].sort((a,b)=>dist(stations[a],city.core)-dist(stations[b],city.core));
+ const taken=new Set(),pos={};
+ for(const id of ids){
+  const s=stations[id];
+  let gx=Math.round(s.x/g),gy=Math.round(s.y/g);
+  if(taken.has(gx+","+gy)){
+   let found=false;
+   for(let r=1;r<=40&&!found;r++){
+    let best=null,bd=1e9;
+    for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){
+     if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+     if(taken.has((gx+dx)+","+(gy+dy)))continue;
+     const d=Math.hypot((gx+dx)*g-s.x,(gy+dy)*g-s.y);
+     if(d<bd){bd=d;best=[gx+dx,gy+dy]}}
+    if(best){gx=best[0];gy=best[1];found=true}}}
+  taken.add(gx+","+gy);
+  pos[id]={x:gx*g,y:gy*g};}
+ schemPos=pos}
+// run fn with stations moved onto the schematic grid, then put them back
+function withSchematic(fn){
+ if(!posterSchematic){fn();return}
+ buildSchematic();
+ if(!schemPos){fn();return}
+ const save=stations.map(s=>({x:s.x,y:s.y}));
+ for(const id in schemPos){const s=stations[id];if(s){s.x=schemPos[id].x;s.y=schemPos[id].y}}
+ rebuildGeometry();
+ try{fn()}finally{
+  stations.forEach((s,i)=>{s.x=save[i].x;s.y=save[i].y});
+  rebuildGeometry()}}
 let densCanvas=null, urbanCanvas=null, lastGeomS=0, lastUrbanG=-1;
 function growthG(){
  const sf=stations.length?emergePtr/stations.length:0;
@@ -1591,15 +1640,21 @@ const GHOST_W=0.75, GHOST_A=0.36, GHOST_COL="#78828e";
 const _labelBoxes=[];   // per-frame drawn-label rects, used to declutter overlapping names
 function growBounds(){
  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9,n=0;
- for(const s of stations){if(!s.emerged)continue;n++;
+ const diag=isPoster()&&posterSchematic;
+ if(diag){
+  // frame the built network only
+  for(const L of lines)for(const id of L.stops){const s=stations[id];if(!s)continue;n++;
+   minX=Math.min(minX,s.x);maxX=Math.max(maxX,s.x);
+   minY=Math.min(minY,s.y);maxY=Math.max(maxY,s.y)}}
+ if(!n)for(const s of stations){if(!s.emerged)continue;n++;
   minX=Math.min(minX,s.x);maxX=Math.max(maxX,s.x);
   minY=Math.min(minY,s.y);maxY=Math.max(maxY,s.y)}
  if(!n){minX=32;maxX=68;minY=32;maxY=68}
- const m=6+9*growthG();
+ const m=diag?3.5:(6+9*growthG());
  let bw=maxX-minX+2*m,bh=maxY-minY+2*m;
  const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
  // global frame ceiling (long-standing); cities may override via growCap
- const growCap=(city&&city.growCap!=null)?city.growCap:GROWBOUNDS_CAP;
+ const growCap=diag?1e9:((city&&city.growCap!=null)?city.growCap:GROWBOUNDS_CAP);
  if(bw>growCap)bw=growCap;
  if(bh>growCap)bh=growCap;
  return{bw,bh,cx,cy}}
@@ -3529,17 +3584,20 @@ function drawCrossings(){
    ctx.fillText(g.name,g.x+px(11),g.y+px(3)+row*px(11))}}
  ctx.restore()}
 function draw(){
+ const _schem=isPoster()&&posterSchematic;
  ctx.setTransform(DPR,0,0,DPR,0,0);
- ctx.fillStyle="#06080d";ctx.fillRect(0,0,W,H);
+ ctx.fillStyle=TH().bg;ctx.fillRect(0,0,W,H);
  ctx.setTransform(DPR*view.s,0,0,DPR*view.s,-view.x*view.s*DPR,-view.y*view.s*DPR);
- drawGrid();
- drawWater();
- drawRidges();
- if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
- drawRegions();
- drawCorridors();
- drawBarrier();
- drawCrossings();
+ // a diagram carries no geography: no grid, water, terrain, density or corridor hints
+ if(!_schem){
+  drawGrid();
+  drawWater();
+  drawRidges();
+  if(urbanCanvas)ctx.drawImage(urbanCanvas,0,0,100,100);
+  drawRegions();
+  drawCorridors();
+  drawBarrier();
+  drawCrossings();}
  // corridors drawn after glow pass
  if(showDensity&&densCanvas){ctx.save();ctx.globalCompositeOperation="screen";
   ctx.drawImage(densCanvas,0,0,100,100);ctx.restore()}
@@ -3569,7 +3627,8 @@ function draw(){
   const _ghost=!lineShown(L);
   const _sel=(L.id===selLine&&!_ghost);
   if(_ghost){ctx.strokeStyle=GHOST_COL;ctx.globalAlpha=GHOST_A;ctx.shadowBlur=0;ctx.shadowColor="transparent"}
-  else{ctx.strokeStyle=L.color;ctx.globalAlpha=_sel?1:CC.alpha*0.82;
+  else{ctx.strokeStyle=L.color;
+   ctx.globalAlpha=(isPoster()&&posterTheme==="light")?1:(_sel?1:CC.alpha*0.82);
    if(_sel){ctx.shadowColor=L.color;ctx.shadowBlur=px(7*zoomBump())}else{ctx.shadowBlur=0;ctx.shadowColor="transparent"}}
   for(const P of L.paths){
    const zb=zoomBump();
@@ -3588,7 +3647,8 @@ function draw(){
       strokeWetOnly(ctx,rail,4.6);ctx.restore()}}}
    else{
     ctx.setLineDash([]);
-    ctx.lineWidth=_ghost?px(clsOf(L).w*GHOST_W*(1+(zoomBump()-1)*0.55)):lineWidthFor(L.id);
+    ctx.lineWidth=_ghost?px(clsOf(L).w*GHOST_W*(1+(zoomBump()-1)*0.55)):
+     lineWidthFor(L.id)*((isPoster()&&posterTheme==="light")?1.5:1);
     const isTram=(L.cls||"metro")==="tram";
     const dpts=(isTram&&city.smoothTram&&P.pts.length>2)?chaikin(P.pts,2):P.pts;
     strokeElbow(ctx,dpts,isTram?2.4:4.6);
@@ -3726,8 +3786,12 @@ function draw(){
      ctx.beginPath();ctx.arc(e.x,e.y,px(8),0,TAU);ctx.stroke()}}}}
  // stations
  _labelBoxes.length=0;
+ const _schemNow=isPoster()&&posterSchematic;
+ const _served=new Set();
+ if(_schemNow)for(const L of lines)for(const q of L.stops)_served.add(q);
  for(const s of stations){
   if(!s.emerged)continue;
+  if(_schemNow&&!_served.has(s.id))continue;
   const t=simS-s.emergeAt;
   // guard: a negative or NaN age would give arc() a negative radius and kill the whole
   // render loop, freezing the game
@@ -3738,12 +3802,13 @@ function draw(){
   if(s.q.length>cap){const p=(Math.sin(simS*6)+1)/2;
    ctx.strokeStyle="rgba(255,84,112,"+(0.25+0.45*p).toFixed(3)+")";ctx.lineWidth=px(1.4);
    ctx.beginPath();ctx.arc(s.x,s.y,px(9),0,TAU);ctx.stroke()}
-  ctx.fillStyle="#06080d";
+  ctx.fillStyle=TH().stn;
   // Station symbols are a constant SCREEN size, so zooming out inflates them in world terms
   // until neighbouring stops merge into a chain. Cap the world-space radius against the
   // city's own stop spacing so a gap always remains between adjacent stations.
   let _zb=1.28*zoomBump()*((city&&city.stationScale!=null)?city.stationScale:0.6);
-  if(fitS0>0&&view.s<=fitS0*1.35){
+  if(_schemNow)_zb*=1.9;
+  if(!_schemNow&&fitS0>0&&view.s<=fitS0*1.35){
    const gapU=(city&&city.minStopGap!=null)?city.minStopGap:4.5;
    const maxWorldR=gapU*0.55;
    const worldR=px(6.6*_zb);
@@ -3800,7 +3865,7 @@ function draw(){
     const p=pointAt(P.pts,s);
     ctx.save();ctx.translate(p.x,p.y);
     ctx.rotate(p.ang+(t.dir<0?Math.PI:0));
-    ctx.fillStyle="#06080d";
+    ctx.fillStyle=TH().stn;
     ctx.beginPath();
     if(L.express&&u===0){
      const ns=carL*((city&&city.expressNose!=null)?city.expressNose:0.34);
@@ -3814,7 +3879,7 @@ function draw(){
     else ctx.rect(-carL/2,-carW/2,carL,carW);
     ctx.fill();
     ctx.strokeStyle=L.color;ctx.lineWidth=px(1.6*_zc);ctx.stroke();
-    ctx.fillStyle="rgba(223,231,243,0.92)";
+    ctx.fillStyle=(posterTheme==="light")?"rgba(18,22,30,0.94)":"rgba(223,231,243,0.92)";
     const cc=CC.carCap,cols=Math.ceil(cc/2);
     const seat0=u*cc;
     for(let k2=0;k2<cc;k2++){
@@ -4194,12 +4259,38 @@ $("pStats").onclick=()=>{posterStats=!posterStats;
  $("pStats").textContent="STATS · "+(posterStats?"ON":"OFF")};
 $("pTrains").onclick=()=>{posterTrains=!posterTrains;
  $("pTrains").textContent="TRAINS · "+(posterTrains?"ON":"OFF")};
-$("pPng").onclick=()=>{
- try{const url=cv.toDataURL("image/png");
+$("pStyle").onclick=()=>{posterSchematic=!posterSchematic;
+ $("pStyle").textContent="STYLE \u00b7 "+(posterSchematic?"DIAGRAM":"MAP")};
+$("pTheme").onclick=()=>{posterTheme=(posterTheme==="dark")?"light":"dark";
+ $("pTheme").textContent=posterTheme.toUpperCase();
+ document.body.classList.toggle("posterLight",posterTheme==="light")};
+function exportPoster(){
+ const oDPR=DPR,oW=cv.width,oH=cv.height,oWW=W,oHH=H,oS=view.s,oX=view.x,oY=view.y,oUser=userCam;
+ try{
+  // a poster shape, not the phone's: 2:3 portrait at print resolution
+  W=1400;H=2100;DPR=2;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  userCam=false;fitView();
+  const pad=0.06;view.s*=(1-pad*2);
+  view.x-=(W/view.s)*pad; view.y-=(H/view.s)*pad;
+  draw();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle=TH().faint;ctx.font="9px ui-monospace,monospace";
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  const day=Math.floor(simS/DAY_SECONDS)+1;
+  ctx.fillText((city?city.name:"")+"  \u00b7  DAY "+day+(posterSchematic?"  \u00b7  DIAGRAM":"")+
+   "  \u00b7  INTERCITY",18,H-16);
+  const url=cv.toDataURL("image/png");
   const a=document.createElement("a");a.href=url;
-  a.download="intercity-"+cityId+"-day"+(Math.floor(simS/DAY_SECONDS)+1)+".png";
-  document.body.appendChild(a);a.click();a.remove();toast("POSTER EXPORTED")}
- catch(err){toast("EXPORT BLOCKED IN THIS VIEWER")}};
+  a.download="intercity-"+cityId+(posterSchematic?"-diagram":"-map")+"-"+posterTheme+"-day"+day+".png";
+  document.body.appendChild(a);a.click();a.remove();
+  toast("EXPORTED \u00b7 "+cv.width+"\u00d7"+cv.height);
+ }catch(err){toast("EXPORT BLOCKED IN THIS VIEWER")}
+ finally{
+  DPR=oDPR;W=oWW;H=oHH;cv.width=oW;cv.height=oH;
+  view.s=oS;view.x=oX;view.y=oY;userCam=oUser;
+  resize();draw()}}
+$("pPng").onclick=()=>exportPoster();
 function snapshotGame(){
  return {v:1,cityId,mode,seed,simS,budget,delivered,lost,journeySum,transferSum,effAvg,
   emergePtr,nextEmergeAt,weekPaid,lineSlots,
@@ -4372,12 +4463,26 @@ document.getElementById("bldTag").textContent="v"+VERSION;
 let lastT=performance.now();
 function frame(now){
  const dt=clamp((now-lastT)/1000,0,0.05);lastT=now;
+ if(isPoster()&&posterSchematic&&!_schemLive){
+  buildSchematic();
+  if(schemPos){_schemSave=stations.map(s=>({x:s.x,y:s.y}));
+   for(const id in schemPos){const s=stations[id];if(s){s.x=schemPos[id].x;s.y=schemPos[id].y}}
+   rebuildGeometry();userCam=false;fitView()}
+  _schemLive=true}
+ else if((!isPoster()||!posterSchematic)&&_schemLive){
+  if(_schemSave){stations.forEach((s,i)=>{if(_schemSave[i]){s.x=_schemSave[i].x;s.y=_schemSave[i].y}});
+   _schemSave=null;rebuildGeometry();userCam=false;fitView()}
+  _schemLive=false}
  if(running){
   if(!userCam){const tv=frameTarget();
-   view.s+=(tv.s-view.s)*0.045;view.x+=(tv.x-view.x)*0.045;view.y+=(tv.y-view.y)*0.045;
+   const k=(isPoster()&&posterSchematic)?1:0.045;
+   view.s+=(tv.s-view.s)*k;view.x+=(tv.x-view.x)*k;view.y+=(tv.y-view.y)*k;
    baseS=view.s}
   if(Math.abs(view.s-lastGeomS)/Math.max(lastGeomS,.001)>0.05)rebuildGeometry();
   update(dt);draw();drawPosterStats();hudTick();autoSave(false)}
+ else if(isPoster()){
+  if(!userCam){const tv=frameTarget();view.s=tv.s;view.x=tv.x;view.y=tv.y;baseS=view.s}
+  draw();drawPosterStats()}
  requestAnimationFrame(frame)}
 function drawPosterStats(){
  if(!document.body.classList.contains("poster")||!posterStats)return;
