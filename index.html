@@ -205,7 +205,7 @@ body.poster #posterBar{display:flex}
 
 <script>
 "use strict";
-const VERSION="7.20";
+const VERSION="8.20";
 (function appIcon(){
  try{
   const c=document.createElement("canvas");c.width=180;c.height=180;
@@ -247,12 +247,19 @@ function segIntersect(a,b,c,d){ // strict interior intersection of ab and cd
  const u=((c.x-a.x)*r.y-(c.y-a.y)*r.x)/den;
  if(t<=.04||t>=.96||u<=.04||u>=.96)return null;
  return{x:a.x+t*r.x,y:a.y+t*r.y}}
-function ribbon(center,hw){ // centreline [[x,y]..] half-width -> polygon
- const L=[],R=[];
- for(let i=0;i<center.length;i++){
-  const p=center[i],a=center[Math.max(0,i-1)],b=center[Math.min(center.length-1,i+1)];
+function ribbon(center,hw,taper){ // centreline [[x,y]..] half-width -> polygon
+ const L=[],R=[],n=center.length;
+ // a river is never the same width twice: a slow swell along the reach, widest on the
+ // outside of bends, and each bank rippled independently
+ let s=0;
+ for(let i=0;i<n;i++){
+  const p=center[i],a=center[Math.max(0,i-1)],b=center[Math.min(n-1,i+1)];
   let dx=b[0]-a[0],dy=b[1]-a[1];const m=Math.hypot(dx,dy)||1;dx/=m;dy/=m;
-  L.push([p[0]-dy*hw,p[1]+dx*hw]);R.push([p[0]+dy*hw,p[1]-dx*hw])}
+  if(i)s+=Math.hypot(p[0]-center[i-1][0],p[1]-center[i-1][1]);
+  const base=taper?hw*(1-(1-taper)*(i/Math.max(1,n-1))):hw;
+  const swell=1+0.22*Math.sin(s*0.55+_hn(center[0][0],center[0][1],1)*3)+0.08*_hn(p[0],p[1],2);
+  const wl=base*swell*(1+0.10*_hn(p[0],p[1],3)),wr=base*swell*(1+0.10*_hn(p[0],p[1],4));
+  L.push([p[0]-dy*wl,p[1]+dx*wl]);R.push([p[0]+dy*wr,p[1]-dx*wr])}
  return L.concat(R.reverse())}
 function pathLen(pts){let s=0;for(let i=1;i<pts.length;i++)s+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);return s}
 function pointAt(pts,s){
@@ -754,6 +761,7 @@ newyork:{
   [[64.35,12.66],[66.88,14.44],[64.68,17.77],[63.84,21.11],[64.14,24.44],[64.31,27.77],[63.5,30.44],[66.88,30],[71.94,28.89],[77,27.77],[80.38,25.55],[83.75,23.33],[87.13,25.55],[88.82,20.66],[87.13,16.66],[88.82,12.22],[92.19,3.33],[102.32,-14.46],[68.56,-14.46],[67.72,-1.12],[66.03,7.77],[65.19,11.1]],
   [[60.97,-14.46],[59.11,3.33],[58.1,16.66],[55.74,25.55],[51.52,32.22],[48.14,38.89],[47.13,45.55],[45.27,50],[41.9,54.45],[38.36,58.89],[34.81,60.67],[29.75,61.45],[23,62.89],[17.6,63.11],[16.67,65.56],[15.23,68.45],[14.31,72.89],[13.29,77.78],[11.61,83.12],[9.16,89.12],[4.77,94.45],[-2.32,110.01],[-24.26,110.01],[-24.26,-14.46]]
  ],
+ nobuildDraw:false,
  nobuild:[
   [[-24.26,-14.46],[63.5,-14.46],[53.38,32.22],[-24.26,32.22]],
   [[-24.26,32.22],[16.25,32.22],[16.25,52.22],[1.06,70],[-24.26,110.01]],
@@ -1102,6 +1110,120 @@ mexicocity:{
   {x:36.31,y:6.51,name:"LECHERIA",kind:"ic",when:0.92}
  ],
  count:380
+},
+seoul:{
+ name:"SEOUL",blurb:"Dense to the edges, split by a wide river that everything crosses. Line 2 runs in a circle.",
+ palette:["#e354b3","#45877e","#af1d1d","#1d1daf","#ddbd9d","#b354e3","#79e2c2","#973556","#bde354","#c498e2","#af971d","#7c3d8f","#7a9e51","#5475e3","#a76225","#1daf1d","#455d87"],
+ maxMetro:9,maxExpress:4,maxTram:4,maxInter:6,
+ classes:["metro","express","tram"],
+ classNames:{metro:"SUBWAY",express:"EXPRESS",tram:"LIGHT RAIL"},
+ chipLetters:{metro:"S",express:"X",tram:"L"},
+ classBlurbs:{metro:"Lines 1 to 9. Dense, frequent, and it crosses the Han wherever it likes.",express:"AREX, GTX and the commuter lines. Very fast, skips stops, reaches far out.",tram:"Light rail feeders on the hillsides and the fringes. Short and slow."},
+ classOverrides:{express:{w:2.5,alpha:0.95,carCap:8,maxCars:3},metro:{w:1.9,alpha:0.78,carCap:7,maxCars:3},tram:{w:1.0,alpha:0.85,maxCars:2}},
+ expressCarScale:0.6,speedScale:{express:1.45,tram:0.55},expressNose:0.12,
+ expressRailGap:0.8,stationScale:0.34,interScale:0.86,carScale:0.58,tramMaxKm:16,
+ features:["terrain","air","tram","sbahn"],
+ pop:9.7,popUnit:"M",kmScale:0.45,spacing:{min:1.1,max:3.6},jitter:1.0,
+ waterPad:0.18,growCap:94,coreZone:20,accZone:22,genRadius:42,
+ minStopGap:2.5,stopGapFlat:8,stopGapZone:34,stopGapOuter:6.0,keepDry:true,
+ spawnMult:1.2,singleRegion:true,showCorridors:true,
+ corrUniform:true,accTether:1.4,accTetherLeak:0.45,accTetherDens:0.35,
+ nobuildLabel:"MOUNTAIN",nobuildHigh:true,nobuildClasses:["metro","express","tram"],
+ nobuildMsg:"NO RAIL OVER THE MOUNTAIN",
+ seas:[
+  [[35.88,52.47],[40.78,51.98],[44.51,54.2],[43.72,59.14],[38.82,59.88],[35.49,56.67]],
+  [[30.98,49.51],[35.49,49.01],[36.47,53.95],[31.96,54.94]]
+ ],
+ rivers:[
+  {pts:[[91.19,48.52],[84.52,50.49],[78.05,53.46],[73.14,57.9],[68.04,56.67],[61.77,56.17],[55.49,57.16],[49.22,58.15],[43.14,57.16],[37.45,55.19],[32.94,51.73],[27.45,47.28],[20.97,41.85],[15.68,37.41],[7.83,34.69]],hw:1.1},
+  {pts:[[62.36,54.45],[63.34,47.53],[64.91,40.12],[66.47,31.48],[67.65,22.83]],hw:0.16},
+  {pts:[[68.04,56.67],[66.08,62.35],[64.91,68.52],[63.73,74.7]],hw:0.14},
+  {pts:[[37.45,55.19],[33.33,61.11],[31.37,67.29],[30.39,73.46]],hw:0.13},
+  {pts:[[27.45,47.28],[33.33,43.83],[38.23,41.11]],hw:0.1}
+ ],
+ islands:[
+  [[37.06,53.95],[40.19,53.33],[42.74,54.45],[43.72,56.67],[41.96,58.27],[38.82,58.03],[37.06,56.17]],
+  [[32.94,51.85],[34.31,51.11],[35.09,51.98],[33.62,52.84]],
+  [[45.1,58.52],[46.86,57.78],[47.65,58.77],[45.88,59.38]]
+ ],
+ nobuild:[
+  [[41.17,30.24],[48.04,26.54],[54.9,22.83],[55.88,15.43],[50,11.72],[42.15,14.19],[38.23,20.37],[37.84,26.54]],
+  [[56.86,15.43],[61.77,11.72],[60.79,8.02],[55.49,9.25]],
+  [[41.17,72.23],[46.08,68.52],[51.96,67.78],[54.9,72.23],[51.96,77.17],[45.1,77.66]],
+  [[50.78,50.49],[52.94,49.01],[54.31,50.49],[52.75,51.98],[51.18,51.85]],
+  [[45.69,39.63],[49.22,37.16],[51.57,38.64],[49.22,41.11]],
+  [[73.54,50.49],[76.48,48.02],[79.03,49.51],[76.48,51.98]]
+ ],
+ blobs:[
+  {x:49.59,y:45.97,r:3.0,w:0.73,t:"res"},
+  {x:49.22,y:45.06,r:3.0,w:0.76,t:"res"},
+  {x:50,y:46.54,r:2.2,w:0.83,t:"res"},
+  {x:41.57,y:48.52,r:2.2,w:0.93,t:"cbd"},
+  {x:37.25,y:49.75,r:2.2,w:0.9,t:"cbd"},
+  {x:39.41,y:55.93,r:3.0,w:0.69,t:"res"},
+  {x:34.9,y:58.15,r:2.2,w:1.0,t:"cbd"},
+  {x:59.34,y:62.84,r:3.0,w:0.76,t:"res"},
+  {x:63.53,y:61.36,r:3.0,w:0.73,t:"res"},
+  {x:60.59,y:66.3,r:2.2,w:0.9,t:"cbd"},
+  {x:73.54,y:59.06,r:2.2,w:0.83,t:"res"},
+  {x:68.24,y:50.49,r:2.2,w:1.0,t:"cbd"},
+  {x:61.77,y:51.23,r:2.2,w:1.0,t:"cbd"},
+  {x:59.61,y:41.11,r:2.2,w:1.0,t:"cbd"},
+  {x:58.83,y:36.66,r:2.2,w:1.0,t:"cbd"},
+  {x:58.83,y:29.01,r:2.2,w:0.97,t:"cbd"},
+  {x:63.14,y:20.61,r:2.2,w:0.9,t:"cbd"},
+  {x:38.82,y:33.21,r:2.2,w:0.86,t:"cbd"},
+  {x:34.11,y:43.33,r:2.2,w:0.97,t:"cbd"},
+  {x:24.31,y:50,r:2.2,w:1.0,t:"cbd"},
+  {x:16.66,y:45.55,r:3.0,w:0.76,t:"res"},
+  {x:30.98,y:64.32,r:2.2,w:0.93,t:"cbd"},
+  {x:34.51,y:70.25,r:2.2,w:0.9,t:"cbd"},
+  {x:44.31,y:67.78,r:2.2,w:0.97,t:"cbd"},
+  {x:82.36,y:48.52,r:2.2,w:0.79,t:"res"},
+  {x:78.44,y:54.2,r:2.2,w:0.86,t:"cbd"},
+  {x:8.81,y:23.33,r:4.0,w:0.49,t:"res"},
+  {x:60.53,y:3.55,r:4.0,w:0.45,t:"res"},
+  {x:8.03,y:61.48,r:3.0,w:0.56,t:"res"},
+  {x:67.65,y:75.93,r:4.0,w:0.42,t:"res"},
+  {x:75.5,y:88.28,r:4.0,w:0.39,t:"res"},
+  {x:79.22,y:39.13,r:4.0,w:0.49,t:"res"},
+  {x:13.72,y:65.31,r:4.0,w:0.52,t:"res"}
+ ],
+ corridors:[
+  {pts:[[49.59,45.97],[50.39,47.28],[50.39,48.52],[53.92,50.49],[61.77,51.23],[68.24,50.49],[72.55,52.47],[73.54,59.06],[63.53,61.36],[59.34,62.84],[60.59,66.3],[44.31,67.78],[34.51,66.79],[30.98,64.32],[34.9,58.15],[39.41,55.93],[37.25,49.75],[41.57,48.52],[46.86,47.28],[49.59,45.97]],w:2.4},
+  {pts:[[60.53,3.55],[62.75,15.43],[58.83,29.01],[59.61,41.11],[52.35,45.06],[49.59,45.97],[48.43,48.52],[34.9,58.15],[30.98,64.32],[34.51,70.25],[34.31,77.17]],w:2.0},
+  {pts:[[20.97,23.33],[38.82,33.21],[41.17,37.9],[47.25,43.33],[49.59,45.97],[50.59,50.49],[49.22,57.16],[59.34,62.84],[60.59,66.3],[63.73,72.23],[67.65,79.63]],w:1.6},
+  {pts:[[63.14,20.61],[58.83,29.01],[58.83,36.66],[59.61,41.11],[53.33,45.06],[49.59,45.97],[49.41,50.49],[46.47,57.16],[44.31,67.78],[40.19,74.7],[36.27,82.1]],w:1.6},
+  {pts:[[16.66,45.55],[24.31,50],[30.39,54.2],[36.27,56.17],[39.41,55.93],[49.22,57.16],[52.75,51.23],[57.85,49.01],[68.24,50.49],[78.44,54.2],[82.36,48.52]],w:1.7},
+  {pts:[[38.82,33.21],[35.88,37.9],[34.11,43.33],[41.57,48.52],[47.25,50.49],[52.94,49.01],[59.61,41.11],[64.91,39.13],[70.59,40.12]],w:1.2},
+  {pts:[[62.75,15.43],[62.75,23.33],[62.75,33.21],[64.91,39.13],[68.24,50.49],[63.53,61.36],[59.34,62.84],[60.59,66.3],[34.51,66.79],[13.72,65.31]],w:1.8},
+  {pts:[[82.36,48.52],[78.44,54.2],[73.54,59.06],[78.44,64.82],[81.38,72.23]],w:0.9},
+  {pts:[[16.66,45.55],[24.31,50],[32.94,51.73],[39.41,55.93],[49.22,58.15],[55.88,61.36],[59.34,62.84],[63.53,61.36],[73.54,59.06]],w:1.5},
+  {pts:[[12.85,47.95],[20.97,47.04],[27.45,47.28],[41.57,48.52],[49.59,45.97]],w:1.0},
+  {pts:[[49.59,45.97],[49.22,57.16],[59.34,62.84],[63.73,72.23],[67.65,75.93],[75.5,88.28]],w:1.1},
+  {pts:[[8.81,23.33],[26.46,33.21],[34.11,43.33],[41.57,48.52],[47.25,50.49],[61.77,51.23],[63.34,47.53],[79.22,39.13]],w:1.2},
+  {pts:[[8.81,23.33],[34.11,43.33],[49.59,45.97],[59.34,62.84],[75.5,88.28]],w:1.0},
+  {pts:[[56.47,20.61],[55.88,29.01],[57.45,36.66],[57.45,41.11],[57.06,43.33]],w:0.6},
+  {pts:[[44.31,67.78],[40.19,65.31],[37.25,62.84],[35.68,59.88]],w:0.5},
+  {pts:[[12.85,47.95],[4.89,40.12],[-0.99,32.71]],w:0.5}
+ ],
+ cores:[{x:49.59,y:45.97},{x:59.34,y:62.87},{x:39.02,y:57.04},{x:61.77,y:51.23},{x:73.54,y:59.06}],
+ core:{x:49.59,y:45.97},
+ landmark:{x:49.41,y:42.69,name:"GYEONGBOKGUNG"},
+ specials:[
+  {x:48.43,y:48.52,name:"SEOUL STATION",kind:"hub",when:0.08},
+  {x:49.59,y:45.97,name:"CITY HALL",kind:"hub",when:0.15},
+  {x:59.34,y:62.87,name:"GANGNAM",kind:"hub",when:0.22},
+  {x:39.02,y:57.04,name:"YEOUIDO",kind:"hub",when:0.3},
+  {x:61.77,y:51.23,name:"WANGSIMNI",kind:"hub",when:0.38},
+  {x:73.54,y:59.06,name:"JAMSIL",kind:"hub",when:0.46},
+  {x:63.14,y:42.59,name:"CHEONGNYANGNI",kind:"hub",when:0.54},
+  {x:12.85,y:47.95,name:"GIMPO",kind:"air",when:0.62},
+  {x:8.81,y:23.33,name:"ILSAN",kind:"ic",when:0.72},
+  {x:60.53,y:3.55,name:"UIJEONGBU",kind:"ic",when:0.82},
+  {x:75.5,y:88.28,name:"BUNDANG",kind:"ic",when:0.92}
+ ],
+ count:400
 },
 bangkok:{
  name:"BANGKOK",blurb:"The river bends past the old city. The monorail never touches it.",
@@ -1483,8 +1605,11 @@ function showClsLegend(){
     .filter(c=>classes.indexOf(c)>=0);
   if(barred.length){
    const allowed=classes.filter(c=>barred.indexOf(c)<0);
-   rules.push((city.nobuildLabel||"PROTECTED LAND")+": "+barred.map(nm).join(" and ")+" cannot enter"+
-    (allowed.length?" \u00b7 "+allowed.map(nm).join(" and ")+" may cross":""));}}
+   const list=a=>a.length<=1?a.join(""):a.length===2?a.join(" and "):
+    a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+   rules.push((city.nobuildLabel||"PROTECTED LAND")+": "+
+    (barred.length===classes.length?"no line may enter":list(barred.map(nm))+" cannot enter")+
+    (allowed.length?" \u00b7 "+list(allowed.map(nm))+" may cross":""));}}
  if(city&&city.crossings&&city.crossings.length){
   const byCls={};
   for(const g of city.crossings){
@@ -1578,33 +1703,90 @@ const THEMES={
  light:{bg:"#f2efe6",ink:"#141821",stn:"#ffffff",dim:"rgba(20,24,33,0.62)",faint:"rgba(20,24,33,0.34)"}};
 function TH(){return THEMES[posterTheme]||THEMES.dark}
 function isPoster(){return document.body.classList.contains("poster")}
-// Schematic (Beck) layout: snap every served station to a grid, nearest-first from the core,
-// resolving collisions outward. Edges then fall on the existing 45-degree elbow logic.
+// ---------------------------------------------------------------- SCHEMATIC (Beck) LAYOUT
+// A transit diagram is deliberately NOT a map. Three rules do the work:
+//   1. radial compression  - the dense centre is expanded, long outer runs are shortened
+//   2. octilinear only     - every leg runs at 0, 45 or 90 degrees
+//   3. a loop is a circuit - a line that closes is drawn as an octagon, not a wobble
+const OCT_A0=-Math.PI/8;                       // vertex angles: edges land on multiples of 45
+function octPoint(cx,cy,R,t){                  // t in [0,1) around the perimeter
+ t=(t%1+1)%1;
+ const side=Math.floor(t*8),f=t*8-side;
+ const a0=OCT_A0+side*Math.PI/4,a1=OCT_A0+(side+1)*Math.PI/4;
+ const x0=cx+Math.cos(a0)*R,y0=cy+Math.sin(a0)*R;
+ const x1=cx+Math.cos(a1)*R,y1=cy+Math.sin(a1)*R;
+ return {x:x0+(x1-x0)*f,y:y0+(y1-y0)*f}}
+function lineIsLoop(L){
+ return !!L.loop&&L.stops.length>=5}
 function buildSchematic(){
  const used=new Set();
  for(const L of lines)for(const s of L.stops)used.add(s);
  if(used.size<2){schemPos=null;return}
- let tot=0,n=0;
- for(const L of lines)for(let i=1;i<L.stops.length;i++){
-  tot+=dist(stations[L.stops[i-1]],stations[L.stops[i]]);n++}
- const g=Math.max(1.1,(n?tot/n:4)*0.62);
- const ids=[...used].sort((a,b)=>dist(stations[a],city.core)-dist(stations[b],city.core));
- const taken=new Set(),pos={};
- for(const id of ids){
+ const core=city.core;
+ // --- 1. radial compression about the core. An exponent below 1 pushes the crowded
+ // centre outward and pulls the far suburbs in, which is exactly what Beck did by hand.
+ let rMax=0;
+ for(const id of used)rMax=Math.max(rMax,dist(stations[id],core));
+ if(rMax<1e-6){schemPos=null;return}
+ const EXP=0.62;
+ const warp={};
+ for(const id of used){
   const s=stations[id];
-  let gx=Math.round(s.x/g),gy=Math.round(s.y/g);
+  const dx=s.x-core.x,dy=s.y-core.y,r=Math.hypot(dx,dy);
+  const rr=rMax*Math.pow(r/rMax,EXP);
+  const k=r>1e-6?rr/r:0;
+  warp[id]={x:core.x+dx*k,y:core.y+dy*k}}
+ // --- grid pitch from the median compressed leg, so spacing is even rather than geographic
+ const legs=[];
+ for(const L of lines)for(let i=1;i<L.stops.length;i++){
+  const a=warp[L.stops[i-1]],b=warp[L.stops[i]];
+  if(a&&b)legs.push(Math.hypot(b.x-a.x,b.y-a.y))}
+ legs.sort((a,b)=>a-b);
+ const g=Math.max(1.0,(legs.length?legs[legs.length>>1]:4)*0.85);
+ const pos={},taken=new Set(),pinned=new Set();
+ const place=(id,x,y)=>{
+  let gx=Math.round(x/g),gy=Math.round(y/g);
   if(taken.has(gx+","+gy)){
-   let found=false;
-   for(let r=1;r<=40&&!found;r++){
+   let done=false;
+   for(let r=1;r<=50&&!done;r++){
     let best=null,bd=1e9;
     for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){
      if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
      if(taken.has((gx+dx)+","+(gy+dy)))continue;
-     const d=Math.hypot((gx+dx)*g-s.x,(gy+dy)*g-s.y);
+     const d=Math.hypot((gx+dx)*g-x,(gy+dy)*g-y);
      if(d<bd){bd=d;best=[gx+dx,gy+dy]}}
-    if(best){gx=best[0];gy=best[1];found=true}}}
-  taken.add(gx+","+gy);
-  pos[id]={x:gx*g,y:gy*g};}
+    if(best){gx=best[0];gy=best[1];done=true}}}
+  taken.add(gx+","+gy);pos[id]={x:gx*g,y:gy*g};return pos[id]};
+ // --- 2. loops first: they anchor the diagram, and their stations are pinned
+ for(const L of lines){
+  if(!lineIsLoop(L))continue;
+  const ring=L.stops.slice();               // a closed line does not repeat its first stop
+  const n=ring.length;if(n<4)continue;
+  let cx=0,cy=0;for(const id of ring){cx+=warp[id].x;cy+=warp[id].y}
+  cx/=n;cy/=n;
+  let R=0;for(const id of ring)R+=Math.hypot(warp[id].x-cx,warp[id].y-cy);
+  R=Math.max(g*2,R/n);
+  // keep the ring's real orientation: start at the bearing of its first stop
+  const a0=Math.atan2(warp[ring[0]].y-cy,warp[ring[0]].x-cx);
+  const t0=((a0-OCT_A0)/(Math.PI*2)+1)%1;
+  // follow the direction the stops actually run, so the diagram is not mirrored
+  let signed=0;
+  for(let i=0;i<n;i++){
+   const a=warp[ring[i]],b=warp[ring[(i+1)%n]];
+   signed+=(a.x-cx)*(b.y-cy)-(b.x-cx)*(a.y-cy)}
+  const dir=signed>=0?1:-1;
+  for(let i=0;i<n;i++){
+   const id=ring[i];
+   if(pinned.has(id))continue;
+   const p=octPoint(cx,cy,R,t0+dir*i/n);
+   const gx=Math.round(p.x/g),gy=Math.round(p.y/g);
+   if(!taken.has(gx+","+gy)){taken.add(gx+","+gy);pos[id]={x:gx*g,y:gy*g}}
+   else place(id,p.x,p.y);
+   pinned.add(id)}}
+ // --- 3. everything else, central stations first so the core keeps the best cells
+ const rest=[...used].filter(id=>!pinned.has(id))
+   .sort((a,b)=>dist(stations[a],core)-dist(stations[b],core));
+ for(const id of rest)place(id,warp[id].x,warp[id].y);
  schemPos=pos}
 // run fn with stations moved onto the schematic grid, then put them back
 function withSchematic(fn){
@@ -1691,12 +1873,13 @@ function districtAt(p){let best=0,t="res";
  for(const b of city.blobs){const q=(p.x-b.x)**2+(p.y-b.y)**2,v=b.w*Math.exp(-q/(2*b.r*b.r));
   if(v>best){best=v;t=b.t}}
  return t}
+function inBB(p,poly){const b=poly.bb;return !b||(p.x>=b[0]&&p.x<=b[2]&&p.y>=b[1]&&p.y<=b[3])}
 function inWater(p,pad){pad=pad||0;
- for(const poly of (city.islands||[]))if(pointInPoly(p,poly))return false;
- for(const poly of city.seas)if(pointInPoly(p,poly))return true;
- for(const r of city.rivers)if(distToPolyline(p,r.pts)<r.hw+pad)return true;
+ for(const poly of (city.islands||[]))if(inBB(p,poly)&&pointInPoly(p,poly))return false;
+ for(const poly of city.seas)if(inBB(p,poly)&&pointInPoly(p,poly))return true;
+ for(const r of city.rivers)if(distToPolyline(p,r.pts)<r.hw*1.32+pad)return true;
  return false}
-function inNoBuild(p){return city.nobuild.some(poly=>pointInPoly(p,poly))}
+function inNoBuild(p){return city.nobuild.some(poly=>inBB(p,poly)&&pointInPoly(p,poly))}
 function segHitsNoBuild(ax,ay,bx,by){
  if(!city.nobuild||!city.nobuild.length)return false;
  for(let i=0;i<=12;i++){const t=i/12;
@@ -3378,6 +3561,61 @@ function strokeWetOnly(g,pts,r){
   const a=pts[i-1],b=pts[i];
   const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
   if(inWater(mid)){g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke()}}}
+// deterministic noise from position, so a shoreline is the same every time it is loaded
+function _hn(x,y,k){const s=Math.sin(x*12.9898+y*78.233+k*37.719)*43758.5453;return (s-Math.floor(s))*2-1}
+// Shoreline spline: a cubic Hermite through EVERY traced vertex. Tangents shrink to zero at
+// acute corners, so a headland or a bay head stays sharp while the reach between them
+// curves. A small perpendicular ripple, scaled to the leg, keeps it from looking machined.
+function shoreline(pts,closed,o){
+ o=o||{};const sub=o.sub||4,jag=(o.jag!=null)?o.jag:0.05,sharpDeg=(o.sharp!=null)?o.sharp:70;
+ const P=pts.map(q=>Array.isArray(q)?[q[0],q[1]]:[q.x,q.y]);
+ const n=P.length;if(n<3)return P;
+ const at=k=>closed?P[(k%n+n)%n]:P[Math.max(0,Math.min(n-1,k))];
+ const tang=[];
+ for(let k=0;k<n;k++){
+  const a=at(k-1),b=at(k),c=at(k+1);
+  let tx=(c[0]-a[0])*0.5,ty=(c[1]-a[1])*0.5;
+  const ux=b[0]-a[0],uy=b[1]-a[1],vx=c[0]-b[0],vy=c[1]-b[1];
+  const mu=Math.hypot(ux,uy)||1e-9,mv=Math.hypot(vx,vy)||1e-9;
+  const cosA=Math.max(-1,Math.min(1,(ux*vx+uy*vy)/(mu*mv)));
+  const turn=Math.acos(cosA)*180/Math.PI;          // 0 = straight on, 180 = doubles back
+  const keep=1-Math.max(0,Math.min(1,(turn-(180-sharpDeg))/sharpDeg)); // acute -> 0
+  // limit tangent length to the shorter neighbouring leg so tight spots never overshoot
+  const cap=Math.min(mu,mv),mt=Math.hypot(tx,ty)||1e-9;
+  if(mt>cap){tx*=cap/mt;ty*=cap/mt}
+  tang.push([tx*keep,ty*keep])}
+ const out=[];const segs=closed?n:n-1;
+ for(let k=0;k<segs;k++){
+  const p0=at(k),p1=at(k+1),m0=tang[k],m1=tang[(k+1)%n];
+  const len=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);
+  out.push([p0[0],p0[1]]);
+  for(let s=1;s<sub;s++){
+   const t=s/sub,t2=t*t,t3=t2*t;
+   const h00=2*t3-3*t2+1,h10=t3-2*t2+t,h01=-2*t3+3*t2,h11=t3-t2;
+   let x=h00*p0[0]+h10*m0[0]+h01*p1[0]+h11*m1[0];
+   let y=h00*p0[1]+h10*m0[1]+h01*p1[1]+h11*m1[1];
+   // ripple, strongest mid-leg, none at the vertices
+   const w=Math.sin(Math.PI*t)*jag*len*_hn(p0[0],p0[1],s);
+   const nx=-(p1[1]-p0[1])/(len||1),ny=(p1[0]-p0[0])/(len||1);
+   out.push([x+nx*w,y+ny*w])}}
+ if(!closed)out.push([P[n-1][0],P[n-1][1]]);
+ return out}
+// Run once per city: replace every traced polygon and centreline with its shoreline curve,
+// so the game logic and the picture agree, and cache a bounding box per polygon.
+function organicCity(c){
+ if(!c||c._organic)return;c._organic=true;
+ const o=c.organic||{};
+ const shore={sub:4,jag:(o.jag!=null)?o.jag:0.05,sharp:(o.sharp!=null)?o.sharp:70};
+ const ridge={sub:3,jag:(o.ridgeJag!=null)?o.ridgeJag:0.10,sharp:55};   // ridgelines stay jagged
+ const bb=poly=>{let a=1e9,b=1e9,x=-1e9,y=-1e9;for(const q of poly){a=Math.min(a,q[0]);b=Math.min(b,q[1]);x=Math.max(x,q[0]);y=Math.max(y,q[1])}
+  poly.bb=[a,b,x,y];return poly};
+ c.seas=(c.seas||[]).map(p=>bb(shoreline(p,true,shore)));
+ c.islands=(c.islands||[]).map(p=>bb(shoreline(p,true,shore)));
+ c.nobuild=(c.nobuild||[]).map(p=>bb(shoreline(p,true,ridge)));
+ for(const r of (c.rivers||[])){
+  if(r.pts.length<3)continue;
+  r.pts=shoreline(r.pts,false,{sub:4,jag:0.035,sharp:70})}
+ c.waterPolys=null}
 function chaikin(pts,iters){
  let p=pts;
  for(let it=0;it<iters;it++){
@@ -3410,7 +3648,7 @@ function drawWater(){
     arr=chaikin(arr,r.smoothRiver);
     cpts=arr.map(p=>[p.x,p.y]);
    }
-   city.waterPolys.push(ribbon(cpts,r.hw))}}
+   city.waterPolys.push(ribbon(cpts,r.hw,r.taper))}}
  const polys=city.waterPolys;
  const _dm=(city&&city.dimTexture)?0.72:1;
  const rim="rgba(122,168,238,"+(0.38*_dm).toFixed(2)+")",body="#0d1526",glow="rgba(90,140,255,0.05)";
@@ -3469,37 +3707,38 @@ function drawGrid(){
  for(let x=2;x<100;x+=6)for(let y=2;y<100;y+=6){
   ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill()}}
 function drawRidges(){
+ if(city.nobuildDraw===false)return;
+ const hi=!!(city.nobuildHigh);
  for(const poly of city.nobuild){
-  ctx.save();
-  polyPath(ctx,poly);
-  ctx.clip();
-  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9,cx=0,cy=0;
   for(const p of poly){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);
-   minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1])}
-  // a protected zone has to read as terrain, not as empty ground. High ground gets ridge
-  // chevrons so it is legible as ELEVATION rather than as flat parkland.
-  const hi=!!(city.nobuildHigh);
-  ctx.fillStyle=hi?"rgba(164,186,222,0.075)":"rgba(150,176,214,0.055)";ctx.fill();
-  ctx.strokeStyle=hi?"rgba(198,218,255,0.13)":"rgba(190,212,255,0.16)";ctx.lineWidth=px(1);
-  ctx.beginPath();
-  for(let x=minX-(maxY-minY);x<maxX+4;x+=2.2){
-   ctx.moveTo(x,maxY);ctx.lineTo(x+(maxY-minY),minY)}
-  ctx.stroke();
+   minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);cx+=p[0];cy+=p[1]}
+  cx/=poly.length;cy/=poly.length;
+  ctx.save();
+  polyPath(ctx,poly);ctx.clip();
+  if(hi){ctx.fillStyle="rgba(164,186,222,0.07)";ctx.fill()}
   if(hi){
-   // chevrons along the long axis, pointing up-slope
-   ctx.strokeStyle="rgba(206,224,255,0.34)";ctx.lineWidth=px(1.1);
-   ctx.beginPath();
-   const w=maxX-minX,h=maxY-minY,horiz=w>=h;
-   const step=Math.max(2.2,(horiz?w:h)/7),arm=Math.min(w,h)*0.22+0.6;
-   for(let t=(horiz?minX:minY)+step*0.5;t<(horiz?maxX:maxY);t+=step){
-    const cx=horiz?t:(minX+maxX)/2, cy=horiz?(minY+maxY)/2:t;
-    if(horiz){ctx.moveTo(cx-arm*0.8,cy+arm*0.5);ctx.lineTo(cx,cy-arm*0.5);ctx.lineTo(cx+arm*0.8,cy+arm*0.5)}
-    else{ctx.moveTo(cx+arm*0.5,cy-arm*0.8);ctx.lineTo(cx-arm*0.5,cy);ctx.lineTo(cx+arm*0.5,cy+arm*0.8)}}
-   ctx.stroke()}
+   // contour rings: the outline shrunk toward its centre in steps, like a topographic map.
+   // Every ring is a curve because the outline is one.
+   const rings=6;
+   for(let k=1;k<=rings;k++){
+    const f=1-k/(rings+1);
+    const a=0.10+0.22*(k/rings);
+    ctx.strokeStyle="rgba(206,224,255,"+a.toFixed(3)+")";ctx.lineWidth=px(0.9);
+    ctx.beginPath();
+    poly.forEach((q,n)=>{const x=cx+(q[0]-cx)*f,y=cy+(q[1]-cy)*f;n?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+    ctx.closePath();ctx.stroke()}}
+  else{
+   // flat protected land reads as bushland: a visible, slightly irregular stipple and a
+   // faint edge, so it is texture on the ground rather than a slab laid over it
+   ctx.fillStyle="rgba(190,212,255,0.30)";
+   const sp=Math.max(0.9,px(5));
+   for(let x=minX;x<maxX;x+=sp)for(let y=minY;y<maxY;y+=sp){
+    const jx=((x*7.3+y*3.1)%1-0.5)*sp*0.7,jy=((x*2.9+y*5.7)%1-0.5)*sp*0.7;
+    ctx.beginPath();ctx.arc(x+jx,y+jy,px(0.7),0,TAU);ctx.fill()}}
   ctx.restore();
   polyPath(ctx,poly);
-  ctx.strokeStyle="rgba(198,218,255,0.30)";ctx.lineWidth=px(1.3);ctx.stroke();
-  // name it once, at the zone's centre, when there is room to read it
+  ctx.strokeStyle=hi?"rgba(206,224,255,0.34)":"rgba(198,218,255,0.12)";ctx.lineWidth=px(hi?1.2:0.8);ctx.stroke();
   if(city.nobuildLabel&&view.s>5){
    ctx.save();ctx.fillStyle="rgba(198,218,255,0.42)";
    ctx.font=(8.5/view.s)+"px ui-monospace,monospace";ctx.textAlign="center";
@@ -3648,7 +3887,8 @@ function draw(){
    else{
     ctx.setLineDash([]);
     ctx.lineWidth=_ghost?px(clsOf(L).w*GHOST_W*(1+(zoomBump()-1)*0.55)):
-     lineWidthFor(L.id)*((isPoster()&&posterTheme==="light")?1.5:1);
+     lineWidthFor(L.id)*((isPoster()&&posterTheme==="light")?1.5:1)
+      *((isPoster()&&posterSchematic)?1.45:1);
     const isTram=(L.cls||"metro")==="tram";
     const dpts=(isTram&&city.smoothTram&&P.pts.length>2)?chaikin(P.pts,2):P.pts;
     strokeElbow(ctx,dpts,isTram?2.4:4.6);
@@ -3807,7 +4047,7 @@ function draw(){
   // until neighbouring stops merge into a chain. Cap the world-space radius against the
   // city's own stop spacing so a gap always remains between adjacent stations.
   let _zb=1.28*zoomBump()*((city&&city.stationScale!=null)?city.stationScale:0.6);
-  if(_schemNow)_zb*=1.9;
+  if(_schemNow)_zb*=1.5;
   if(!_schemNow&&fitS0>0&&view.s<=fitS0*1.35){
    const gapU=(city&&city.minStopGap!=null)?city.minStopGap:4.5;
    const maxWorldR=gapU*0.55;
@@ -4267,8 +4507,14 @@ $("pTheme").onclick=()=>{posterTheme=(posterTheme==="dark")?"light":"dark";
 function exportPoster(){
  const oDPR=DPR,oW=cv.width,oH=cv.height,oWW=W,oHH=H,oS=view.s,oX=view.x,oY=view.y,oUser=userCam;
  try{
-  // a poster shape, not the phone's: 2:3 portrait at print resolution
-  W=1400;H=2100;DPR=2;
+  // a poster shape, not the phone's, and in the orientation the network itself wants
+  let nw=1,nh=1;
+  {let a=1e9,b=1e9,x=-1e9,y=-1e9,any=false;
+   for(const L of lines)for(const id of L.stops){const s=stations[id];if(!s)continue;any=true;
+    a=Math.min(a,s.x);b=Math.min(b,s.y);x=Math.max(x,s.x);y=Math.max(y,s.y)}
+   if(any){nw=Math.max(1,x-a);nh=Math.max(1,y-b)}}
+  if(nw/nh>1.25){W=2100;H=1400}else{W=1400;H=2100}
+  DPR=2;
   cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
   userCam=false;fitView();
   const pad=0.06;view.s*=(1-pad*2);
@@ -4330,7 +4576,7 @@ $("fileIn").onchange=e=>{
  rd.onload=()=>{try{loadSave(JSON.parse(rd.result))}catch(err){toast("COULD NOT READ SAVE")}};
  rd.readAsText(f);e.target.value=""};
 function loadSave(d){
- cityId=d.cityId;mode=d.mode;seed=d.seed;city=CITIES[cityId];
+ cityId=d.cityId;mode=d.mode;seed=d.seed;city=CITIES[cityId];organicCity(city);
  simS=d.simS;budget=d.budget;delivered=d.delivered;lost=d.lost;
  journeySum=d.journeySum;transferSum=d.transferSum;effAvg=d.effAvg!=null?d.effAvg:0.6;
  emergePtr=d.emergePtr;nextEmergeAt=d.nextEmergeAt;weekPaid=d.weekPaid;
@@ -4445,7 +4691,7 @@ $("beginBtn").onclick=()=>{startGame();$("overlay").style.display="none";
  if(!seenHelp){seenHelp=true;$("helpCard").style.display="flex"}};
 function startGame(){
  seed=(Math.random()*1e9)|0;            // fresh growth each game (item 3)
- city=CITIES[cityId];
+ city=CITIES[cityId];organicCity(city);
  lines=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};
  budget=(city&&city.startBudget)||800;delivered=0;lost=0;journeySum=0;transferSum=0;
  ecoInc=0;ecoCost=0;ecoT=0;ecoSeries=[];
