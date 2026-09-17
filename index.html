@@ -1,12 +1,12 @@
 <!doctype html>
-<!-- INTERCITY 8.27. Standalone game. No external fonts, assets or network requests. -->
+<!-- INTERCITY 8.32. Standalone game. No external fonts, assets or network requests. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);overscroll-behavior:none}body.playing{overflow:hidden;user-select:none;-webkit-user-select:none}button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--edge);background:var(--panel);border-radius:10px;padding:10px 12px;font-size:10px;letter-spacing:.1em;touch-action:manipulation}button:active{background:#28364b}button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button:disabled{opacity:.32;cursor:default}button.on,button[aria-pressed=true]{border-color:var(--accent);color:#c9eeff}button.warn{color:#ffb3c2}button svg{width:18px;height:18px;display:block}#cv{position:fixed;inset:0;touch-action:none;display:block}.hud{position:fixed;z-index:3}.hidden{display:none!important}body:not(.playing) .hud{visibility:hidden}
 #topL{top:max(12px,env(safe-area-inset-top));left:12px;font-size:10px;line-height:1.8;letter-spacing:.04em;pointer-events:none;max-width:calc(100vw - 236px)}#cityHeading{display:flex;align-items:center;gap:5px}#hCity{font-size:12px;color:#fff;letter-spacing:.12em}#hClock{color:var(--dim)}#metrics{color:#c2cede}#metricInfo{pointer-events:auto;border:0;background:transparent;padding:5px;color:#b8c9dc;letter-spacing:0}#metricInfo svg{width:14px;height:14px}#topR{top:max(12px,env(safe-area-inset-top));right:10px;display:flex;gap:4px}#topR button{width:36px;min-height:38px;padding:8px;background:#101622f5;display:flex;align-items:center;justify-content:center}#topR #bSpeed{width:58px;padding:6px;font-size:10px;letter-spacing:0}
 #flowButton{pointer-events:auto;display:flex;align-items:center;gap:7px;border:0;background:#06080deb;padding:5px 0;font-size:9px;letter-spacing:.03em}#flowBars{display:flex;flex-direction:column;gap:3px;width:38px}#flowBars i{display:block;height:3px;min-width:1px;border-radius:1px}#flowIn{background:#5fd68b}#flowOut{background:#e07272}#flowNet{white-space:nowrap;color:#bcd9ca}.negative #flowNet{color:#f0a5a5}
-#menuPop{display:none;top:58px;right:10px;flex-direction:column;gap:5px;background:#101622;border:1px solid var(--edge);border-radius:12px;padding:8px;max-height:75dvh;overflow:auto}#menuPop button{text-align:left;border:0;background:transparent;min-height:40px}#menuPop #mBuild{font-size:9px;min-height:26px;padding:5px 12px}#bottom{bottom:0;left:0;right:0;display:flex;flex-direction:column;gap:4px;padding:20px 10px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#04060af5 32%);pointer-events:none}#bottom>*{pointer-events:auto;width:max-content;max-width:100%}.clsRow{display:flex;align-items:center;gap:3px;min-height:32px}.clsLbl{display:flex;align-items:center;justify-content:center;width:34px;min-width:34px;height:32px;padding:2px;border:0;background:transparent;color:#a4b7cf}.clsLbl svg{width:28px;height:28px}.chips{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;max-width:calc(100vw - 63px);padding:6px 5px}.chips::-webkit-scrollbar{display:none}.chip{position:relative;width:20px;height:20px;min-width:20px;border:2px solid;border-radius:50%;padding:0;font-size:11px;letter-spacing:0;background:transparent}.chip:before{content:'';position:absolute;inset:-6px}.chip.empty,.chip.add{border-style:dashed}.chip.sel{outline:1px solid #ffffff9c;outline-offset:3px}.chip.add{border-color:#7588a3;color:#bdccde;font-size:14px}.clsSum{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--dim);font-size:9px}.clsSum .pool{display:flex;align-items:center;gap:2px}.clsSum svg{width:20px;height:20px}.clsSum button{border:0;background:transparent;padding:5px;color:#b4c6de;min-width:28px;min-height:28px}.clsSum button svg{width:15px;height:15px}#lineInfo{display:none}#toolRow{display:flex;align-items:stretch;gap:6px;overflow-x:auto;scrollbar-width:none}#toolRow button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:43px;min-height:42px;padding:7px 6px;background:#101622f5}#toolRow svg{width:20px;height:16px}.toolLabel{font-size:8px;letter-spacing:.02em;color:var(--ink)}.bc{font-size:9px;letter-spacing:0;color:#aebed1;min-height:10px}
+#menuPop{display:none;top:58px;right:10px;flex-direction:column;gap:5px;background:#101622;border:1px solid var(--edge);border-radius:12px;padding:8px;max-height:75dvh;overflow:auto}#menuPop button{text-align:left;border:0;background:transparent;min-height:40px}#menuPop #mBuild{font-size:9px;min-height:26px;padding:5px 12px}#bottom{bottom:0;left:0;right:0;display:flex;flex-direction:column;gap:4px;padding:20px 10px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#04060af5 32%);pointer-events:none}#bottom>*{pointer-events:auto;width:max-content;max-width:100%}.clsRow{display:flex;align-items:center;gap:3px;min-height:32px}.clsLbl{display:flex;align-items:center;justify-content:center;width:34px;min-width:34px;height:32px;padding:2px;border:0;background:transparent;color:#a4b7cf}.clsLbl svg{width:28px;height:28px}.chips{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;max-width:calc(100vw - 63px);padding:6px 5px}.chips::-webkit-scrollbar{display:none}.chip{position:relative;width:20px;height:20px;min-width:20px;border:2px solid;border-radius:50%;padding:0;font-size:11px;letter-spacing:0;background:transparent}.chip:before{content:'';position:absolute;inset:-6px}.chip.empty,.chip.add{border-style:dashed}.chip.sel{outline:1px solid #ffffff9c;outline-offset:3px}.chip.add{border-color:#7588a3;color:#bdccde;font-size:14px}.clsSum{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--dim);font-size:9px}.clsSum .pool{display:flex;align-items:center;gap:2px}.clsSum svg{width:20px;height:20px}.clsSum button{border:0;background:transparent;padding:5px;color:#b4c6de;min-width:28px;min-height:28px}.clsSum button svg{width:15px;height:15px}#lineInfo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;line-height:1.5;color:#bfccdc;padding:4px 7px;background:#06080df2;border-radius:5px;letter-spacing:.03em}#lineInfo[hidden]{display:none}#lineInfo meter{width:48px;height:7px;accent-color:#b8daca}#toolRow{display:flex;align-items:stretch;gap:6px;overflow-x:auto;scrollbar-width:none}#toolRow button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:43px;min-height:42px;padding:7px 6px;background:#101622f5}#toolRow svg{width:20px;height:16px}.toolLabel{font-size:8px;letter-spacing:.02em;color:var(--ink)}.bc{font-size:9px;letter-spacing:0;color:#aebed1;min-height:10px}
 #toast{position:fixed;left:50%;bottom:214px;transform:translateX(-50%);z-index:40;max-width:88vw;pointer-events:none;text-align:center;background:#101622;border:1px solid #52677f;border-radius:10px;padding:10px 14px;font-size:11px;line-height:1.5;letter-spacing:.04em;opacity:0;transition:opacity .2s}#offer{display:none;bottom:208px;left:50%;transform:translateX(-50%);z-index:5;text-align:center;background:#101622;border:1px solid #6a8baf;border-radius:12px;padding:12px;max-width:94vw}.offerTitle{font-size:9px;letter-spacing:.13em;color:#b9dfff;margin-bottom:9px}#offerBtns{display:flex;justify-content:center;gap:8px}#offerBtns button{min-height:42px}
 #posterBar{display:none;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);gap:6px;align-items:center;padding:6px;background:#101622f7;border:1px solid var(--edge);border-radius:12px;max-width:calc(100vw - 20px)}#posterBar button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:40px;white-space:nowrap;font-size:10px;padding:9px}#posterBar #pExit,#posterBar #pOptions{width:40px;padding:10px}body.poster #topL,body.poster #topR,body.poster #bottom,body.poster #offer{display:none!important}body.poster #posterBar{display:flex}body.posterLight #posterBar{background:#f2efe6f7;border-color:#b4bac0}body.posterLight #posterBar button{background:#fffdf7;color:#141821;border-color:#b4bac0}body.posterLight #pOptions svg circle{fill:#fffdf7}
 .modal{display:none;position:fixed;inset:0;z-index:30;background:#030509c9;align-items:center;justify-content:center;padding:20px}.modal[aria-hidden=false]{display:flex}.modal .box{width:min(440px,100%);max-height:85dvh;overflow:auto;background:#0b1120;border:1px solid #35475e;border-radius:14px;padding:22px}.modal h2{font:400 13px/1.5 var(--mono);letter-spacing:.15em;margin:0 0 16px}.modal p{font:12px/1.8 var(--mono);color:#b8c8dc;margin:10px 0}.modal b{color:#e8f2ff;font-weight:500}.modal .close{width:100%;margin-top:16px;min-height:44px}.optionGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.optionGrid button{min-height:44px;font-size:10px}.legendEntry{display:flex;gap:12px;padding:10px 0}.legendEntry .modeGlyph{color:#a4bbd7;flex-shrink:0}.legendEntry svg{width:28px;height:28px}.legendEntry p{margin:0}.legendEntry strong{display:block;color:#e8f2ff;font-size:11px;font-weight:400;margin-bottom:5px;letter-spacing:.09em}
@@ -20,8 +20,8 @@
 <canvas id="cv" aria-label="Transit network. Select a line, then drag between stations to build."></canvas>
 <div class="hud" id="topL"><div id="cityHeading"><span id="hCity"></span><button id="metricInfo" aria-label="Network statistics"></button></div><div id="hClock"></div><div id="metrics"></div><button id="flowButton" aria-label="Income and costs"><span id="flowBars" aria-hidden="true"><i id="flowIn"></i><i id="flowOut"></i></span><span id="flowNet"></span></button></div>
 <div class="hud" id="topR"><button id="bSpeed" aria-label="Change simulation speed">▶ 1×</button><button id="bHelp" title="Help" aria-label="Help"></button><button id="bFit" title="Fit view (F)" aria-label="Fit view"></button><button id="bPoster" title="Preview network diagram" aria-label="Preview network diagram"></button><button id="bMenu" title="Menu" aria-label="Menu"></button></div>
-<div class="hud" id="menuPop"><button id="mBuild" disabled>INTERCITY</button><button id="mSave">SAVE · JSON</button><button id="mLoad">LOAD · JSON</button><button id="bHaze">DEMAND · OFF</button><button id="mRestart">RESTART THIS SEED</button><button id="mQuit">CITY SELECT</button><button id="mFit">FIT VIEW</button></div>
-<div class="hud" id="bottom"><div id="chipRow"></div><div id="lineInfo" hidden></div><div id="toolRow"></div></div>
+<div class="hud" id="menuPop"><button id="mBuild" disabled>INTERCITY</button><button id="mSave">SAVE · JSON</button><button id="mLoad">LOAD · JSON</button><button id="bHaze">DEMAND · ON</button><button id="mRestart">RESTART THIS SEED</button><button id="mQuit">CITY SELECT</button><button id="mFit">FIT VIEW</button></div>
+<div class="hud" id="bottom"><div id="chipRow"></div><div id="lineInfo" hidden role="status"></div><div id="toolRow"></div></div>
 <div class="hud" id="posterBar"><button id="pExit" title="Return to game" aria-label="Return to game"></button><button id="pStyle" aria-label="Switch between diagram and geographic map">DIAGRAM</button><button id="pOptions" title="Preview options" aria-label="Preview options"></button><button id="pPng" title="Export PNG" aria-label="Export preview as PNG"></button></div>
 <div id="toast" role="status" aria-live="polite"></div><div class="hud" id="offer"><div class="offerTitle">WEEKLY DELIVERY · CHOOSE ONE</div><div id="offerBtns"></div></div>
 <div class="modal" id="helpCard" role="dialog" aria-modal="true" aria-labelledby="helpTitle" aria-hidden="true"><div class="box"><h2 id="helpTitle">BUILD &amp; EDIT</h2><p><b>Build:</b> select a coloured dot and drag between stations. Extend a ringed end; join the two ends to make a loop.</p><p><b>Select:</b> tap a station to cycle its lines. Tap empty ground to deselect. Tap a mode glyph to hide its lines.</p><p><b>Edit:</b> tap track to bend it. Drag track onto a station to add a stop. Pull a middle stop away to remove its service and keep the track. Undo reverses your last edit.</p><p><b>Move:</b> drag empty ground to pan; pinch to zoom. On desktop, scroll to pan, Control-scroll to zoom, F to centre, Space for speed.</p><button class="close" id="helpOk">CLOSE</button></div></div>
@@ -478,7 +478,7 @@ Object.assign(CITIES.chongqing,{"elevationGrid":{"x":24,"y":6,"step":0.9,"nx":77
  c.preserveTraces=true;c.terrainLandClip=true;c.terrainFade=6;
 }
 
-const VERSION="8.31";
+const VERSION="8.32";
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 const SHAPES=["circle","triangle","square","diamond","star","plane"];
 const DAY_SECONDS=75,GM_PER_S=1440/DAY_SECONDS,TRAIN_SPEED=9,IC_KM=250;
@@ -493,7 +493,7 @@ let budget=800,delivered=0,lost=0,journeySum=0,transferSum=0,simS=0,passengers=0
 let emergePtr=0,nextEmergeAt=0,weekPaid=0,running=false,seenHelp=false,speedIdx=1;
 const SPEEDS=[0,1,4],SPEEDLBL=["⏸ 0×","▶ 1×","▶▶ 4×"];
 let rngState=seed,ecoInc=0,ecoCost=0,ecoT=0,ecoSeries=[],pendingOffer=null;
-let showDensity=false,posterTrains=true,posterLabels=true,posterStats=false,posterSchematic=false,posterTheme="dark";
+let showDensity=true,posterTrains=true,posterLabels=true,posterStats=false,posterSchematic=false,posterTheme="dark";
 let demandCov=0,demandReach=0,lastDemT=-1e9,lastUrbanG=-1,urbanCanvas=null,densCanvas=null;
 let nnWorld=6,metroCapKm=80,lastGeomS=0,crossings=[],geomVersion=0,schematicCache=null;
 let editFeedback=null;
@@ -538,7 +538,7 @@ function computeMetroCap(){const regs={};for(const s of stations){if(s.icOnly)co
 function boundsOf(ss){if(!ss.length)return{cx:50,cy:50,bw:36,bh:36};let x=Infinity,y=Infinity,X=-Infinity,Y=-Infinity;for(const p of ss){x=Math.min(x,p.x);X=Math.max(X,p.x);y=Math.min(y,p.y);Y=Math.max(Y,p.y)}return{cx:(x+X)/2,cy:(y+Y)/2,bw:X-x,bh:Y-y}}
 function growBounds(){let ss=stations.filter(s=>s.emerged),diag=isPoster()&&posterSchematic;if(diag){const d=getSchematic();ss=Object.values(d.pos)}const b=boundsOf(ss),pad=diag?5:city?.viewPadding!=null?city.viewPadding:6+9*growthG(),cap=diag?1e9:city?.growCap??118;return{...b,bw:Math.min(cap,Math.max(10,b.bw+pad*2)),bh:Math.min(cap,Math.max(10,b.bh+pad*2))}}
 function minZoom(){const b=growBounds();return Math.max(.62*Math.min(W/b.bw,H/b.bh),.6*Math.min(W,H)/112)}
-function frameTarget(){const b=growBounds(),top=isPoster()?posterHeaderBottom():124,bottom=isPoster()?86:(city?.classes?.length||2)*32+88,freeH=Math.max(H*.28,H-top-bottom);const s=clamp(Math.min((W-36)/b.bw,freeH/b.bh),isPoster()?.1:Math.min(minZoom(),30),30);return{s,x:b.cx-W/s/2,y:b.cy-(top+freeH/2)/s}}
+function frameTarget(){const b=growBounds(),top=isPoster()?posterHeaderBottom():124,bottom=isPoster()?86:(city?.classes?.length||2)*32+112,freeH=Math.max(H*.28,H-top-bottom);const s=clamp(Math.min((W-36)/b.bw,freeH/b.bh),isPoster()?.1:Math.min(minZoom(),30),30);return{s,x:b.cx-W/s/2,y:b.cy-(top+freeH/2)/s}}
 function fitView(){if(!city)return;Object.assign(view,frameTarget());baseS=view.s;if(!fitS0)fitS0=view.s;userCam=false}
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.max(1,devicePixelRatio||1);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);cv.style.width=W+"px";cv.style.height=H+"px";if(city&&!userCam)fitView()}
 window.addEventListener("resize",resize);resize();
@@ -600,7 +600,36 @@ function routeBlock(L,pts,opts={}){const cl=clsKeyOf(L),blocked=corridorBlock(L,
 function roundedPath(raw,r=3,roundness=1){if(raw.length<3)return raw.map(p=>({...p}));const out=[{...raw[0]}];for(let i=1;i<raw.length-1;i++){const a=raw[i-1],b=raw[i],c=raw[i+1],l1=dist(a,b),l2=dist(b,c),rr=Math.min(r,l1*.35,l2*.35)*roundness;if(rr<1e-6){out.push({...b});continue}const u={x:b.x+(a.x-b.x)*rr/l1,y:b.y+(a.y-b.y)*rr/l1},v={x:b.x+(c.x-b.x)*rr/l2,y:b.y+(c.y-b.y)*rr/l2};out.push(u);for(let k=1;k<=8;k++){const t=k/8,s=1-t;out.push({x:s*s*u.x+2*s*t*b.x+t*t*v.x,y:s*s*u.y+2*s*t*b.y+t*t*v.y})}}out.push({...raw[raw.length-1]});return out}
 function elbowPts(a,b,flip=false,rightAngle=false){const dx=b.x-a.x,dy=b.y-a.y,X=Math.abs(dx),Y=Math.abs(dy);if(X<.08||Y<.08||(!rightAngle&&Math.abs(X-Y)<.08))return[{x:a.x,y:a.y},{x:b.x,y:b.y}];let c;if(rightAngle)c=flip?{x:a.x,y:b.y}:{x:b.x,y:a.y};else if(X>Y)c=flip?{x:a.x+Math.sign(dx)*(X-Y),y:a.y}:{x:a.x+Math.sign(dx)*Y,y:a.y+Math.sign(dy)*Y};else c=flip?{x:a.x,y:a.y+Math.sign(dy)*(Y-X)}:{x:a.x+Math.sign(dx)*X,y:a.y+Math.sign(dy)*X};return[{x:a.x,y:a.y},c,{x:b.x,y:b.y}]}
 function bendPath(L,a,b,flip=false){if(isCableLine(L))return [{x:a.x,y:a.y},{x:b.x,y:b.y}];return roundedPath(elbowPts(a,b,flip,!!city.tram90&&clsKeyOf(L)==="tram"),clsKeyOf(L)==="tram"?1.6:4.6,city.bendRoundness??.8)}
-function buildUrbanLayer(g=growthG()){lastUrbanG=g;const c=document.createElement("canvas");c.width=c.height=480;const a=c.getContext("2d");for(const b of city.blobs){const r=b.r*(.45+.55*g)*4.8,x=b.x*4.8,y=b.y*4.8,gr=a.createRadialGradient(x,y,0,x,y,r*2);gr.addColorStop(0,"rgba(117,151,188,"+(.075*b.w).toFixed(3)+")");gr.addColorStop(1,"rgba(117,151,188,0)");a.fillStyle=gr;a.fillRect(x-r*2,y-r*2,r*4,r*4)}urbanCanvas=c}
+/* Population is a quiet, permanent block texture. These are the city's
+   stylised density weights, not a claim of census resolution. Raster layers
+   share a dry-land mask and are built once per city, never in the draw loop. */
+let urbanBounds={x:0,y:0,w:100,h:100},landMask=null,populationCells=[];
+const urbanCache=new WeakMap();
+function buildUrbanLayer(g=growthG()){
+ lastUrbanG=g;let cached=urbanCache.get(city);
+ if(cached){({canvas:urbanCanvas,bounds:urbanBounds,mask:landMask,cells:populationCells}=cached);return}
+ const extent=city.blobs.flatMap(b=>[{x:b.x-b.r*2.7,y:b.y-b.r*2.7},{x:b.x+b.r*2.7,y:b.y+b.r*2.7}]);
+ const b=boundsOf(extent.length?extent:[{x:0,y:0},{x:100,y:100}]);
+ urbanBounds={x:Math.floor(b.cx-b.bw/2),y:Math.floor(b.cy-b.bh/2),w:Math.ceil(b.bw+2),h:Math.ceil(b.bh+2)};
+ const k=640/Math.max(urbanBounds.w,urbanBounds.h),make=()=>{const c=document.createElement("canvas");c.width=Math.ceil(urbanBounds.w*k);c.height=Math.ceil(urbanBounds.h*k);return c};
+ landMask=make();const m=landMask.getContext("2d");m.setTransform(k,0,0,k,-urbanBounds.x*k,-urbanBounds.y*k);
+ m.fillStyle="#fff";m.fillRect(urbanBounds.x,urbanBounds.y,urbanBounds.w,urbanBounds.h);m.globalCompositeOperation="destination-out";
+ for(const p of city.waterPolys||[]){polyPath(m,p);m.fill()}
+ m.globalCompositeOperation="source-over";for(const p of city.islands||[]){polyPath(m,p);m.fill()}
+ m.globalCompositeOperation="destination-out";for(const p of city.inlandWater||[]){polyPath(m,p);m.fill()}
+ urbanCanvas=make();const a=urbanCanvas.getContext("2d");a.setTransform(k,0,0,k,-urbanBounds.x*k,-urbanBounds.y*k);populationCells=[];
+ const step=.75;
+ for(let x=urbanBounds.x;x<urbanBounds.x+urbanBounds.w;x+=step)for(let y=urbanBounds.y;y<urbanBounds.y+urbanBounds.h;y+=step){
+  const p={x:x+step/2,y:y+step/2},d=densityAt(p);if(d<.045||inWater(p))continue;
+  populationCells.push({...p,d});const j=.55+.45*(_hn(x,y,2)+1)/2;
+  a.fillStyle="rgba(144,168,192,"+(.008+.055*d*j).toFixed(3)+")";
+  a.fillRect(x+.1,y+.1,step-.2,step-.2);
+ }
+ a.setTransform(1,0,0,1,0,0);a.globalCompositeOperation="destination-in";a.drawImage(landMask,0,0);a.globalCompositeOperation="source-over";
+ urbanCache.set(city,{canvas:urbanCanvas,bounds:urbanBounds,mask:landMask,cells:populationCells});
+}
+function drawUrbanLayer(c){if(c)ctx.drawImage(c,urbanBounds.x,urbanBounds.y,urbanBounds.w,urbanBounds.h)}
+
 
 Object.assign(CITIES.rio,{renderScale:.74,stationScale:.34,stationMinPx:1.7,stationMaxPx:3.8,stationStroke:.85,zoomSymbolMax:1.8,viewPadding:4,bendRoundness:1,hintAlpha:.055,quietBoundaries:true,mountainLevels:[40,120,240,400,600,840,1120],contourSimplify:.3,contourRoundness:1.1,contourMinAreaPx:80});
 
@@ -877,10 +906,7 @@ function genStations(){
    emerged:false,inter:false,q:[],acc:0,order:dCore+(rng()-0.5)*16,name:null,strainT:0,emergeAt:0})}
  snapGenerated(cand,rng);
  cand.sort((a,b)=>dist(a,city.core)-dist(b,city.core));
- const need=new Set(["circle","square","triangle"]);
- for(let i=0;i<Math.min(5,cand.length);i++)need.delete(cand[i].shape);
- for(const s of need){const j=cand.findIndex((c,i)=>i>=5&&c.shape===s);
-  if(j>0){const t=cand[4];cand[4]=cand[j];cand[j]=t}}
+
  if(city.specials){
   const sp=city.specials.slice().sort((a,b)=>a.when-b.when);
   for(const S of sp){
@@ -960,14 +986,23 @@ function attractF(d,t){
  if(d==="res")return isMorning(t)?0.45:isEvening(t)?2.6:1;
  if(d==="ind")return isNight(t)?0.7:1.1;
  return 1.7}
-function pickTarget(origin){
- const t=minOfDay(),w={};let tot=0;
- for(const s of stations){if(!s.emerged||s.shape===origin.shape)continue;
-  const a=attractF(s.district,t)*(0.25+s.dens);w[s.shape]=(w[s.shape]||0)+a;tot+=a}
- if(tot<=0)return null;
- let r=simRandom()*tot;
- for(const sh in w){if(r<w[sh])return sh;r-=w[sh]}
- return null}
+/* Each trip has a real destination. Cache cumulative weights by origin and
+   rush-hour band; distance softens long trips without excluding the outskirts. */
+let destinationTables=new Map(),destinationBases=new WeakMap(),destinationBand=-1,destinationRoster=null;
+function demandBand(){const t=minOfDay();return isMorning(t)?1:isEvening(t)?2:isNight(t)?3:0}
+function destinationTable(origin){
+ const band=demandBand();if(destinationRoster!==stations||destinationBand!==band){destinationTables.clear();destinationRoster=stations;destinationBand=band}
+ if(destinationTables.has(origin.id))return destinationTables.get(origin.id);
+ const ids=[],weights=[],cum=[];let total=0;const t=minOfDay(),range=Math.max(4,kms(14));
+ let base=destinationBases.get(origin);if(!base||base.roster!==stations||base.weights.length<stations.length){base={roster:stations,weights:new Float64Array(stations.length).fill(-1)};destinationBases.set(origin,base)}
+ for(const s of stations){if(!s.emerged||s.id===origin.id)continue;
+  if(base.weights[s.id]<0){const near=1/(1+Math.pow(kms(dist(s,origin))/range,1.4)),distanceWeight=s.air?.6+.4*near:.2+.8*near;base.weights[s.id]=(.25+s.dens)*distanceWeight}
+  const w=attractF(s.district,t)*base.weights[s.id];
+  ids.push(s.id);weights.push(w);cum.push(total+=w);
+ }
+ const result={ids,weights,cum,total};destinationTables.set(origin.id,result);return result;
+}
+function pickTarget(origin){const t=destinationTable(origin);if(!t.total)return null;const r=simRandom()*t.total;let lo=0,hi=t.cum.length-1;while(lo<hi){const m=(lo+hi)>>1;if(r<t.cum[m])hi=m;else lo=m+1}return t.ids[lo]}
 
 
 function shapePath(g,x,y,r,shape){
@@ -1138,20 +1173,34 @@ function transferDelay(id){return stations[id].inter?1:3}
 function travelEstimate(L,P,dir=1){const C=clsOf(L),v=C.vmax*(city.speedScale?.[clsKeyOf(L)]||1),l=P.len;if(l<=0)return.01;const peak=Math.min(v,Math.sqrt(2*l/(1/C.acc+1/C.br))),ramp=peak/C.acc+peak/C.br,cruise=Math.max(0,l-.5*peak*peak*(1/C.acc+1/C.br))/peak;return ramp+cruise+Math.max(0,dynamicsTravel(L,P,dir)-l/v)+(L.express?.35:.7)}
 function rebuildService(){const N=stations.length,states=[],at=Array.from({length:N},()=>[]),rev=Array.from({length:N},()=>[]),index=new Map();const add=(a,b,w)=>rev[b].push([a,Math.max(.001,w)]);for(const L of lines){if(L.stops.length<2||!L.trains.length)continue;let circuit=L.paths.reduce((v,p)=>v+travelEstimate(L,p,1)+(L.loop?0:travelEstimate(L,p,-1)),0);L.circuit=circuit;for(let i=0;i<L.stops.length;i++){const dirs=L.loop||i>0&&i<L.stops.length-1?[1,-1]:[i===0?1:-1];for(const dir of dirs){const count=L.loop?L.trains.filter(t=>t.dir===dir).length:L.trains.length;if(!count)continue;const node=rev.length,st={node,li:L.id,i,dir,id:L.stops[i],wait:circuit/count*.5};rev.push([]);states.push(st);at[st.id].push(st);index.set(stateKey(st.li,i,dir),st)}}}
  for(const st of states){const L=lines[st.li],n=L.stops.length,j=(st.i+st.dir+n)%n,dir=outgoingDir(L,j,st.dir),next=index.get(stateKey(st.li,j,dir)),seg=st.dir>0?st.i:(st.i-1+n)%n,P=L.paths[seg];if(!next||!P)continue;st.next=next.node;st.ride=travelEstimate(L,P,st.dir);st.seg=seg;add(st.node,next.node,st.ride);add(st.id,st.node,st.wait);add(st.node,st.id,transferDelay(st.id))}
- const d={};for(const sh of SHAPES){const starts=[];for(const s of stations)if(s.emerged&&s.shape===sh){starts.push(s.id);for(const st of at[s.id])starts.push(st.node)}d[sh]=shortestDistances(rev,starts)}service={states,at,dist:d,reverse:rev,index};serviceVersion++;lastDemT=-1e9}
+ const components=new Int32Array(N).fill(-1);let group=0;
+ for(const s of stations){if(!at[s.id].length||components[s.id]>=0)continue;const q=[s.id];components[s.id]=group;
+  for(let i=0;i<q.length;i++)for(const st of at[q[i]]){if(st.next==null)continue;const id=states[st.next-N].id;if(components[id]<0){components[id]=group;q.push(id)}}group++}
+ service={states,at,dist:new Map(),reverse:rev,index,components};serviceVersion++;destinationTables.clear();lastDemT=-1e9;coverageVersion=-1;reachVersion=-1;
+ focusFlows=[];for(const L of lines)L.sectionLoads=new Map();}
 function rebuildRouting(){if(generating)return;rebuildGeometry();adj=new Map();for(const L of lines)for(const P of L.paths){if(!L.trains.length)continue;for(const[a,b]of[[P.aId,P.bId],[P.bId,P.aId]]){if(!adj.has(a))adj.set(a,[]);adj.get(a).push(b)}}const em=stations.filter(s=>s.emerged);if(em.length>3){const ds=em.map(s=>Math.min(...em.filter(q=>q!==s).map(q=>dist(s,q)))).sort((a,b)=>a-b);nnWorld=ds[Math.floor(ds.length*.25)]}recomputeTraffic();rebuildService();rebuildDemand()}
-function rideOption(L,i,dir,shape){const st=service.index.get(stateKey(L.id,i,outgoingDir(L,i,dir))),d=service.dist[shape];if(!st||!d||st.next==null)return Infinity;return st.ride+d[st.next]}
-function platformCost(id,shape){return service.dist[shape]?.[id]??Infinity}
+function destinationDistances(dest){
+ if(!Number.isInteger(dest)||!stations[dest]?.emerged)return null;
+ let d=service.dist.get(dest);if(d)return d;
+ d=shortestDistances(service.reverse,[dest,...(service.at[dest]||[]).map(st=>st.node)]);
+ // Normal maps fit entirely in this cache; imported oversized saves remain bounded.
+ if(service.dist.size>=512)service.dist.delete(service.dist.keys().next().value);
+ service.dist.set(dest,d);return d;
+}
+function rideOption(L,i,dir,dest){const st=service.index.get(stateKey(L.id,i,outgoingDir(L,i,dir))),d=destinationDistances(dest);if(!st||!d||st.next==null)return Infinity;return st.ride+d[st.next]}
+function platformCost(id,dest){return destinationDistances(dest)?.[id]??Infinity}
+function hasJourney(a,b){return a===b||service.components?.[a]>=0&&service.components[a]===service.components[b]}
 
-function selectLine(i){selLine=i;tool=null;computeCrossings();refreshUI()}
+
+function selectLine(i){clearDemandFocus();selLine=i;tool=null;computeCrossings();refreshUI()}
 function layoutOf(L){return{stops:L.stops.slice(),flips:clone(L.flips),railPaths:clone(L.railPaths),routeMeta:clone(L.routeMeta),loop:L.loop,homeRegion:L.homeRegion,activeEnd:L.activeEnd,stock:L.trains.map(t=>({cars:t.cars,dir:t.dir}))}}
 function remember(L,charge,label){undoStack.push({li:L.id,layout:layoutOf(L),charge:isOp()?charge:0,label});if(undoStack.length>60)undoStack.shift()}
 function trainPosition(t,L){const P=L.paths[t.seg];return P?pointAt(P.pts,clamp(t.f,0,1)*P.len):stations[L.stops[0]]||city.core}
 function nearestOpen(p){let best=null,bd=Infinity;for(const s of stations)if(s.emerged){const d=dist(s,p);if(d<bd){best=s;bd=d}}return best}
-function returnRiders(t,p){const s=nearestOpen(p);if(s)for(const r of t.riders){r.waitSince=simS;queueAdd(s,r)}t.riders=[]}
+function returnRiders(t,p){const s=nearestOpen(p);if(s)for(const r of t.riders){if(r.dest===s.id)completeJourney(r);else{r.waitSince=simS;queueAdd(s,r)}}t.riders=[]}
 function captureTrainPositions(L){return L.trains.map(t=>({t,p:trainPosition(t,L)}))}
 function projectTrain(t,p,L){let best=null;for(let i=0;i<L.paths.length;i++){const P=L.paths[i];let acc=0;for(let k=1;k<P.pts.length;k++){const a=P.pts[k-1],b=P.pts[k],dx=b.x-a.x,dy=b.y-a.y,len=dist(a,b),f=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/(len*len||1),0,1),q={x:a.x+dx*f,y:a.y+dy*f},d=dist(p,q);if(!best||d<best.d)best={d,seg:i,f:(acc+len*f)/(P.len||1)};acc+=len}}if(best){t.seg=best.seg;t.f=best.f;t.li=L.id;t.v=Math.min(t.v||0,clsOf(L).vmax)}else returnRiders(t,p)}
-function finishEdit(L,positions=[]){rebuildRouting();for(const {t,p}of positions)if(L.trains.includes(t))projectTrain(t,p,L);if(!L.paths.length){for(const t of L.trains)returnRiders(t,positions.find(q=>q.t===t)?.p||city.core);L.trains=[];L.homeRegion=null;rebuildService()}refreshUI();recountPassengers();autoSave(true)}
+function finishEdit(L,positions=[]){clearDemandFocus();rebuildRouting();for(const {t,p}of positions)if(L.trains.includes(t))projectTrain(t,p,L);if(!L.paths.length){for(const t of L.trains)returnRiders(t,positions.find(q=>q.t===t)?.p||city.core);L.trains=[];L.homeRegion=null;rebuildService()}refreshUI();recountPassengers();autoSave(true)}
 function createLine(cl){if(clsCount(cl)>=capOf(cl)||lines.length>=capTotal()){toast(clsName(cl)+" AT MAX");return}let c=0;if(lines.length>=lineSlots)c=COST.line+30*(lineSlots-3);if(!pay(c))return;if(lines.length>=lineSlots)lineSlots++;const L=newLineObj(lines.length,cl);lines.push(L);selectLine(L.id);toast(clsName(cl)+" · "+clsCount(cl)+"/"+capOf(cl));autoSave(true)}
 function doConnect(A,B){const L=lines[selLine];if(!L||A===B)return false;if(L.loop){toast("THIS LINE IS A LOOP · UNDO TO REOPEN");return false}if(!L.stops.length){const plan=planSegment(L,A,B);if(!plan.ok){toast(plan.msg);return false}if(kms(plan.len)>lineMaxKm(L)){toast("TOO LONG FOR ONE LINE");return false}const c=routePrice(L,plan)+trainPrice(L);if(!pay(c))return false;remember(L,c,"opening track");L.stops=[A,B];L.homeRegion=L.express?null:stations[A].region;L.activeEnd="tail";storeRoute(L,A,B,plan);L.trains=[newTrain(L,0,0,1)];finishEdit(L);toast("LINE OPENED · FIRST TRAIN INCLUDED");buzz(12);return true}if(isEndOf(L,A))return appendAt(L,A===L.stops[0]?"head":"tail",B);if(isEndOf(L,B))return appendAt(L,B===L.stops[0]?"head":"tail",A);toast("DRAG FROM A RINGED LINE END");return false}
 function appendAt(L,endName,X){const end=endName==="head"?L.stops[0]:L.stops.at(-1),other=endName==="head"?L.stops.at(-1):L.stops[0];if(end===X)return false;const close=X===other&&L.stops.length>=3;if(L.stops.includes(X)&&!close){toast("STATION ALREADY ON THIS LINE");return false}const plan=planSegment(L,end,X);if(!plan.ok){toast(plan.msg);return false}if(kms(lineLength(L)+plan.len)>lineMaxKm(L)){toast("LINE AT MAX LENGTH");return false}const c=routePrice(L,plan);if(!pay(c))return false;remember(L,c,close?"closing loop":"extension");const positions=captureTrainPositions(L);storeRoute(L,end,X,plan);if(close){L.loop=true;L.trains.forEach((t,i)=>t.dir=i%2?-1:1)}else if(endName==="head")L.stops.unshift(X);else L.stops.push(X);L.activeEnd=endName;finishEdit(L,positions);if(close)toast("LOOP CLOSED");buzz(12);return true}
@@ -1192,16 +1241,20 @@ function queueCount(s){return s.q.length+(s.overflow||[]).reduce((n,g)=>n+g.coun
 /* Detailed riders near the platform, compact cohorts behind them. A busy station
    never switches off demand at another station. Cohorts retain count and mean
    timestamps, so aggregate waiting/journey statistics remain conserved. */
-function queueAdd(s,r){if(!s)return;s.overflow??=[];r.waitSince??=simS;if(s.q.length<LIVE_QUEUE&&!s.overflow.length){s.q.push(r);return}const key=r.shape+":"+(r.lastLi??-1);let g=s.overflow.find(g=>g.key===key);if(!g){s.overflow.push({...r,key,count:1});return}const n=g.count;for(const k of["spawn","waitSince","tf","ox","oy"])if(Number.isFinite(r[k]))g[k]=((g[k]||0)*n+r[k])/(n+1);g.count++}
+function queueAdd(s,r){if(!s)return;s.overflow??=[];r.waitSince??=simS;if(s.q.length<LIVE_QUEUE&&!s.overflow.length){s.q.push(r);return}const key=r.dest+":"+(r.lastLi??-1);let g=s.overflow.find(g=>g.key===key);if(!g){s.overflow.push({...r,key,count:1});return}const n=g.count;for(const k of["spawn","waitSince","tf","ox","oy"])if(Number.isFinite(r[k]))g[k]=((g[k]||0)*n+r[k])/(n+1);g.count++}
 function fillQueue(s){s.overflow??=[];while(s.q.length<LIVE_QUEUE&&s.overflow.length){let bi=0;for(let i=1;i<s.overflow.length;i++)if(s.overflow[i].waitSince<s.overflow[bi].waitSince)bi=i;const g=s.overflow[bi],r={...g};delete r.count;delete r.key;s.q.push(r);if(--g.count===0)s.overflow.splice(bi,1)}}
 function queueRemoveOne(s){if(s.overflow?.length){const g=s.overflow.at(-1);if(--g.count===0)s.overflow.pop();return true}return !!s.q.pop()}
 function recountPassengers(){passengers=stations.reduce((n,s)=>n+queueCount(s),0)+lines.reduce((n,L)=>n+L.trains.reduce((s,t)=>s+t.riders.length,0),0);return passengers}
-function stepSpawns(dt){const tod=minOfDay();for(const s of stations){if(!s.emerged)continue;const served=(adj.get(s.id)||[]).length>0;s.acc+=dt*SPAWN_K*(city.spawnMult??1)*(.3+1.7*s.dens)*produceF(s.district,tod)*(served?1:.25);while(s.acc>=1){s.acc--;const sh=pickTarget(s);if(!sh)continue;queueAdd(s,{shape:sh,spawn:simS,waitSince:simS,tf:0,ox:s.x,oy:s.y,lastLi:null});generated++;passengers++}}}
+function stepSpawns(dt){const tod=minOfDay();for(const s of stations){if(!s.emerged)continue;const served=(adj.get(s.id)||[]).length>0;s.acc+=dt*SPAWN_K*(city.spawnMult??1)*(.3+1.7*s.dens)*produceF(s.district,tod)*(served?1:.25);while(s.acc>=1){s.acc--;const dest=pickTarget(s);if(dest==null)continue;queueAdd(s,{dest,spawn:simS,waitSince:simS,tf:0,ox:s.x,oy:s.y,lastLi:null});generated++;passengers++}}}
 function stepStrain(dt){for(const s of stations){if(!s.emerged)continue;if(!(adj.get(s.id)||[]).length){s.strainT=0;continue}if(queueCount(s)>(s.inter?STRAIN_INTER:STRAIN_AT)){s.strainT+=dt;while(s.strainT>7){s.strainT-=7;if(queueRemoveOne(s)){lost++;passengers--}}}else s.strainT=0}}
-function willSkipNext(t,L){if(!L.express)return false;const n=L.stops.length;if(n<2)return false;const i=t.dir>0?(t.seg+1)%n:t.seg;if(!L.loop&&(i===0||i===n-1))return false;const s=stations[L.stops[i]],dir=outgoingDir(L,i,t.dir);for(const r of t.riders)if(r.shape===s.shape||!isFinite(rideOption(L,i,dir,r.shape))||rideOption(L,i,dir,r.shape)>transferDelay(s.id)+platformCost(s.id,r.shape)+.05)return false;const cap=(1+t.cars)*effCarCap(L);if(t.riders.length<cap){fillQueue(s);for(const r of s.q.concat(s.overflow||[]))if(shouldBoard(r,L,i,dir))return false}return true}
-function shouldBoard(r,L,i,dir){const v=rideOption(L,i,dir,r.shape);return isFinite(v)&&v<=platformCost(L.stops[i],r.shape)+.05}
-function exchange(t,L,i){const s=stations[L.stops[i]],dir=outgoingDir(L,i,t.dir);let moved=0;const keep=[];for(const r of t.riders){if(r.shape===s.shape){delivered++;journeySum+=Math.max(0,simS-r.spawn)*GM_PER_S;transferSum+=r.tf;moved++;if(isOp()){const fare=FARE*(city.fareMult||1);budget+=fare-OPC;ecoInc+=fare;ecoCost+=OPC}}else if(!isFinite(rideOption(L,i,dir,r.shape))||rideOption(L,i,dir,r.shape)>transferDelay(s.id)+platformCost(s.id,r.shape)+.05){r.waitSince=simS;queueAdd(s,r);moved++}else keep.push(r)}t.riders=keep;
- fillQueue(s);const cap=(1+t.cars)*effCarCap(L);let loops=0;while(t.riders.length<cap&&loops++<cap+1){const j=s.q.findIndex(r=>shouldBoard(r,L,i,dir));let r;if(j>=0)r=s.q.splice(j,1)[0];else{const k=(s.overflow||[]).findIndex(g=>shouldBoard(g,L,i,dir));if(k<0)break;const g=s.overflow[k];r={...g};delete r.count;delete r.key;if(--g.count===0)s.overflow.splice(k,1);}if(r.lastLi!=null&&r.lastLi!==L.id)r.tf++;r.lastLi=L.id;t.riders.push(r);moved++;fillQueue(s)}return moved}
+function willSkipNext(t,L){if(!L.express)return false;const n=L.stops.length;if(n<2)return false;const i=t.dir>0?(t.seg+1)%n:t.seg;if(!L.loop&&(i===0||i===n-1))return false;const s=stations[L.stops[i]],dir=outgoingDir(L,i,t.dir);for(const r of t.riders)if(r.dest===s.id||!isFinite(rideOption(L,i,dir,r.dest))||rideOption(L,i,dir,r.dest)>transferDelay(s.id)+platformCost(s.id,r.dest)+.05)return false;const cap=(1+t.cars)*effCarCap(L);if(t.riders.length<cap){fillQueue(s);for(const r of s.q.concat(s.overflow||[]))if(shouldBoard(r,L,i,dir))return false}return true}
+function shouldBoard(r,L,i,dir){const v=rideOption(L,i,dir,r.dest);return isFinite(v)&&v<=platformCost(L.stops[i],r.dest)+.05}
+function completeJourney(r){delivered++;journeySum+=Math.max(0,simS-r.spawn)*GM_PER_S;transferSum+=r.tf;if(isOp()){const fare=FARE*(city.fareMult||1);budget+=fare-OPC;ecoInc+=fare;ecoCost+=OPC}}
+function exchange(t,L,i){const s=stations[L.stops[i]],dir=outgoingDir(L,i,t.dir);let moved=0;const keep=[];for(const r of t.riders){if(r.dest===s.id){completeJourney(r);moved++}else if(!isFinite(rideOption(L,i,dir,r.dest))||rideOption(L,i,dir,r.dest)>transferDelay(s.id)+platformCost(s.id,r.dest)+.05){r.waitSince=simS;queueAdd(s,r);moved++}else keep.push(r)}t.riders=keep;
+ fillQueue(s);const cap=(1+t.cars)*effCarCap(L);let loops=0;while(t.riders.length<cap&&loops++<cap+1){const j=s.q.findIndex(r=>shouldBoard(r,L,i,dir));let r;if(j>=0)r=s.q.splice(j,1)[0];else{const k=(s.overflow||[]).findIndex(g=>shouldBoard(g,L,i,dir));if(k<0)break;const g=s.overflow[k];r={...g};delete r.count;delete r.key;if(--g.count===0)s.overflow.splice(k,1);}if(r.lastLi!=null&&r.lastLi!==L.id)r.tf++;r.lastLi=L.id;t.riders.push(r);moved++;fillQueue(s)}
+ const st=service.index.get(stateKey(L.id,i,dir));if(st){L.sectionLoads??=new Map();L.sectionLoads.set(st.seg+":"+dir,{load:t.riders.length/cap,time:simS});}
+ if(t.riders.length>=cap&&s.q.concat(s.overflow||[]).some(r=>shouldBoard(r,L,i,dir)))leftBehind.set(L.id,simS);
+ return moved}
 function headwayFactor(t,L){if(L.trains.length<2)return 1;const lens=L.paths.map(p=>p.len),tot=lens.reduce((n,l)=>n+l,0);if(!tot)return 1;const arc=q=>lens.slice(0,q.seg).reduce((n,l)=>n+l,0)+clamp(q.f,0,1)*(lens[q.seg]||0),ring=L.loop?tot:tot*2,pos=q=>L.loop||q.dir>0?arc(q):(tot*2-arc(q))%ring,own=L.trains.filter(q=>!L.loop||q.dir===t.dir),ideal=ring/own.length,me=pos(t);if(own.length<2)return 1;let gap=Infinity;for(const q of own){if(q===t)continue;let g=pos(q)-me;if(L.loop&&t.dir<0)g=-g;g=(g%ring+ring)%ring;if(g<gap)gap=g}if(!isFinite(gap))return 1;return clamp(.2+.8*gap/(ideal*1.05),.2,1)}
 function stepTrain(t,dt){const L=lines[t.li],sc=segCountOf(L);if(sc<1)return;t.seg=clamp(t.seg,0,sc-1);const P=L.paths[t.seg];if(!P||P.len<=0)return;if(t.dwell>0){t.dwell=Math.max(0,t.dwell-dt);t.v=0;return}const C=clsOf(L),vmax=C.vmax*(city.speedScale?.[clsKeyOf(L)]||1),s=clamp(t.f,0,1)*P.len,left=t.dir>0?P.len-s:s,skip=willSkipNext(t,L);let allowed=skip?vmax:Math.min(vmax,Math.sqrt(2*C.br*left+.02));allowed*=headwayFactor(t,L);
  const here=pointAt(P.pts,s);allowed=Math.min(allowed,dynamicsLimit(P,s,t.dir,C.br));
@@ -1209,13 +1262,63 @@ function stepTrain(t,dt){const L=lines[t.li],sc=segCountOf(L);if(sc<1)return;t.s
  t.v=t.v<allowed?Math.min(allowed,t.v+C.acc*dt):Math.max(allowed,t.v-C.br*dt);t.f+=t.dir*t.v*dt/P.len;
  if(t.dir>0&&t.f>=1||t.dir<0&&t.f<=0){const n=L.stops.length,i=t.dir>0?(t.seg+1)%n:t.seg,st=stations[L.stops[i]],term=!L.loop&&(i===0||i===n-1),moved=exchange(t,L,i);if(!L.express||moved||term){t.dwell=Math.min(2.6,(st.inter?.35:.7)+moved*(st.inter?.03:.06));t.v=0}else t.dwell=0;const dir=outgoingDir(L,i,t.dir);t.dir=dir;if(dir>0){t.seg=i%sc;t.f=0}else{t.seg=(i-1+sc)%sc;t.f=1}}}
 function cashDropAmount(){const km=kms(lines.reduce((s,L)=>s+L.paths.reduce((t,p)=>t+p.chord,0),0));return Math.round(((city.cashDrop||50)+km*UPK.km*3)/10)*10}
-function makeOffer(){const carRoom=lines.some(L=>L.trains.some(t=>t.cars<clsOf(L).maxCars)),trainRoom=lines.some(L=>L.paths.length&&L.trains.length<maxTrainsFor(L)),room=(city.classes||["metro","express"]).some(k=>clsCount(k)<capOf(k));const pool=[{k:"cash",l:"+$50",w:4}];if(trainRoom)pool.push({k:"train",l:"+1 TRAIN",w:2});if(carRoom)pool.push({k:"car",l:"+1 CARRIAGE",w:1});if(stations.filter(s=>s.inter).length<capI())pool.push({k:"inter",l:"+1 INTERCHANGE",w:1});if(room&&lineSlots<capTotal()&&lines.length>=lineSlots)pool.push({k:"line",l:"+1 LINE SLOT",w:1});const draw=ex=>{const a=pool.filter(o=>o!==ex);let r=simRandom()*a.reduce((s,o)=>s+o.w,0);for(const o of a){r-=o.w;if(r<=0)return o}return a.at(-1)};const a=draw(),b=pool.length>1?draw(a):a;pendingOffer=a===b?[a]:[a,b];if(city.cashDrop){const other=pendingOffer.find(o=>o.k!=="cash"),amt=cashDropAmount(),cash={k:"cash",l:"+$"+amt,amt};pendingOffer=other?[cash,other]:[cash]}renderOffer()}
-function renderOffer(){$("offerBtns").replaceChildren();if(!pendingOffer){$("offer").style.display="none";return}for(const o of pendingOffer){const b=document.createElement("button");b.textContent=o.l;b.onclick=()=>applyOffer(o.k,o.amt);$("offerBtns").append(b)}$("offer").style.display="block"}
-function applyOffer(k,amt){pendingOffer=null;renderOffer();if(k==="cash"){const a=amt||(city.cashDrop?cashDropAmount():50);budget+=a;toast("+$"+a)}else if(k==="line"){if(lineSlots<capTotal()){lineSlots++;toast("LINE SLOT ADDED")}else budget+=city.cashDrop?cashDropAmount():50}else if(k==="train"){const eligible=lines.filter(L=>L.paths.length&&L.trains.length<maxTrainsFor(L)).sort((a,b)=>b.stops.reduce((s,id)=>s+queueCount(stations[id]),0)-a.stops.reduce((s,id)=>s+queueCount(stations[id]),0));if(eligible.length){addTrain(true,eligible[0]);toast("TRAIN DELIVERED · LINE "+(eligible[0].id+1))}else{budget+=40;toast("ALL LINES AT MAX TRAINS · +$40")}}else if(k==="car"){let best=null,bL=null;for(const L of lines)for(const t of L.trains)if(t.cars<clsOf(L).maxCars&&(!best||t.cars<best.cars)){best=t;bL=L}if(best){best.cars++;toast("CARRIAGE DELIVERED · LINE "+(bL.id+1))}else{budget+=30;toast("ALL TRAINS AT MAX LENGTH · +$30")}}else if(k==="inter"){const eligible=stations.filter(s=>s.emerged&&!s.inter).sort((a,b)=>(adj.get(b.id)||[]).length-(adj.get(a.id)||[]).length);if(eligible.length&&stations.filter(s=>s.inter).length<capI())upgradeInter(eligible[0].id,true);else toast("NO ELIGIBLE STATION")}refreshUI();autoSave(true)}
-function rebuildDemand(){if(!city)return;lastDemT=simS;const active=stations.filter(s=>s.emerged&&service.at[s.id]?.length);let total=0,near=0;for(let x=2;x<100;x+=3)for(let y=2;y<100;y+=3){const p={x,y};if(inWater(p)||inNoBuild(p))continue;const d=densityAt(p);total+=d;if(active.some(s=>dist(s,p)<=6))near+=d}demandCov=total?Math.round(near/total*100):0;const weights={};for(const s of stations)if(s.emerged)weights[s.shape]=(weights[s.shape]||0)+attractF(s.district,minOfDay())*(.25+s.dens);let all=0,reachable=0;for(const s of stations){if(!s.emerged)continue;const outgoing=(.3+1.7*s.dens)*produceF(s.district,minOfDay());for(const[sh,w]of Object.entries(weights)){if(sh===s.shape)continue;const v=w*outgoing;all+=v;if(isFinite(platformCost(s.id,sh)))reachable+=v}}demandReach=all?Math.round(reachable/all*100):0;
- const c=document.createElement("canvas");c.width=c.height=360;const g=c.getContext("2d");for(const s of stations){if(!s.emerged)continue;const n=queueCount(s),reachable=Object.entries(weights).some(([sh,w])=>sh!==s.shape&&w&&isFinite(platformCost(s.id,sh)));if(n<3&&reachable)continue;const r=(4+Math.min(8,n/4))*3.6,x=s.x*3.6,y=s.y*3.6,gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,"rgba(222,120,92,"+clamp(.1+n*.008,.1,.48).toFixed(3)+")");gr.addColorStop(1,"rgba(222,120,92,0)");g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2)}densCanvas=c}
+/* Capital grants arrive automatically. The player spends them through the
+   normal tools; no asset lottery interrupts the map. */
+function renderOffer(){$("offer").style.display="none";$("offerBtns").replaceChildren()}
+function awardGrants(week){if(!isOp()||week<=weekPaid)return;const count=week-weekPaid,amount=cashDropAmount()*count;weekPaid=week;budget+=amount;pendingOffer=null;renderOffer();toast("WEEK "+week+" · GRANT +$"+amount)}
+function settleLegacyOffer(){if(!pendingOffer?.length){pendingOffer=null;return}if(isOp())budget+=pendingOffer.find(o=>o.k==="cash")?.amt||cashDropAmount();pendingOffer=null;renderOffer()}
+let coverageVersion=-1,reachVersion=-1,reachBand=-1,stationDemand=new Map(),focusStation=null,focusFlows=[],focusUntil=0,leftBehind=new Map();
+function clearDemandFocus(){focusStation=null;focusFlows=[];focusUntil=0}
+function resetDemand(){clearDemandFocus();destinationTables.clear();destinationBases=new WeakMap();destinationBand=-1;destinationRoster=null;stationDemand.clear();leftBehind.clear();coverageVersion=reachVersion=-1;lastDemT=-1e9}
+function refreshDemandFocus(){
+ focusFlows=[];const s=stations[focusStation];if(!s)return;const counts=new Map();
+ for(const r of s.q.concat(s.overflow||[])){if(r.dest===s.id||!stations[r.dest]?.emerged)continue;counts.set(r.dest,(counts.get(r.dest)||0)+(r.count||1))}
+ focusFlows=[...counts].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([dest,count])=>({dest,count,reachable:hasJourney(s.id,dest)}));
+}
+function rebuildDemand(){
+ if(!city)return;lastDemT=simS;
+ if(coverageVersion!==serviceVersion){
+  if(!urbanCanvas||!urbanCache.has(city))buildUrbanLayer();
+  const active=stations.filter(s=>s.emerged&&service.at[s.id]?.length);let total=0,near=0;
+  for(let i=0;i<populationCells.length;i+=3){const p=populationCells[i];total+=p.d;if(active.some(s=>dist(s,p)<=6))near+=p.d}
+  demandCov=total?Math.round(near/total*100):0;coverageVersion=serviceVersion;
+ }
+ const band=demandBand();
+ if(reachVersion!==serviceVersion||reachBand!==band){let all=0,reached=0;
+  for(const s of stations){if(!s.emerged)continue;const t=destinationTable(s),outgoing=(.3+1.7*s.dens)*produceF(s.district,minOfDay());
+   for(let i=0;i<t.ids.length;i++){const w=t.weights[i]*outgoing;all+=w;if(hasJourney(s.id,t.ids[i]))reached+=w}}
+  demandReach=all?Math.round(reached/all*100):0;reachVersion=serviceVersion;reachBand=band;
+ }
+ const c=densCanvas||document.createElement("canvas");c.width=landMask.width;c.height=landMask.height;const g=c.getContext("2d"),k=c.width/urbanBounds.w;
+ g.setTransform(k,0,0,k,-urbanBounds.x*k,-urbanBounds.y*k);stationDemand.clear();
+ for(const s of stations){if(!s.emerged)continue;let n=0,wait=0,unrouted=0;
+  for(const r of s.q.concat(s.overflow||[])){const count=r.count||1;n+=count;wait+=count*Math.max(0,simS-(r.waitSince??r.spawn));if(!hasJourney(s.id,r.dest))unrouted+=count}
+  const mean=n?wait/n:0;stationDemand.set(s.id,{n,wait:mean,unrouted});if(!n)continue;
+  const strain=clamp((n/18)*.35+mean/80+(unrouted/n)*.18,0,1),r=2+4*strain;
+  const gr=g.createRadialGradient(s.x,s.y,0,s.x,s.y,r),rgb=unrouted>n/2?"222,131,109":"223,178,107";
+  gr.addColorStop(0,"rgba("+rgb+","+(.025+.21*strain).toFixed(3)+")");gr.addColorStop(1,"rgba("+rgb+",0)");g.fillStyle=gr;g.fillRect(s.x-r,s.y-r,2*r,2*r);
+ }
+ g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="destination-in";g.drawImage(landMask,0,0);g.globalCompositeOperation="source-over";densCanvas=c;
+ refreshDemandFocus();
+}
+function drawDemandFlows(D){
+ if(isPoster()||focusStation==null||performance.now()>focusUntil)return;
+ const s=stations[focusStation];if(!s)return;const A=D.station(s);if(!A)return;
+ ctx.save();ctx.lineCap="round";
+ for(const f of focusFlows){const B=D.station(stations[f.dest]);if(!B)continue;const length=dist(A,B);if(length<.01)continue;
+  const dx=B.x-A.x,dy=B.y-A.y,off=Math.min(length*.12,pxr(26)),C={x:(A.x+B.x)/2-dy/length*off,y:(A.y+B.y)/2+dx/length*off};
+  const col=f.reachable?"164,207,218":"232,173,132",r=Math.max(pxr(12),Math.min(3,length*.2));
+  const gr=ctx.createRadialGradient(B.x,B.y,0,B.x,B.y,r);gr.addColorStop(0,"rgba("+col+",.20)");gr.addColorStop(1,"rgba("+col+",0)");ctx.fillStyle=gr;ctx.fillRect(B.x-r,B.y-r,2*r,2*r);
+  ctx.strokeStyle="rgba("+col+",.64)";ctx.lineWidth=pxr(.8);ctx.setLineDash([pxr(1.5),pxr(5)]);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.quadraticCurveTo(C.x,C.y,B.x,B.y);ctx.stroke();ctx.setLineDash([]);
+  const t=.72,u=1-t,p={x:u*u*A.x+2*u*t*C.x+t*t*B.x,y:u*u*A.y+2*u*t*C.y+t*t*B.y},ang=Math.atan2(u*(C.y-A.y)+t*(B.y-C.y),u*(C.x-A.x)+t*(B.x-C.x)),arm=pxr(4);
+  ctx.beginPath();ctx.moveTo(p.x-Math.cos(ang-.55)*arm,p.y-Math.sin(ang-.55)*arm);ctx.lineTo(p.x,p.y);ctx.lineTo(p.x-Math.cos(ang+.55)*arm,p.y-Math.sin(ang+.55)*arm);ctx.stroke();
+ }
+ ctx.strokeStyle="#c9e0ec";ctx.lineWidth=pxr(1);ctx.beginPath();ctx.arc(A.x,A.y,stationRadius(s)+pxr(4),0,TAU);ctx.stroke();ctx.restore();
+}
+function peakSectionLoad(L){let peak=0;for(const q of L.sectionLoads?.values()||[])if(simS-q.time<Math.max(30,(L.circuit||30)*2))peak=Math.max(peak,q.load);for(const t of L.trains)peak=Math.max(peak,t.riders.length/((1+t.cars)*effCarCap(L)));return clamp(peak,0,1)}
+
 function meanWait(){let n=0,sum=0;for(const s of stations){for(const r of s.q){n++;sum+=Math.max(0,simS-(r.waitSince??r.spawn))}for(const r of s.overflow||[]){n+=r.count;sum+=r.count*Math.max(0,simS-(r.waitSince??r.spawn))}}return n?sum/n*GM_PER_S:0}
-function update(dtReal){const dt=dtReal*SPEEDS[speedIdx];if(dt<=0)return;simS+=dt;if(emergePtr<stations.length&&simS>=nextEmergeAt){emergeStation(true);const gg=emergePtr/stations.length;nextEmergeAt=simS+(isOp()?.6:.5)*DAY_SECONDS*(.7+simRandom()*.6)*(1+1.7*gg)}if(isOp()){const week=Math.floor(simS/(DAY_SECONDS*7));if(week>weekPaid){weekPaid=week;toast("WEEK "+week+" · DELIVERY ARRIVED");makeOffer()}let tr=0,cars=0,u=0;for(const L of lines){tr+=L.trains.length;for(const t of L.trains)cars+=t.cars;for(const P of L.paths)u+=P.chord}const up=UPK.train*tr+UPK.car*cars+UPK.km*kms(u),sub=SUBSIDY_DAY*(city.subsidyMult||1)+kms(u)*(city.subsidyKm||0),day=dt/DAY_SECONDS;budget+=(sub-up)*day;ecoInc+=sub*day;ecoCost+=up*day;ecoT+=day;if(ecoT>=.5){const ri=ecoInc/ecoT,rc=ecoCost/ecoT,p=ecoSeries.at(-1);ecoSeries.push(p?[p[0]*.55+ri*.45,p[1]*.55+rc*.45]:[ri,rc]);if(ecoSeries.length>120)ecoSeries.shift();ecoInc=ecoCost=ecoT=0}}if(Math.abs(growthG()-lastUrbanG)>.03)buildUrbanLayer();if(simS-lastDemT>DAY_SECONDS*.5)rebuildDemand();stepSpawns(dt);for(const L of lines)for(const t of L.trains)stepTrain(t,dt);stepStrain(dt);recountPassengers()}
+function update(dtReal){const dt=dtReal*SPEEDS[speedIdx];if(dt<=0)return;simS+=dt;if(emergePtr<stations.length&&simS>=nextEmergeAt){emergeStation(true);const gg=emergePtr/stations.length;nextEmergeAt=simS+(isOp()?.6:.5)*DAY_SECONDS*(.7+simRandom()*.6)*(1+1.7*gg)}if(isOp()){const week=Math.floor(simS/(DAY_SECONDS*7));awardGrants(week);let tr=0,cars=0,u=0;for(const L of lines){tr+=L.trains.length;for(const t of L.trains)cars+=t.cars;for(const P of L.paths)u+=P.chord}const up=UPK.train*tr+UPK.car*cars+UPK.km*kms(u),sub=SUBSIDY_DAY*(city.subsidyMult||1)+kms(u)*(city.subsidyKm||0),day=dt/DAY_SECONDS;budget+=(sub-up)*day;ecoInc+=sub*day;ecoCost+=up*day;ecoT+=day;if(ecoT>=.5){const ri=ecoInc/ecoT,rc=ecoCost/ecoT,p=ecoSeries.at(-1);ecoSeries.push(p?[p[0]*.55+ri*.45,p[1]*.55+rc*.45]:[ri,rc]);if(ecoSeries.length>120)ecoSeries.shift();ecoInc=ecoCost=ecoT=0}}if(Math.abs(growthG()-lastUrbanG)>.03)buildUrbanLayer();if(simS-lastDemT>2)rebuildDemand();stepSpawns(dt);for(const L of lines)for(const t of L.trains)stepTrain(t,dt);stepStrain(dt);recountPassengers()}
 
 /* The preview owns a separate layout. Simulation, saved alignments and station
    coordinates are never changed by diagram construction. */
@@ -1552,8 +1655,8 @@ function drawTrains(D){
   const z=isPoster()?1:1+(zoomBump()-1)*.45,xs=L.express?(city.expressCarScale??1):1,cs=city.carScale??1,l=trackPx((clsKeyOf(L)==="tram"?8.5:L.express?18*xs:13)*z*cs),w=trackPx((clsKeyOf(L)==="tram"?3.8:L.express?7.5*xs:5.5)*z*cs);
   for(let u=t.cars;u>=0;u--){const p=trainDisplayPoint(L,t,u*(l+trackPx(2.5*z*cs)),D);if(!p)continue;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.ang+(t.dir<0?Math.PI:0));ctx.fillStyle=TH().stn;ctx.strokeStyle=L.color;ctx.lineWidth=trackPx(1.25*z);ctx.beginPath();
    if(L.express&&u===0){const ns=l*(city.expressNose??.34);ctx.moveTo(-l/2,-w/2);ctx.lineTo(l/2-ns,-w/2);ctx.lineTo(l/2,0);ctx.lineTo(l/2-ns,w/2);ctx.lineTo(-l/2,w/2);ctx.closePath()}else if(ctx.roundRect)ctx.roundRect(-l/2,-w/2,l,w,Math.min(w/3,trackPx(2)));else ctx.rect(-l/2,-w/2,l,w);
-   ctx.fill();ctx.stroke();const capacity=effCarCap(L),cols=Math.ceil(capacity/2);ctx.fillStyle=TH().ink;
-   for(let k=0;k<capacity;k++){const r=t.riders[u*capacity+k];if(!r)break;const x=-l*.34+(k%cols)*l*.63/Math.max(1,cols-1),y=k<cols?-w*.18:w*.18;shapePath(ctx,x,y,Math.min(w*.13,l/(cols*3)),r.shape);ctx.fill()}ctx.restore();
+   ctx.fill();ctx.stroke();ctx.restore();
+
   }
  }}
 }
@@ -1562,10 +1665,11 @@ function segmentInsideBox(a,b,r){
  for(let i=0;i<4;i++){if(Math.abs(pp[i])<1e-9){if(qq[i]<0)return 0;continue}const t=qq[i]/pp[i];if(pp[i]<0)lo=Math.max(lo,t);else hi=Math.min(hi,t);if(lo>=hi)return 0}
  return(hi-lo)*Math.hypot(dx,dy);
 }
+function stationGlyph(s){return s.air||s.kind==="air"||s.district==="air"?"plane":"circle"}
 function stationRadius(s,diag=false){
- if(diag)return pxr((s.shape==="plane"?3.7:3.0)*posterScale());
+ if(diag)return pxr((stationGlyph(s)==="plane"?3.7:3.0)*posterScale());
  const z=1.28*zoomBump()*(city.stationScale??.6);
- let r=px((s.shape==="plane"?5:4.4)*z);
+ let r=px((stationGlyph(s)==="plane"?5:4.4)*z);
  r=Math.max(r,Math.min(pxr(city.stationMinPx??2.4),nnWorld*.3));
  if(view.s<=fitS0*1.35)r=Math.min(r,(city.minStopGap??4.5)*.42);
  if(city.stationMaxPx!=null&&!isPoster())r=Math.min(r,pxr(city.stationMaxPx));return r;
@@ -1578,14 +1682,14 @@ function drawStations(D){
   const r=stationRadius(s,D.diag);
   const q=queueCount(s),age=simS-s.emergeAt;ctx.save();
   if(!isPoster()&&age>=0&&age<1.2){ctx.strokeStyle="#cbe3ef";ctx.globalAlpha=(1-age/1.2)*.6;ctx.lineWidth=pxr(1);ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0,pxr(5+age*24)),0,TAU);ctx.stroke();ctx.globalAlpha=1}
-  if(!isPoster()&&q>(s.inter?STRAIN_INTER:STRAIN_AT)){ctx.strokeStyle="#ef8c87";ctx.globalAlpha=.3+.4*(.5+.5*Math.sin(simS*6));ctx.lineWidth=pxr(1.1);ctx.beginPath();ctx.arc(p.x,p.y,r*2,0,TAU);ctx.stroke();ctx.globalAlpha=1}
+  if(!isPoster()&&q>(s.inter?STRAIN_INTER:STRAIN_AT)){ctx.strokeStyle="#ef8c87";ctx.globalAlpha=.3+.4*(.5+.5*Math.sin(simS*2.5));ctx.lineWidth=pxr(1.1);ctx.beginPath();ctx.arc(p.x,p.y,r*2,0,TAU);ctx.stroke();ctx.globalAlpha=1}
   const interchange=s.inter||(D.diag&&lines.filter(L=>L.stops.includes(s.id)).length>1);
   // A fine transfer link joins the separated lanes. No capsule masks the rails.
   if(D.diag){const ports=D.ports.get(s.id)||[];let ends=null,span=0;
    for(const a of ports)for(const b of ports)if(dist(a,b)>span){span=dist(a,b);ends=[a,b]}
    if(ends&&span>r*.5){ctx.lineCap="round";ctx.strokeStyle=TH().ink;ctx.globalAlpha=.66;ctx.lineWidth=pxr(1.05*posterScale());pathStroke(ctx,ends)}
   }
-  ctx.globalAlpha=1;ctx.fillStyle=TH().stn;shapePath(ctx,p.x,p.y,r,s.shape);ctx.fill();
+  ctx.globalAlpha=1;ctx.fillStyle=TH().stn;shapePath(ctx,p.x,p.y,r,stationGlyph(s));ctx.fill();
   ctx.strokeStyle=TH().ink;ctx.globalAlpha=interchange?.88:.74;
   ctx.lineWidth=pxr((D.diag?(interchange?1.5:1):city.stationStroke??1)*posterScale());ctx.stroke();
   if(s.inter&&!D.diag){ctx.lineWidth=pxr(1.6*posterScale());ctx.beginPath();ctx.arc(p.x,p.y,r*1.8*(city.interScale??1),0,TAU);ctx.stroke()}
@@ -1593,7 +1697,8 @@ function drawStations(D){
   ctx.globalAlpha=1;
   if(s.metroIsland&&!isPoster()&&clsKeyOf(lines[selLine]||{cls:"metro"})==="tram")mapText("M",p,{size:10,colour:"#b3d5f2",dx:r*view.s+5,dy:-5});
   if(s.name&&(!isPoster()||posterLabels))names.push({s,p,r});symbols.push({p:w2s(p),r:r*view.s*(s.inter&&!D.diag?2:1.5)});
-  if(!isPoster()&&q&&symF()>.52){ctx.fillStyle=TH().ink;const show=Math.min(s.q.length,8);for(let i=0;i<show;i++){const x=p.x+pxr(9.5)+(i%4)*pxr(4.8),y=p.y-Math.floor(i/4)*pxr(5);shapePath(ctx,x,y,pxr(1.8),s.q[i].shape);ctx.fill()}if(q>show)mapText("+"+(q-show),p,{size:10,colour:TH().dim,dx:31,dy:3})}
+
+
   ctx.restore();
  }
  names.sort((a,b)=>Number(b.s.inter)-Number(a.s.inter));
@@ -1635,17 +1740,18 @@ function drawEditFeedback(){
 }
 function draw(){
  if(!city)return;labelBoxes.length=0;
- if(!isPoster()){labelBoxes.push({x:0,y:0,w:Math.min(210,W-220),h:150},{x:W-230,y:0,w:230,h:55},{x:0,y:H-((city.classes?.length||2)*32+88),w:Math.min(370,W),h:230})}ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=TH().bg;ctx.fillRect(0,0,W,H);ctx.setTransform(DPR*view.s,0,0,DPR*view.s,-view.x*view.s*DPR,-view.y*view.s*DPR);
+ if(!isPoster()){labelBoxes.push({x:0,y:0,w:Math.min(210,W-220),h:150},{x:W-230,y:0,w:230,h:55},{x:0,y:H-((city.classes?.length||2)*32+112),w:Math.min(370,W),h:230})}ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=TH().bg;ctx.fillRect(0,0,W,H);ctx.setTransform(DPR*view.s,0,0,DPR*view.s,-view.x*view.s*DPR,-view.y*view.s*DPR);
  const D=displayGeometry();
  if(isPoster())labelBoxes.push(posterTitleBox());
  if(D.diag)drawSchematicBackdrop();
  if(!D.diag){
   if(!isPoster()){ctx.fillStyle="#9abbdb10";for(let x=2;x<100;x+=6)for(let y=2;y<100;y+=6){ctx.beginPath();ctx.arc(x,y,pxr(.6),0,TAU);ctx.fill()}}
-  drawWater();if(urbanCanvas&&!(isPoster()&&posterTheme==="light"))ctx.drawImage(urbanCanvas,0,0,100,100);drawRidges();
+  drawWater();if(urbanCanvas&&!(isPoster()&&posterTheme==="light"))drawUrbanLayer(urbanCanvas);drawRidges();
   if(posterLabels||!isPoster())for(const r of city.regions||[])mapText(r.t,r,{size:12,colour:TH().dim,avoid:true});drawHints();
   if(posterLabels||!isPoster())for(const r of city.terrainLabels||[])mapText(r.text,r,{size:11,colour:TH().dim,align:"center",avoid:true});
-  if(showDensity&&!isPoster()&&densCanvas)ctx.drawImage(densCanvas,0,0,100,100);
+  if(showDensity&&!isPoster()&&densCanvas)drawUrbanLayer(densCanvas);
  }
+ drawDemandFlows(D);
  // Selected lines render last, at full opacity, with a sharp edge rather than blur.
  const ordered=lines.slice().sort((a,b)=>Number(a.id===selLine&&!isPoster())-Number(b.id===selLine&&!isPoster()));
  for(const L of ordered)for(const P of L.paths)drawTrack(L,P,D.paths.get(P),D.diag,D.railNeighbours.get(P));
@@ -1813,7 +1919,19 @@ function refreshUI(){
  mk("station","Build station",()=>{tool=tool==="station"?null:"station";if(tool)toast("TAP EMPTY GROUND");refreshUI()},false,cost(COST.station),tool==="station");
  mk("inter","Build interchange",()=>{tool=tool==="inter"?null:"inter";if(tool)toast("TAP A STATION");refreshUI()},false,cost(COST.inter),tool==="inter");
 }
-function lineInfo(){} // Selection details are available from the line information button.
+function lineInfo(){
+ const e=$("lineInfo");if(focusStation!=null&&performance.now()>focusUntil)clearDemandFocus();
+ if(tool||isPoster()){e.hidden=true;return}
+ if(focusStation!=null){const s=stations[focusStation],d=stationDemand.get(focusStation);e.hidden=false;
+  const message=d?.unrouted?" · NO ROUTE "+d.unrouted:d?.wait>20?" · LONG WAITS":"";
+  const text=(s.name||"STATION")+" · "+queueCount(s)+" WAITING"+message;if(e.dataset.value!==text){e.textContent=text;e.dataset.value=text}return;
+ }
+ const L=lines[selLine];if(!L?.paths.length||!L.trains.length){e.hidden=true;return}
+ e.hidden=false;const load=Math.round(peakSectionLoad(L)*100),behind=simS-(leftBehind.get(L.id)??-Infinity)<20,key=L.id+":"+load+":"+behind;if(e.dataset.value===key)return;e.dataset.value=key;e.replaceChildren();
+ const meter=document.createElement("meter");meter.min=0;meter.max=100;meter.value=load;meter.setAttribute("aria-label","Busiest section load, "+load+" percent");
+ const label=document.createElement("span");label.textContent="BUSIEST SECTION "+load+"%";e.append(meter,label);
+ if(behind){const hint=document.createElement("span");hint.textContent="LEFT BEHIND";hint.style.color="#e9b691";e.append(hint)}
+}
 function scaleRiders(n){if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e4)return(n/1e3).toFixed(1)+"K";return Math.round(n).toLocaleString("en-GB")}
 function waitText(n){return n>=60?(n/60).toFixed(1)+"H":Math.round(n)+"M"}
 function flowRates(){
@@ -1827,9 +1945,9 @@ function hudTick(){
  $("hCity").textContent=city.name;$("hClock").textContent="DAY "+day+" · "+h+":"+m;$("metrics").replaceChildren();
  const texts=[...(isOp()?["$"+Math.floor(budget)]:[]),"RIDERS "+scaleRiders(delivered),"ACCESS "+demandCov+"%"];
  texts.forEach((t,i)=>{if(i)$("metrics").append(document.createElement("br"));$("metrics").append(document.createTextNode(t))});
- $("flowButton").style.display=isOp()?"flex":"none";if(isOp())drawFlow();
+ $("flowButton").style.display=isOp()?"flex":"none";if(isOp())drawFlow();lineInfo();
 }
-function showModal(id){modalFocus=document.activeElement;$(id).setAttribute("aria-hidden","false");$(id).querySelector("button")?.focus()}
+function showModal(id){clearDemandFocus();modalFocus=document.activeElement;$(id).setAttribute("aria-hidden","false");$(id).querySelector("button")?.focus()}
 function closeModal(id){$(id).setAttribute("aria-hidden","true");modalFocus?.focus();modalFocus=null}
 function info(title,paragraphs){$("infoTitle").textContent=title;$("infoBody").replaceChildren();for(const text of paragraphs){const p=document.createElement("p");p.textContent=text;$("infoBody").append(p)}showModal("infoCard")}
 function addModeDetails(c){
@@ -1844,11 +1962,12 @@ function addCitySources(c){if(!c.sources)return;const details=document.createEle
 function cityInfo(id){const c=CITIES[id];info(c.name,[CITY_COPY[id][2]]);addModeDetails(c);addCitySources(c)}
 function showClsLegend(){
  const text=[],L=lines[selLine];
+ if(L?.paths.length)text.push("Busiest section is the highest recent departure occupancy in either direction, including current trains. It is not a whole-line average.");
  if(L)text.push(clsName(clsKeyOf(L))+" "+(L.id+1)+" · "+L.stops.length+" stops · "+L.trains.length+" trains · "+Math.round(kms(lineLength(L)))+" km"+(L.traffic?". Shared street traffic reduces capacity by one per car.":"."));
  text.push(CITY_COPY[cityId][2]);if(city.nobuildClasses?.length)text.push(city.nobuildMsg);
  if(city.crossings?.length)for(const cl of classesFor(city)){const gates=city.crossings.filter(g=>(!g.cls||g.cls.includes(cl))&&!(city.landlocked||[]).includes(cl));if(gates.length)text.push(clsName(cl)+": "+gates.map(g=>g.name).join(", ")+".")}
  if(terrainModel().grid)text.push(city.terrainSource?"Contours follow a simplified elevation model. Nested contours show relief; tight bends and gradients slow trains. See Map sources for the geography.":"Contours show stylised elevation. Nested contours show relief. Gradients and tight bends slow trains; feasible tunnels cost more. These heights are not survey data.");
- text.push("Dashed protected boundaries follow this city’s access rules. Faint transport spines suggest demand; marked tram streets are compulsory only where that city requires them.");
+ text.push("Dashed protected boundaries follow this city’s access rules. The quiet block texture shows stylised population density; warm haze shows waiting demand. Faint transport spines suggest demand; marked tram streets are compulsory only where that city requires them.");
  if(L?.paths.length){const grade=Math.max(...L.paths.map(p=>p.dynamics?.maxGrade||0))*100,tunnels=L.paths.reduce((s,p)=>s+(p.dynamics?.tunnelLength||0),0);text.push("TRACK · Maximum gradient "+grade.toFixed(1)+"%"+(tunnels?" · "+kms(tunnels).toFixed(1)+" km in mountain tunnels":"")+".")}
  info(city.name,text);addModeDetails(city);addCitySources(city);
  const p=document.createElement("p");p.textContent="Metro and intercity trains can both serve transport junctions. Terrain and regional rules still apply.";$("infoBody").append(p);
@@ -1856,8 +1975,8 @@ function showClsLegend(){
 $("metricInfo").onclick=()=>info("NETWORK",[
  "RIDERS "+scaleRiders(delivered)+" · LOST "+scaleRiders(lost)+" · "+Math.round(kms(lines.reduce((s,L)=>s+lineLength(L),0)))+" KM",
  "ACCESS "+demandCov+"% · REACH "+demandReach+"% · WAIT "+waitText(meanWait()),
- "Access measures population within "+kms(6).toFixed(1)+" km of an operating station. Reach measures trips with a usable route. Wait is current platform time in the game clock.",
- "Passengers weigh journey time, service frequency and transfers. Interchanges shorten transfers and hold more people. Shapes seek a matching station."
+ "Access estimates population within "+kms(6).toFixed(1)+" km of an operating station. Reach measures trips with a usable route. Wait is current platform time in the game clock.",
+ "Passengers weigh journey time, service frequency and transfers. Interchanges shorten transfers and hold more people. Trips have specific destinations. Tap a station to see up to three main outgoing flows for its waiting passengers."
 ]);
 $("flowButton").onclick=()=>{const r=flowRates();info("FINANCES",["INCOME $"+Math.round(r.income)+" / DAY · COSTS $"+Math.round(r.cost)+" / DAY",r.sampled?"Green is income from fares and subsidy; red is operating costs. These are recent daily rates.":"Green is subsidy; red is upkeep. Fare income appears after the first operating sample.","Construction and rolling-stock purchases come directly from the budget."])};
 $("infoClose").onclick=()=>closeModal("infoCard");$("bHelp").onclick=()=>showModal("helpCard");$("helpOk").onclick=()=>closeModal("helpCard");
@@ -1908,21 +2027,34 @@ function nearestStation(p,rad){let best=null,bd=rad;for(const s of stations)if(s
 function nearestSeg(p,L,rad){let best=-1,bd=rad;for(let i=0;i<L.paths.length;i++){const pts=L.paths[i].pts;for(let k=1;k<pts.length;k++){const d=distToSeg(p,[pts[k-1].x,pts[k-1].y],[pts[k].x,pts[k].y]);if(d<bd){bd=d;best=i}}}return best}
 function lineAtPoint(p,rad){let best=null,bd=rad;for(const L of lines){if(!lineShown(L))continue;for(const P of L.paths)for(let k=1;k<P.pts.length;k++){const d=distToSeg(p,[P.pts[k-1].x,P.pts[k-1].y],[P.pts[k].x,P.pts[k].y]);if(d<bd){bd=d;best=L.id}}}return best}
 function cancelGesture(){pointers.clear();downP=null;midPan=null;pinchPrev=null;pinched=false;dragMode=null;dragFrom=null;dragW=null;snapSt=null;dragPlan=null;moved=false}
-function tap(p){if(!running||isPoster())return;const hit=nearestStation(p,pxr(16));if(hit!=null){if(tool==="inter"){upgradeInter(hit);return}if(tool==="detach"){const L=lines[selLine]?.stops.includes(hit)?lines[selLine]:lines.find(L=>L.stops.includes(hit));tool=null;if(L)detachAt(L.id,hit);else{toast("NOT ON A LINE");refreshUI()}return}if(tool==="station"){toast("TAP EMPTY GROUND TO BUILD");return}const via=lines.filter(L=>L.stops.includes(hit)).map(L=>L.id);if(via.length)selectLine(via[(via.indexOf(selLine)+1)%via.length]);return}if(tool==="station"){placeStation(p);return}const L=lines[selLine];if(L&&!tool){const si=nearestSeg(p,L,pxr(11));if(si>=0){flipBend(L.id,si);return}}const li=lineAtPoint(p,pxr(11));selectLine(li??-1)}
+function tap(p){if(!running||isPoster())return;const hit=nearestStation(p,pxr(16));if(hit!=null){if(tool==="inter"){upgradeInter(hit);return}if(tool==="detach"){const L=lines[selLine]?.stops.includes(hit)?lines[selLine]:lines.find(L=>L.stops.includes(hit));tool=null;if(L)detachAt(L.id,hit);else{toast("NOT ON A LINE");refreshUI()}return}if(tool==="station"){toast("TAP EMPTY GROUND TO BUILD");return}const via=lines.filter(L=>L.stops.includes(hit)).map(L=>L.id);if(via.length)selectLine(via[(via.indexOf(selLine)+1)%via.length]);focusStation=hit;focusUntil=performance.now()+10000;refreshDemandFocus();lineInfo();return}if(tool==="station"){placeStation(p);return}const L=lines[selLine];if(L&&!tool){const si=nearestSeg(p,L,pxr(11));if(si>=0){flipBend(L.id,si);return}}const li=lineAtPoint(p,pxr(11));selectLine(li??-1)}
 cv.addEventListener("pointerdown",e=>{if(!running||e.button===2)return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}if(e.button===1){midPan={x:e.clientX,y:e.clientY,id:e.pointerId};userCam=true;return}pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1){downP={x:e.clientX,y:e.clientY};downT=Date.now();moved=false;pinched=false;dragMode=dragFrom=dragW=snapSt=dragPlan=null;if(!isPoster()&&!tool){const wp=s2w(downP),hit=nearestStation(wp,pxr(16)),L=lines[selLine];if(hit!=null){if(L&&!L.loop&&(!L.stops.length||isEndOf(L,hit))){dragMode="connect";dragFrom=hit}else if(L?.stops.includes(hit)){dragMode="pull";dragFrom=hit}else{const ends=lines.filter(L=>isEndOf(L,hit));if(ends.length===1){selectLine(ends[0].id);dragMode="connect";dragFrom=hit}}}else if(L){const si=nearestSeg(wp,L,pxr(12));if(si>=0){dragMode="splice";dragFrom=si}}}}if(pointers.size>=2){pinched=true;dragMode=dragFrom=dragW=snapSt=dragPlan=null;const p=[...pointers.values()];pinchPrev={d:dist(p[0],p[1]),mid:{x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2}}}});
-cv.addEventListener("pointermove",e=>{if(midPan&&midPan.id===e.pointerId){view.x-=(e.clientX-midPan.x)/view.s;view.y-=(e.clientY-midPan.y)/view.s;midPan.x=e.clientX;midPan.y=e.clientY;return}if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId),p={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,p);if(pointers.size>=2){const a=[...pointers.values()],d=dist(a[0],a[1]),mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};userCam=true;if(pinchPrev){view.x-=(mid.x-pinchPrev.mid.x)/view.s;view.y-=(mid.y-pinchPrev.mid.y)/view.s;const wm=s2w(mid);view.s=clamp(view.s*d/(pinchPrev.d||d),minZoom(),30);view.x=wm.x-mid.x/view.s;view.y=wm.y-mid.y/view.s}pinchPrev={d,mid};return}if(!downP)return;if(dist(p,downP)>7)moved=true;if(!moved)return;if(dragMode){dragW=s2w(p);if(dragMode!=="pull"){let id=nearestStation(dragW,pxr(27));if(dragMode==="connect"&&id===dragFrom)id=null;if(id!==snapSt){snapSt=id;dragPlan=null;if(id!=null){const L=lines[selLine];if(dragMode==="connect")dragPlan=planSegment(L,dragFrom,id);else{dragPlan=planSplice(L,dragFrom,id)}buzz(8)}}}}else{view.x-=(p.x-prev.x)/view.s;view.y-=(p.y-prev.y)/view.s;userCam=true}});
+cv.addEventListener("pointermove",e=>{if(midPan&&midPan.id===e.pointerId){view.x-=(e.clientX-midPan.x)/view.s;view.y-=(e.clientY-midPan.y)/view.s;midPan.x=e.clientX;midPan.y=e.clientY;return}if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId),p={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,p);if(pointers.size>=2){const a=[...pointers.values()],d=dist(a[0],a[1]),mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};userCam=true;if(pinchPrev){view.x-=(mid.x-pinchPrev.mid.x)/view.s;view.y-=(mid.y-pinchPrev.mid.y)/view.s;const wm=s2w(mid);view.s=clamp(view.s*d/(pinchPrev.d||d),minZoom(),30);view.x=wm.x-mid.x/view.s;view.y=wm.y-mid.y/view.s}pinchPrev={d,mid};return}if(!downP)return;if(dist(p,downP)>7)moved=true;if(!moved)return;clearDemandFocus();if(dragMode){dragW=s2w(p);if(dragMode!=="pull"){let id=nearestStation(dragW,pxr(27));if(dragMode==="connect"&&id===dragFrom)id=null;if(id!==snapSt){snapSt=id;dragPlan=null;if(id!=null){const L=lines[selLine];if(dragMode==="connect")dragPlan=planSegment(L,dragFrom,id);else{dragPlan=planSplice(L,dragFrom,id)}buzz(8)}}}}else{view.x-=(p.x-prev.x)/view.s;view.y-=(p.y-prev.y)/view.s;userCam=true}});
 function endPointer(e,cancel=false){if(midPan?.id===e.pointerId){midPan=null;return}if(!pointers.has(e.pointerId))return;const was=pointers.size;pointers.delete(e.pointerId);if(cancel){dragMode=dragFrom=dragW=snapSt=dragPlan=null;moved=true;pinched=true}if(was>=2&&pointers.size===1){downP={...[...pointers.values()][0]};moved=true;pinched=true;pinchPrev=null;return}if(!pointers.size){if(!cancel&&!pinched&&downP){if(!moved&&Date.now()-downT<600)tap(s2w({x:e.clientX,y:e.clientY}));else if(moved&&dragFrom!=null){const L=lines[selLine],p=s2w({x:e.clientX,y:e.clientY}),target=snapSt??nearestStation(p,pxr(18));if(dragMode==="connect"&&target!=null&&target!==dragFrom)doConnect(dragFrom,target);else if(dragMode==="splice"&&target!=null)spliceAt(selLine,dragFrom,target);else if(dragMode==="pull"&&L){if(dist(p,stations[dragFrom])>pxr(26))detachAt(selLine,dragFrom);else editFeedback={li:L.id,pts:pullTrack(L,dragFrom),anchor:{x:stations[dragFrom].x,y:stations[dragFrom].y},drag:{...p},colour:L.color,start:performance.now()}}}}cancelGesture()}}
 cv.addEventListener("pointerup",e=>endPointer(e));cv.addEventListener("pointercancel",e=>endPointer(e,true));cv.addEventListener("lostpointercapture",e=>endPointer(e,true));
 cv.addEventListener("wheel",e=>{if(!running)return;e.preventDefault();userCam=true;if(e.ctrlKey||e.metaKey){const p={x:e.clientX,y:e.clientY},w=s2w(p);view.s=clamp(view.s*Math.exp(-e.deltaY*.01),minZoom(),30);view.x=w.x-p.x/view.s;view.y=w.y-p.y/view.s}else{view.x+=e.deltaX/view.s;view.y+=e.deltaY/view.s}},{passive:false});cv.addEventListener("contextmenu",e=>e.preventDefault());
 document.addEventListener("keydown",e=>{const modal=document.querySelector('.modal[aria-hidden="false"]');if(modal){if(e.key==="Escape"){closeModal(modal.id);e.preventDefault()}if(e.key==="Tab"){const b=[...modal.querySelectorAll("button")];if(e.shiftKey&&document.activeElement===b[0]){b.at(-1).focus();e.preventDefault()}else if(!e.shiftKey&&document.activeElement===b.at(-1)){b[0].focus();e.preventDefault()}}return}if(!running||/input|textarea/i.test(e.target.tagName))return;const k=e.key.toLowerCase();if(k==="f"||k==="c")fitView();else if(k===" "||k==="p"){if(e.target.tagName==="BUTTON")return;e.preventDefault();$("bSpeed").click()}else if(k==="h"||k==="?")$("bHelp").click();else if(k==="escape"){cancelGesture();if(isPoster())exitPoster();else if($("menuPop").style.display==="flex")$("menuPop").style.display="none";else selectLine(-1)}else if(k>="1"&&k<="9"&&lines[Number(k)-1])selectLine(Number(k)-1);else if(k==="["&&selLine>0)selectLine(selLine-1);else if(k==="]"&&selLine<lines.length-1)selectLine(selLine+1);else if(k==="m")$("bMenu").click();else if(k==="z"&&(e.ctrlKey||e.metaKey)){e.preventDefault();undoStop()}});
 
 const AUTOKEY="intercity_autosave_v822",LEGACYKEY="intercity_autosave";
-function snapshotGame(){return{v:2,version:VERSION,cityId,mode,seed,rngState,simS,budget,delivered,lost,generated,journeySum,transferSum,emergePtr,nextEmergeAt,weekPaid,lineSlots,speedIdx,hiddenCls:clone(hiddenCls),ecoInc,ecoCost,ecoT,ecoSeries:clone(ecoSeries),pendingOffer:clone(pendingOffer),stations:stations.map(s=>({...s,q:s.q.map(r=>({...r})),overflow:(s.overflow||[]).map(r=>({...r}))})),lines:lines.map(L=>({color:L.color,stops:L.stops.slice(),flips:clone(L.flips),railPaths:clone(L.railPaths),routeMeta:clone(L.routeMeta),routeEncoding:"canonical-polyline",loop:L.loop,activeEnd:L.activeEnd,express:L.express,visible:L.visible,cls:clsKeyOf(L),homeRegion:L.homeRegion,trains:L.trains.map(t=>({...t,riders:t.riders.map(r=>({...r}))}))}))}}
+function snapshotGame(){return{v:3,demandModel:"station-destinations",version:VERSION,cityId,mode,seed,rngState,simS,budget,delivered,lost,generated,journeySum,transferSum,emergePtr,nextEmergeAt,weekPaid,lineSlots,speedIdx,hiddenCls:clone(hiddenCls),ecoInc,ecoCost,ecoT,ecoSeries:clone(ecoSeries),pendingOffer:clone(pendingOffer),stations:stations.map(s=>({...s,q:s.q.map(r=>({...r})),overflow:(s.overflow||[]).map(r=>({...r}))})),lines:lines.map(L=>({color:L.color,stops:L.stops.slice(),flips:clone(L.flips),railPaths:clone(L.railPaths),routeMeta:clone(L.routeMeta),routeEncoding:"canonical-polyline",loop:L.loop,activeEnd:L.activeEnd,express:L.express,visible:L.visible,cls:clsKeyOf(L),homeRegion:L.homeRegion,trains:L.trains.map(t=>({...t,riders:t.riders.map(r=>({...r}))}))}))}}
 function autoSave(force=false){if(!running||!stations.length)return;const now=performance.now();if(!force&&now-lastAuto<4000)return;lastAuto=now;try{localStorage.setItem(AUTOKEY,JSON.stringify({t:Date.now(),g:snapshotGame()}))}catch(e){}}
 function readAuto(){const results=[];for(const k of[AUTOKEY,LEGACYKEY])try{const o=JSON.parse(localStorage.getItem(k));if(o?.g?.stations?.length&&CITIES[o.g.cityId])results.push(o)}catch(e){}return results.sort((a,b)=>(b.t||0)-(a.t||0))[0]||null}
 /* Parse and validate completely before changing the live city. Imported legacy
    alignments are kept, including tracks whose old editor permitted exceptions. */
-function validateSave(raw){if(!raw||typeof raw!=="object"||!CITIES[raw.cityId]||!Array.isArray(raw.stations)||!Array.isArray(raw.lines))throw Error("Not an Intercity save");if(!raw.stations.length||raw.stations.length>5000||raw.lines.length>64)throw Error("Invalid network size");const finite=(v,def=0)=>Number.isFinite(v)?v:def;const rider=r=>{if(!r||!SHAPES.includes(r.shape)||!Number.isFinite(r.spawn))throw Error("Invalid passenger data");return{shape:r.shape,spawn:Math.max(0,r.spawn),waitSince:finite(r.waitSince,r.spawn),tf:Math.max(0,finite(r.tf)),ox:finite(r.ox),oy:finite(r.oy),lastLi:Number.isInteger(r.lastLi)?r.lastLi:null}};const ns=raw.stations.map((s,i)=>{if(!s||!Number.isFinite(s.x)||!Number.isFinite(s.y)||Math.abs(s.x)>1e4||Math.abs(s.y)>1e4||!SHAPES.includes(s.shape))throw Error("Invalid station data");if(s.q!=null&&(!Array.isArray(s.q)||s.q.length>100000))throw Error("Invalid queue");const q=(s.q||[]).map(rider),overflow=(s.overflow||[]).map(g=>{const r=rider(g);if(!Number.isInteger(g.count)||g.count<1||g.count>1e9)throw Error("Invalid queue count");return{...r,key:r.shape+":"+(r.lastLi??-1),count:g.count}});return{x:s.x,y:s.y,id:i,shape:s.shape,district:["res","cbd","ind","air","star"].includes(s.district)?s.district:"res",dens:clamp(finite(s.dens,.5),0,1),emerged:!!s.emerged,inter:!!s.inter,name:typeof s.name==="string"?s.name.slice(0,80):null,kind:typeof s.kind==="string"?s.kind:null,icOnly:!!s.icOnly,air:!!s.air,dead:!!s.dead,metroIsland:!!s.metroIsland,onCorridor:!!s.onCorridor,q,overflow,acc:Math.max(0,finite(s.acc)),order:finite(s.order),strainT:Math.max(0,finite(s.strainT)),emergeAt:finite(s.emergeAt,s.emerged?-10:0)}});
+function validateSave(raw){if(!raw||typeof raw!=="object"||!CITIES[raw.cityId]||!Array.isArray(raw.stations)||!Array.isArray(raw.lines))throw Error("Not an Intercity save");if(!raw.stations.length||raw.stations.length>5000||raw.lines.length>64)throw Error("Invalid network size");const finite=(v,def=0)=>Number.isFinite(v)?v:def;const legacy=(raw.v||1)<3&&raw.demandModel!=="station-destinations";
+ const legacyTargets=new Map();
+ const rider=r=>{if(!r||!Number.isFinite(r.spawn))throw Error("Invalid passenger data");let dest=r.dest;
+  if(legacy&&dest==null){if(!SHAPES.includes(r.shape))throw Error("Invalid passenger data");
+   const key=r.shape+":"+finite(r.ox)+":"+finite(r.oy);let choices=legacyTargets.get(key);
+   if(!choices){const origin={x:finite(r.ox),y:finite(r.oy)};choices=raw.stations.map((s,id)=>({s,id})).filter(q=>q.s.emerged&&q.s.shape===r.shape&&dist(q.s,origin)>.01);
+    if(!choices.length)choices=raw.stations.map((s,id)=>({s,id})).filter(q=>q.s.emerged&&dist(q.s,origin)>.01);
+    if(!choices.length)choices=raw.stations.map((s,id)=>({s,id})).filter(q=>q.s.emerged);
+    legacyTargets.set(key,choices)}
+   dest=choices[Math.abs(Math.floor(r.spawn*997+finite(r.ox)*31+finite(r.oy)*17))%choices.length]?.id;
+  }
+  if(!Number.isInteger(dest)||!raw.stations[dest]?.emerged)throw Error("Invalid destination");
+  return{dest,spawn:Math.max(0,r.spawn),waitSince:finite(r.waitSince,r.spawn),tf:Math.max(0,finite(r.tf)),ox:finite(r.ox),oy:finite(r.oy),lastLi:Number.isInteger(r.lastLi)?r.lastLi:null}
+ };const ns=raw.stations.map((s,i)=>{if(!s||!Number.isFinite(s.x)||!Number.isFinite(s.y)||Math.abs(s.x)>1e4||Math.abs(s.y)>1e4||!SHAPES.includes(s.shape))throw Error("Invalid station data");if(s.q!=null&&(!Array.isArray(s.q)||s.q.length>100000))throw Error("Invalid queue");const q=(s.q||[]).map(rider),overflow=(s.overflow||[]).map(g=>{const r=rider(g);if(!Number.isInteger(g.count)||g.count<1||g.count>1e9)throw Error("Invalid queue count");return{...r,key:r.dest+":"+(r.lastLi??-1),count:g.count}});return{x:s.x,y:s.y,id:i,shape:s.shape,district:["res","cbd","ind","air","star"].includes(s.district)?s.district:"res",dens:clamp(finite(s.dens,.5),0,1),emerged:!!s.emerged,inter:!!s.inter,name:typeof s.name==="string"?s.name.slice(0,80):null,kind:typeof s.kind==="string"?s.kind:null,icOnly:!!s.icOnly,air:!!s.air,dead:!!s.dead,metroIsland:!!s.metroIsland,onCorridor:!!s.onCorridor,q,overflow,acc:Math.max(0,finite(s.acc)),order:finite(s.order),strainT:Math.max(0,finite(s.strainT)),emergeAt:finite(s.emergeAt,s.emerged?-10:0)}});
  const nl=raw.lines.map((L,i)=>{const cls=L.cls||(L.express?"express":"metro");if(!CLASSES[cls]||!Array.isArray(L.stops)||L.stops.some(id=>!Number.isInteger(id)||!ns[id]||!ns[id].emerged)||new Set(L.stops).size!==L.stops.length)throw Error("Invalid line stops");const paths={};for(const[k,poly]of Object.entries(L.railPaths||{})){if(!/^\d+-\d+$/.test(k)||!Array.isArray(poly)||poly.length<2||poly.length>50000)throw Error("Invalid track geometry");const[a,b]=k.split("-").map(Number);if(!ns[a]||!ns[b]||a>=b)throw Error("Invalid track endpoints");const p=poly.map(q=>{if(!Array.isArray(q)||!Number.isFinite(q[0])||!Number.isFinite(q[1])||Math.abs(q[0])>1e4||Math.abs(q[1])>1e4)throw Error("Invalid track point");return[q[0],q[1]]});if(L.routeEncoding!=="canonical-polyline"){const start={x:p[0][0],y:p[0][1]},end={x:p.at(-1)[0],y:p.at(-1)[1]};if(dist(start,ns[a])+dist(end,ns[b])>dist(start,ns[b])+dist(end,ns[a]))p.reverse()}paths[k]=p}for(const[k,m]of Object.entries(L.routeMeta||{})){if(m?.engineering!=null&&(!paths[k]||!validEngineering(m.engineering,pathLen(paths[k].map(p=>({x:p[0],y:p[1]}))))))throw Error("Invalid elevation profile")}const trains=(L.trains||[]).map(t=>{if(!t||!Number.isInteger(t.seg)||!Number.isFinite(t.f)||!Number.isInteger(t.cars)||t.cars<0||t.cars>20)throw Error("Invalid train data");return{li:i,seg:clamp(t.seg,0,Math.max(0,L.stops.length-1)),f:clamp(t.f,0,1),dir:t.dir===-1?-1:1,cars:t.cars,dwell:Math.max(0,finite(t.dwell,.3)),v:Math.max(0,finite(t.v)),riders:(t.riders||[]).map(rider)}});return{id:i,color:typeof L.color==="string"&&/^#[a-f\d]{6}$/i.test(L.color)?L.color:null,stops:L.stops.slice(),cls,express:cls==="express",flips:clone(L.flips||{}),railPaths:paths,routeMeta:clone(L.routeMeta||{}),loop:!!L.loop&&L.stops.length>=3,activeEnd:L.activeEnd==="head"?"head":"tail",homeRegion:L.homeRegion??null,visible:L.visible!==false,trains,paths:[],traffic:0}});
  return{cityId:raw.cityId,mode:raw.mode==="atelier"?"atelier":"operator",seed:finite(raw.seed,1)|0,rngState:finite(raw.rngState,raw.seed||1)|0,simS:Math.max(0,finite(raw.simS)),budget:finite(raw.budget,800),delivered:Math.max(0,finite(raw.delivered)),lost:Math.max(0,finite(raw.lost)),generated:Math.max(0,finite(raw.generated)),journeySum:Math.max(0,finite(raw.journeySum)),transferSum:Math.max(0,finite(raw.transferSum)),emergePtr:clamp(Math.floor(finite(raw.emergePtr)),0,ns.length),nextEmergeAt:Math.max(0,finite(raw.nextEmergeAt,DAY_SECONDS*.7)),weekPaid:Math.max(0,Math.floor(finite(raw.weekPaid))),lineSlots:clamp(Math.floor(finite(raw.lineSlots,3)),3,64),speedIdx:clamp(Math.floor(finite(raw.speedIdx,1)),0,2),hiddenCls:Object.fromEntries(Object.keys(CLASSES).map(k=>[k,!!raw.hiddenCls?.[k]])),ecoInc:finite(raw.ecoInc),ecoCost:finite(raw.ecoCost),ecoT:finite(raw.ecoT),ecoSeries:Array.isArray(raw.ecoSeries)?raw.ecoSeries.filter(a=>Array.isArray(a)&&a.length===2&&a.every(Number.isFinite)).slice(-120):[],pendingOffer:Array.isArray(raw.pendingOffer)?raw.pendingOffer.filter(o=>o&&["cash","train","car","line","inter"].includes(o.k)).slice(0,2).map(o=>({k:o.k,l:String(o.l||o.k).slice(0,40),amt:finite(o.amt)||undefined})):null,stations:ns,lines:nl}}
 function realignSavedCrossings(){
@@ -1946,8 +2078,8 @@ function smoothSavedTramRoutes(){
   }
  }
 }
-function loadSave(raw){const d=validateSave(raw);editFeedback=null;cancelGesture();exitPoster();cityId=d.cityId;city=CITIES[cityId];organicCity(city);mode=d.mode;seed=d.seed;rngState=d.rngState;simS=d.simS;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=d.nextEmergeAt;weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;lines=d.lines;for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}smoothSavedTramRoutes();const adjusted=realignSavedCrossings();selLine=-1;tool=null;undoStack=[];recountPassengers();if(!d.generated)generated=passengers+delivered+lost;computeMetroCap();buildUrbanLayer();rebuildRouting();fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":"SAVE LOADED · "+city.name);autoSave(true)}
-function startGame(){editFeedback=null;cancelGesture();exitPoster();city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=0;speedIdx=1;nextEmergeAt=DAY_SECONDS*.7;pendingOffer=null;fitS0=0;generating=true;try{genStations()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;renderOffer();hudTick();autoSave(true)}
+function loadSave(raw){const d=validateSave(raw);resetDemand();editFeedback=null;cancelGesture();exitPoster();cityId=d.cityId;city=CITIES[cityId];organicCity(city);mode=d.mode;seed=d.seed;rngState=d.rngState;simS=d.simS;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=d.nextEmergeAt;weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;lines=d.lines;for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();selLine=-1;tool=null;undoStack=[];recountPassengers();if(!d.generated)generated=passengers+delivered+lost;computeMetroCap();buildUrbanLayer();rebuildRouting();fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":"SAVE LOADED · "+city.name);autoSave(true)}
+function startGame(){resetDemand();editFeedback=null;cancelGesture();exitPoster();city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=0;speedIdx=1;nextEmergeAt=DAY_SECONDS*.7;pendingOffer=null;fitS0=0;generating=true;try{genStations()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;renderOffer();hudTick();autoSave(true)}
 $("resumeBtn").onclick=()=>{const o=readAuto();if(!o){toast("NO SAVED GAME");return}try{loadSave(o.g);seenHelp=true}catch(e){toast("COULD NOT READ THE SAVE · ORIGINAL KEPT")}};
 $("mSave").onclick=()=>{$("menuPop").style.display="none";downloadBlob(new Blob([JSON.stringify(snapshotGame())],{type:"application/json"}),"intercity-"+cityId+"-save.json");toast("SAVE EXPORTED")};
 $("mLoad").onclick=()=>{$("menuPop").style.display="none";$("fileIn").click()};$("titleLoad").onclick=()=>$("fileIn").click();$("fileIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{loadSave(JSON.parse(await f.text()))}catch(err){toast("COULD NOT READ SAVE · CURRENT CITY KEPT")}};
