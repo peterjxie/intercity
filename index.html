@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 8.43. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 8.44. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -52,6 +52,7 @@
 <div id="overlay"><div class="inner"><header class="atlasHeader"><div><h1 class="brand">INTERCITY</h1><div class="edition">A TRANSIT LAYOUT GARDEN</div></div><span id="bldTag" class="edition"></span></header><div class="atlasSection">CHOOSE A CITY</div><div class="atlasGrid"><div class="ccards" id="cityCards" role="group" aria-label="Choose a city"></div><aside class="selectionPanel" id="selectionPanel" aria-label="Game options"><div id="selectionSettings"><div class="eyebrow">MODE<button id="modeInfo" aria-label="About game modes"></button></div><div class="modeButtons"><button id="cardOp">$ OPERATOR</button><button id="cardAt">∞ ATELIER</button></div><div class="seedRow"><span id="seedVal"></span><button id="bSeed" title="Generate a new growth seed">↻ NEW</button></div><button id="titleLoad">LOAD SAVE</button></div><button id="gameOptions" aria-controls="selectionSettings" aria-expanded="false" aria-label="Game options">$ OPERATOR · ▴</button><button id="beginBtn" disabled><span>BEGIN<small id="beginCity">CHOOSE A CITY</small></span><span aria-hidden="true">↗</span></button><button id="resumeBtn"></button></aside></div></div></div>
 <input type="file" id="fileIn" accept=".json,application/json" hidden>
 <script>
+
 
 
 "use strict";
@@ -606,7 +607,38 @@ function preferredAlignmentRoute(L,A,B){
  candidates.sort((a,b)=>pathLen(a)-pathLen(b));return candidates[0]||null;
 }
 
-const VERSION="8.43";
+/* 8.44 source repairs: preserve every coastline and the hand-traced street
+   layout. Only the canal-side alignment and a clipped terminal move. */
+{
+ const c=CITIES.amsterdam,tr=c.snapTracks[4];
+ tr[6]=[40.74,25.92];tr.splice(7,0,[46.5,30.3]);
+ // Two peripheral traces include a harbour crossing / a clipped harbour end.
+ // Preserve the surveyed banks and the land sections, never advertise an IJ
+ // tram crossing which the scenario expressly forbids.
+ const north=c.snapTracks[20],b=north[6];
+ c.snapTracks[20]=north.slice(0,6).concat([[24.37,-11.26]]);
+ c.snapTracks.push([[26.62,-13.83],b]);
+ c.snapTracks[100][8]=[26.07,-14.31];
+ const r=CITIES.rio;
+ // Three fixed-seed direct-network probes: 120–128 emerged stations and
+ // 75–81% connected demand with six metro trunks. Two optional extra lines
+ // give the western plain and northeast room without widening other modes.
+ r.maxMetro=8;
+ // The paired VLT ends were 18–24 m beyond the simplified quay.
+ for(const g of r.routeCorridors)for(const p of g.pts)if(p[0]>83.14&&p[0]<83.17&&p[1]>42.35&&p[1]<42.38){p[0]=83.08;p[1]=42.41;}
+ r.railStructures=[{kind:'tunnel',classes:['tram'],width:.11,
+  pts:[[75.489,41.348],[75.914,41.844],[76.406,42.638],[76.487,42.835]]}];
+ // Chongqing's surveyed bridge decks span the river valley. Their elevation
+ // must not dip to the river-bed raster halfway across.
+ const q=CITIES.chongqing;
+ // One short crossing has incompatible bank heights for monorail in this
+ // elevation model. Keep its geography, but do not offer it as rail access.
+ q.railBridges=q.bridges.filter((_,i)=>i!==5);
+ q.railStructures=q.railBridges.map(pts=>({kind:'bridge',classes:['tram','metro','express'],width:.12,pts}));
+ for(const g of CITIES.mumbai.crossings)g.cls=['express'];
+}
+
+const VERSION="8.44";
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 const SHAPES=["circle","triangle","square","diamond","star","plane"];
 const DAY_SECONDS=75,GM_PER_S=1440/DAY_SECONDS,TRAIN_SPEED=9,IC_KM=250;
@@ -649,7 +681,12 @@ function isCableLine(L,c=city){return modeKind(clsKeyOf(L),c)==="cable"}
 function clsOf(L){const key=clsKeyOf(L);return Object.assign({},CLASSES[key],city?.classOverrides?.[key]||{})}
 function clsName(k){return city?.classNames?.[k]||({metro:"METRO",tram:"TRAM",express:"INTERCITY",ferry:"FERRY"}[k])}
 function capM(){return city?.maxMetro??6}function capX(){return city?.maxExpress??2}function capTram(){return city?.maxTram??0}
-function capI(){return city?.maxInter??4}function capTotal(){return capM()+capX()+capTram()+(city?.maxFerry||0)}
+function capI(){
+ // Reserve two discretionary hubs only where authored hubs exhausted the old
+ // allowance. This depends on the scenario, never the player's current count.
+ const base=city?.maxInter??4,fixed=(city?.stationSeeds||city?.specials||[]).filter(s=>s.kind==='hub').length;
+ return fixed>=base?fixed+2:base;
+}function capTotal(){return capM()+capX()+capTram()+(city?.maxFerry||0)}
 function capOf(k){return k==="ferry"?(city?.maxFerry||0):k==="metro"?capM():k==="tram"?capTram():capX()}
 function clsCount(k){return lines.filter(L=>clsKeyOf(L)===k).length}
 function kms(u){return u*(city?.kmScale||1)}
@@ -796,10 +833,14 @@ function routeBlock(L,pts,opts={}){if(isFerry(L))return waterPathOK(pts)?null:"F
  const profile=engineeringProfile(L,pts,opts);if(!profile.ok)return profile.msg;const protection=protectionBlock(L,pts,profile);if(protection)return protection;
  const wet=wetIntervals(pts,!!city.barrierMinHw);if(!wet.length)return null;
  if((city.landlocked||[]).includes(cl))return city.landlockedMsg||"THIS SERVICE STAYS ON LAND";
- if(city.ijBarrier&&cl!==city.ijBarrier.coreClass&&cl!=="express"){const y=city.ijBarrier.y;if(pts.some(p=>p.y<y)&&pts.some(p=>p.y>y))return "TRAMS CANNOT CROSS THE IJ"}
+ if(city.ijBarrier&&cl!==city.ijBarrier.coreClass&&cl!=="express"){
+  // The IJ follows the mapped water polygon, not an infinite latitude line.
+  const water=city.seas[city.ijBarrier.waterIndex??0];
+  if(water&&pathIntervals(pts,[water],p=>inside(p,water)&&inWater(p)).length)return "TRAMS CANNOT CROSS THE IJ";
+ }
  if(cl==="tram"&&city.tramRiverMax!=null){const major=city.rivers.filter(r=>r.hw>city.tramRiverMax).map(r=>r.poly);if(pathIntervals(pts,major,p=>major.some(r=>inside(p,r))&&!city.islands.some(q=>inside(p,q))).length)return clsName(cl)+" CANNOT CROSS THE RIVER"}
  if(city.crossings?.length&&crossingViolation(L,pts,wet))return city.crossingMsg||"FOLLOW THE MARKED CROSSING";
- if(cl==="tram"&&city.bridges?.length&&!city.snapTracks){let total=0;for(const w of wet)total+=w.len;if(total>(city.bridgeFreeSpan??.35))for(const w of wet)if(!city.bridges.some(b=>distToPolyline(w.p,b)<(city.bridgeSnap??2)))return clsName(cl)+" MUST CROSS AT A BRIDGE"}
+ if(cl==="tram"&&city.bridges?.length&&!city.snapTracks){let total=0;for(const w of wet)total+=w.len;if(total>(city.bridgeFreeSpan??.35))for(const w of wet)if(!((city.railBridges||city.bridges).some(b=>{const width=city.railBridgeWidth??.18,n=Math.max(2,Math.ceil(w.len/(width*.5)));for(let i=0;i<=n;i++)if(distToPolyline({x:lerp(w.a.x,w.b.x,i/n),y:lerp(w.a.y,w.b.y,i/n)},b)>width)return false;return true})))return clsName(cl)+" MUST CROSS AT A BRIDGE"}
  return null}
 function roundedPath(raw,r=3,roundness=1){if(raw.length<3)return raw.map(p=>({...p}));const out=[{...raw[0]}];for(let i=1;i<raw.length-1;i++){const a=raw[i-1],b=raw[i],c=raw[i+1],l1=dist(a,b),l2=dist(b,c),rr=Math.min(r,l1*.35,l2*.35)*roundness;if(rr<1e-6){out.push({...b});continue}const u={x:b.x+(a.x-b.x)*rr/l1,y:b.y+(a.y-b.y)*rr/l1},v={x:b.x+(c.x-b.x)*rr/l2,y:b.y+(c.y-b.y)*rr/l2};out.push(u);for(let k=1;k<=8;k++){const t=k/8,s=1-t;out.push({x:s*s*u.x+2*s*t*b.x+t*t*v.x,y:s*s*u.y+2*s*t*b.y+t*t*v.y})}}out.push({...raw[raw.length-1]});return out}
 function elbowPts(a,b,flip=false,rightAngle=false){const dx=b.x-a.x,dy=b.y-a.y,X=Math.abs(dx),Y=Math.abs(dy);if(X<.08||Y<.08||(!rightAngle&&Math.abs(X-Y)<.08))return[{x:a.x,y:a.y},{x:b.x,y:b.y}];let c;if(rightAngle)c=flip?{x:a.x,y:b.y}:{x:b.x,y:a.y};else if(X>Y)c=flip?{x:a.x+Math.sign(dx)*(X-Y),y:a.y}:{x:a.x+Math.sign(dx)*Y,y:a.y+Math.sign(dy)*Y};else c=flip?{x:a.x,y:a.y+Math.sign(dy)*(Y-X)}:{x:a.x+Math.sign(dx)*X,y:a.y+Math.sign(dy)*X};return[{x:a.x,y:a.y},c,{x:b.x,y:b.y}]}
@@ -912,11 +953,36 @@ function shallowEarthworks(samples,M,metres){
  let earthworkLength=0,maxGrade=0;const out=samples.map((p,i)=>{if(i){const len=p.s-samples[i-1].s;earthworkLength+=len*(Math.abs(rail[i]-p.z)+Math.abs(rail[i-1]-samples[i-1].z))/16;maxGrade=Math.max(maxGrade,Math.abs(rail[i]-rail[i-1])/Math.max(.001,len*metres))}return{...p,ground:p.z,z:rail[i]}});
  return{ok:true,samples:out,maxGrade,tunnel:false,tunnelLength:0,earthworkLength};
 }
+// Surveyed infrastructure has a rail level distinct from the terrain below.
+// This applies inside a narrow authored deck only, never a general terrain waiver.
+function structureSamples(L,samples){
+ if(!city.railStructures?.length)return samples;
+ const cl=clsKeyOf(L),structures=city._railStructureProfiles||(city._railStructureProfiles=city.railStructures.map(g=>{
+  const pts=g.pts.map(q=>({x:q[0],y:q[1]})),len=pathLen(pts);
+  return{...g,pts,len,z0:elevationAt(pts[0]),z1:elevationAt(pts.at(-1))};
+ }));
+ return samples.map((p,i)=>{
+  // A stop remains at ground level; a corridor is not permission to put a
+  // new station halfway inside a hill or hanging above a valley.
+  if(i===0||i===samples.length-1)return p;
+  for(const g of structures){
+   if(!g.classes.includes(cl))continue;
+   const q=projectOnTrack(p,g.pts);if(q.d>g.width||q.s<1e-6||q.s>g.len-1e-6)continue;
+   const z=lerp(g.z0,g.z1,q.s/g.len);
+   if(g.kind==='tunnel'&&z>p.z+2)continue;
+   return{...p,ground:p.z,z,structure:g.kind};
+  }return p;
+ });
+}
+
 function engineeringProfile(L,pts,{surfaceOnly=false}={}){
- const samples=sampleTrack(pts),len=samples.at(-1).s,M=terrainClass(L),metres=(city.kmScale||1)*1000;
+ const samples=structureSamples(L,sampleTrack(pts)),len=samples.at(-1).s,M=terrainClass(L),metres=(city.kmScale||1)*1000;
  let max=0;for(let i=1;i<samples.length;i++)max=Math.max(max,Math.abs(samples[i].z-samples[i-1].z)/Math.max(.001,(samples[i].s-samples[i-1].s)*metres));
  const underPark=protectedZones().some(z=>z.underground?.includes(clsKeyOf(L))&&protectedRuns(pts,z).length);
- if(!underPark&&max<=M.maxGrade+1e-6)return{ok:true,samples,maxGrade:max,tunnel:false,tunnelLength:0};
+ if(!underPark&&max<=M.maxGrade+1e-6){
+  let tunnelLength=0;for(let i=1;i<samples.length;i++)if(samples[i].structure==='tunnel'&&samples[i].ground-samples[i].z>2||samples[i-1].structure==='tunnel'&&samples[i-1].ground-samples[i-1].z>2)tunnelLength+=samples[i].s-samples[i-1].s;
+  return{ok:true,samples,maxGrade:max,tunnel:tunnelLength>0,tunnelLength};
+ }
  if(!underPark){const work=shallowEarthworks(samples,M,metres);if(work)return work}
  if(surfaceOnly||!M.tunnel)return{ok:false,msg:"GRADIENT TOO STEEP FOR THIS MODE",samples,maxGrade:max};
  const z0=samples[0].z,z1=samples.at(-1).z,grade=Math.abs(z1-z0)/Math.max(.001,len*metres);
@@ -1539,11 +1605,61 @@ class MinHeap{constructor(){this.a=[]}push(id,v){const a=this.a;let i=a.length;a
 function shortestDistances(adj,starts){const d=new Float64Array(adj.length).fill(Infinity),h=new MinHeap();for(const s of starts){d[s]=0;h.push(s,0)}while(h.size){const[u,v]=h.pop();if(v>d[u]+1e-8)continue;for(const[k,w]of adj[u])if(v+w<d[k]){d[k]=v+w;h.push(k,d[k])}}return d}
 let streetNet=null,streetCity=null,streetMemo=new Map();
 function snapActive(){return !!city.snapTracks?.length}
-function nearestTrack(p){let best=null;for(const tr of city.snapTracks||[])for(let i=1;i<tr.length;i++){const a=tr[i-1],b=tr[i],dx=b[0]-a[0],dy=b[1]-a[1],t=clamp(((p.x-a[0])*dx+(p.y-a[1])*dy)/(dx*dx+dy*dy||1),0,1),x=a[0]+dx*t,y=a[1]+dy*t,d=Math.hypot(x-p.x,y-p.y);if(!best||d<best.d)best={x,y,d}}return best}
-function snapGenerated(cand,rng){if(!snapActive())return;const accepted=[],zone=city.coreRadiusU||24.4;let islands=0;for(const s of cand){const p=nearestTrack(s);if(!p||p.d>(city.corrZoneU||8)){accepted.push(s);continue}if(p.d>3.2&&islands<(city.offCorridorMax||6)&&dist(s,city.core)<=zone){s.metroIsland=true;islands++;accepted.push(s);continue}if(accepted.some(q=>dist(q,p)<(city.coreStopGap||3)*.8))continue;s.x=p.x;s.y=p.y;s.onCorridor=true;accepted.push(s)}let tries=0;while(islands<(city.offCorridorMax||6)&&tries++<900){const poly=city.nobuild[0],cx=poly?poly.reduce((s,q)=>s+q[0],0)/poly.length:city.core.x,cy=poly?poly.reduce((s,q)=>s+q[1],0)/poly.length:city.core.y,p={x:cx+(rng()-.5)*7,y:cy+(rng()-.5)*7};if(dist(p,city.core)>zone||inWater(p,.2)||(nearestTrack(p)?.d??99)<2.6||accepted.some(s=>dist(p,s)<3))continue;const d=districtAt(p);accepted.push({...p,shape:shapeFor(d,rng),district:d,dens:densityAt(p),metroIsland:true,emerged:false,inter:false,q:[],acc:0,order:0,name:null,strainT:0,emergeAt:0});islands++}cand.splice(0,cand.length,...accepted)}
-function buildStreetNet(){if(streetNet&&streetCity===cityId)return streetNet;const pts=[],adj=[],owners=[],cells=new Map(),CELL=.6;for(const [ti,tr] of city.snapTracks.entries()){let prev=-1;for(let i=1;i<tr.length;i++){const a=tr[i-1],b=tr[i],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/.55));for(let k=i===1?0:1;k<=n;k++){const p={x:lerp(a[0],b[0],k/n),y:lerp(a[1],b[1],k/n)},id=pts.length;pts.push(p);adj.push([]);owners.push(ti);if(prev>=0){const d=dist(pts[prev],p);adj[id].push([prev,d]);adj[prev].push([id,d])}const cx=Math.floor(p.x/CELL),cy=Math.floor(p.y/CELL);for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(const j of cells.get((cx+dx)+","+(cy+dy))||[]){const d=dist(p,pts[j]);if(d<=.62&&owners[j]!==ti){const w=d+.24;adj[id].push([j,w]);adj[j].push([id,w])}}const key=cx+","+cy;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(id);prev=id}}}streetNet={pts,adj};streetCity=cityId;streetMemo.clear();return streetNet}
-function nearStreet(p){const net=buildStreetNet();let id=-1,d=Infinity;net.pts.forEach((q,i)=>{const v=dist(p,q);if(v<d){d=v;id=i}});return{id,d}}
-function streetRoute(L,a,b){if(clsKeyOf(L)!=="tram")return null;const net=buildStreetNet(),A=nearStreet(a),B=nearStreet(b);if(A.d>(city.snapTol||4)&&B.d>(city.snapTol||4))return null;const key=A.id+":"+B.id;let poly=streetMemo.get(key);if(poly===undefined){const d=new Float64Array(net.pts.length).fill(Infinity),prev=new Int32Array(net.pts.length).fill(-1),h=new MinHeap();d[A.id]=0;h.push(A.id,0);while(h.size){const[u,v]=h.pop();if(v>d[u]+1e-8)continue;if(u===B.id)break;for(const[k,w]of net.adj[u])if(v+w<d[k]){d[k]=v+w;prev[k]=u;h.push(k,d[k])}}poly=null;if(isFinite(d[B.id])){const ids=[];for(let i=B.id;i>=0;i=prev[i])ids.push(i);poly=ids.reverse().map(i=>net.pts[i])}streetMemo.set(key,poly)}if(!poly)return null;let trunk=poly.map(p=>({...p}));
+function nearestTrack(p,dry=false){let best=null;for(const tr of city.snapTracks||[])for(let i=1;i<tr.length;i++){const a=tr[i-1],b=tr[i],dx=b[0]-a[0],dy=b[1]-a[1],t=clamp(((p.x-a[0])*dx+(p.y-a[1])*dy)/(dx*dx+dy*dy||1),0,1),x=a[0]+dx*t,y=a[1]+dy*t,d=Math.hypot(x-p.x,y-p.y);if((!best||d<best.d)&&(!dry||!inWater({x,y},.06)&&!inNoBuild({x,y})))best={x,y,d}}return best}
+function snapGenerated(cand,rng){if(!snapActive())return;const accepted=[],zone=city.coreRadiusU||24.4;let islands=0;for(const s of cand){const p=nearestTrack(s,true);if(!p||p.d>(city.corrZoneU||8)){accepted.push(s);continue}if(p.d>3.2&&islands<(city.offCorridorMax||6)&&dist(s,city.core)<=zone){s.metroIsland=true;islands++;accepted.push(s);continue}if(inWater(p,.06)||inNoBuild(p)){accepted.push(s);continue}if(accepted.some(q=>dist(q,p)<(city.coreStopGap||3)*.8))continue;s.x=p.x;s.y=p.y;s.onCorridor=true;accepted.push(s)}let tries=0;while(islands<(city.offCorridorMax||6)&&tries++<900){const poly=city.nobuild[0],cx=poly?poly.reduce((s,q)=>s+q[0],0)/poly.length:city.core.x,cy=poly?poly.reduce((s,q)=>s+q[1],0)/poly.length:city.core.y,p={x:cx+(rng()-.5)*7,y:cy+(rng()-.5)*7};if(dist(p,city.core)>zone||inWater(p,.2)||(nearestTrack(p)?.d??99)<2.6||accepted.some(s=>dist(p,s)<3))continue;const d=districtAt(p);accepted.push({...p,shape:shapeFor(d,rng),district:d,dens:densityAt(p),metroIsland:true,emerged:false,inter:false,q:[],acc:0,order:0,name:null,strainT:0,emergeAt:0});islands++}cand.splice(0,cand.length,...accepted)}
+function buildStreetNet(){
+ if(streetNet&&streetCity===city)return streetNet;
+ const pts=[],adj=[],owners=[],ends=[],cells=new Map(),CELL=.65,L={cls:'tram'};
+ const link=(a,b,cost=0,spur=false,checked=false)=>{
+  if(a===b||adj[a].some(e=>e[0]===b))return;
+  const p=[pts[a],pts[b]];
+  // Only the traced street may cross a canal. Proximity alone never invents
+  // a bridge between streets on opposite banks or cuts through the old core.
+  if(spur&&pathCrossesWater(p)||!checked&&routeBlock(L,p,{surfaceOnly:true}))return;
+  const w=dist(...p)+cost;adj[a].push([b,w]);adj[b].push([a,w]);
+ };
+ for(const [ti,tr]of city.snapTracks.entries()){
+  let prev=-1,first=-1;
+  const checked=!routeBlock(L,tr.map(q=>({x:q[0],y:q[1]})),{surfaceOnly:true});
+  for(let i=1;i<tr.length;i++){
+   const a=tr[i-1],b=tr[i],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/.45));
+   for(let k=i===1?0:1;k<=n;k++){
+    const p={x:lerp(a[0],b[0],k/n),y:lerp(a[1],b[1],k/n)},id=pts.length;
+    pts.push(p);adj.push([]);owners.push(ti);if(first<0)first=id;if(prev>=0)link(prev,id,0,false,checked);
+    const cx=Math.floor(p.x/CELL),cy=Math.floor(p.y/CELL);
+    for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(const j of cells.get((cx+dx)+','+(cy+dy))||[])
+     if(owners[j]!==ti&&dist(p,pts[j])<=.62)link(id,j,.24,true);
+    const key=cx+','+cy;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(id);prev=id;
+   }
+  }
+  if(first>=0)ends.push(first,prev);
+ }
+ // Small open ends in hand traces may miss a junction between sample points.
+ // Project onto the other street, instead of increasing every weld radius.
+ for(const id of ends){
+  let best=null;
+  const cx=Math.floor(pts[id].x/CELL),cy=Math.floor(pts[id].y/CELL),near=new Set();
+  for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++)for(const j of cells.get((cx+dx)+','+(cy+dy))||[])for(const k of[j,j+1])if(k>0&&k<owners.length)near.add(k);
+  for(const j of near){
+   if(owners[j]===owners[id]||owners[j]!==owners[j-1]||!adj[j].some(e=>e[0]===j-1))continue;
+   const p=projectOnTrack(pts[id],[pts[j-1],pts[j]]);
+   if(p.d>.8||best&&p.d>=best.d||pathCrossesWater([pts[id],p])||routeBlock(L,[pts[id],p],{surfaceOnly:true}))continue;
+   best={...p,a:j-1,b:j};
+  }
+  if(best){const j=pts.length;pts.push({x:best.x,y:best.y});adj.push([]);owners.push(owners[best.a]);link(id,j,.24,true);link(j,best.a);link(j,best.b);}
+ }
+ streetNet={pts,adj};streetCity=city;streetMemo.clear();streetChoiceCity=null;return streetNet;
+}
+function nearStreet(p){
+ const net=buildStreetNet();let id=-1,d=Infinity;
+ for(let i=0;i<net.pts.length;i++){
+  const q=net.pts[i],v=dist(p,q);if(!net.adj[i].length||v>=d)continue;
+  if(v>1e-6&&(pathCrossesWater([p,q])||routeBlock({cls:'tram'},[p,q],{surfaceOnly:true})))continue;
+  id=i;d=v;
+ }
+ return{id,d};
+}
+function streetRoute(L,a,b){if(clsKeyOf(L)!=="tram")return null;const net=buildStreetNet(),A=nearStreet(a),B=nearStreet(b);if(A.id<0||B.id<0||A.d>(city.snapTol||4)||B.d>(city.snapTol||4))return null;const key=A.id+":"+B.id;let poly=streetMemo.get(key);if(poly===undefined){const d=new Float64Array(net.pts.length).fill(Infinity),prev=new Int32Array(net.pts.length).fill(-1),h=new MinHeap();d[A.id]=0;h.push(A.id,0);while(h.size){const[u,v]=h.pop();if(v>d[u]+1e-8)continue;if(u===B.id)break;for(const[k,w]of net.adj[u])if(v+w<d[k]){d[k]=v+w;prev[k]=u;h.push(k,d[k])}}poly=null;if(isFinite(d[B.id])){const ids=[];for(let i=B.id;i>=0;i=prev[i])ids.push(i);poly=ids.reverse().map(i=>net.pts[i])}streetMemo.set(key,poly)}if(!poly)return null;let trunk=poly.map(p=>({...p}));
  // Project onto the route, so a station does not acquire an out-and-back stub
  // just because its nearest sampled graph node is behind it.
  if(trunk.length>1){const pa=projectOnTrack(a,trunk),pb=projectOnTrack(b,trunk);if(pa.s<=pb.s)trunk=sliceTrack(trunk,pa.s,pb.s)}
@@ -1563,7 +1679,7 @@ function streetRouteChoices(L,a,b){
  const key=[a.x,a.y,b.x,b.y].join(":"),cached=streetChoiceMemo.get(key);if(cached)return cached;
  const first=streetRoute(L,a,b),out=[];if(first&&!routeBlock(L,first))out.push(first);
  const net=buildStreetNet(),A=nearStreet(a),B=nearStreet(b);
- if(A.id<0||B.id<0||(A.d>(city.snapTol||4)&&B.d>(city.snapTol||4)))return out;
+ if(A.id<0||B.id<0||(A.d>(city.snapTol||4)||B.d>(city.snapTol||4)))return out;
  const penalties=new Map(),edgeKey=(u,v)=>u<v?u+":"+v:v+":"+u;
  for(let pass=0;pass<5&&out.length<4;pass++){
   const d=new Float64Array(net.pts.length).fill(Infinity),prev=new Int32Array(net.pts.length).fill(-1),heap=new MinHeap();d[A.id]=0;heap.push(A.id,0);
@@ -1714,7 +1830,7 @@ function planSegment(L,aId,bId,opts={}){const A=stations[aId],B=stations[bId];if
  if(city.flexibleLandNetwork&&(!cands.length||opts.interactive)){const p=preferredAlignmentRoute(L,A,B);if(p)add(p,{kind:'corridor'})}
  if((!cands.length||opts.interactive)&&city.crossings?.length&&!(city.landlocked||[]).includes(clsKeyOf(L))){const gates=opts.interactive?city.crossings.filter(g=>!g.cls||g.cls.includes(clsKeyOf(L))).sort((a,b)=>dist(A,a)+dist(B,a)-dist(A,b)-dist(B,b)).slice(0,4):city.crossings;for(const gate of gates){if(gate.cls&&!gate.cls.includes(clsKeyOf(L)))continue;for(const rev of[false,true]){let deck=crossingDeck(gate).map(p=>({...p}));if(rev)deck.reverse();if(deck.length<2)continue;for(const f1 of flips)for(const f2 of flips){const p=cleanPath(bendPath(L,A,deck[0],f1).concat(deck, bendPath(L,deck.at(-1),B,f2)));if(pathLen(p)>dist(A,B)*2.8+8)continue;add(p,{gate:gate.name,kind:"crossing",flip:f1,costMult:gate.costMult||1})}}}}
  if(opts.exactFlip!=null)return finish();
- if(!cands.length&&clsKeyOf(L)==="tram"&&city.bridges&&!city.snapTracks){for(const bridge of city.bridges)for(const rev of[false,true]){let deck=bridge.map(p=>({x:p[0],y:p[1]}));if(rev)deck.reverse();const p=bendPath(L,A,deck[0]).concat(deck,bendPath(L,deck.at(-1),B));if(pathLen(p)<dist(A,B)*2.8+6)add(p,{kind:"bridge"})}}
+ if(!cands.length&&clsKeyOf(L)==="tram"&&city.bridges&&!city.snapTracks){for(const bridge of city.railBridges||city.bridges)for(const rev of[false,true]){let deck=bridge.map(p=>({x:p[0],y:p[1]}));if(rev)deck.reverse();const p=bendPath(L,A,deck[0]).concat(deck,bendPath(L,deck.at(-1),B));if(pathLen(p)<dist(A,B)*2.8+6)add(p,{kind:"bridge"})}}
  if(city.tramCorridors&&clsKeyOf(L)==="metro"&&cands.some(p=>p.kind==="bend"&&!p.engineering.tunnel))return finish();
  if(city.routeCorridors?.length&&(!cands.length||cands.every(p=>p.engineering.tunnel))){const p=mappedCorridorRoute(L,A,B);if(p)add(p,{kind:"corridor"})}
  if(!(city.flexibleLandNetwork&&cands.some(p=>p.gate))&&(!cands.length||cands.every(p=>pathCrossesWater(p.pts)||p.engineering.tunnel))){const p=contourRoute(L,A,B);if(p)add(p,{kind:"contour"})}
@@ -2748,7 +2864,8 @@ function refreshUI(){
  mk("detach","Detach stop",()=>toggleBuildTool("detach"),false,"",tool==="detach");
  mk("clear","Clear line",deleteLine,!L?.stops.length,"",false,true);
  mk("station",isFerry(L)?"Plan ferry landings":"Build station",()=>toggleBuildTool("station"),false,cost(isFerry(L)?FERRY.landingCost:COST.station),tool==="station"||!!ferryPlanning);
- mk("inter","Build interchange",()=>toggleBuildTool("inter"),false,cost(COST.inter),tool==="inter");
+ const hubs=stations.filter(s=>s.inter).length,hubCap=capI();
+ mk("inter","Build interchange",()=>toggleBuildTool("inter"),hubs>=hubCap&&tool!=="inter",cost(COST.inter)+" "+hubs+"/"+hubCap,tool==="inter");
  renderFerryPanel();
 }
 function lineInfo(){
@@ -3075,7 +3192,45 @@ function smoothSavedTramRoutes(){
   }
  }
 }
-function loadSave(raw){const d=validateSave(raw);resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();cityId=d.cityId;city=cityId==="istanbul"&&d.cityRevision!==CITIES.istanbul.mapRevision?ISTANBUL_LEGACY:CITIES[cityId];organicCity(city);mode=d.mode;seed=d.seed;rngState=d.rngState;simS=d.simS;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=d.nextEmergeAt;weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;lines=d.lines;walking=d.walking;connectionGrowth=d.connectionGrowth;syncGrowthControl();for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}repairLineColours();computeMetroCap();repairCanalMetroRoutes();smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();const tidied=tidySavedAlignments();selLine=-1;tool=null;undoStack=[];recountPassengers();if(!d.generated)generated=passengers+delivered+lost;buildUrbanLayer();rebuildRouting();restoreTidiedTrains(tidied);fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":tidied.remaining?"SAVE LOADED · "+tidied.remaining+" OLD ALIGNMENT(S) KEPT":tidied.changed?"SAVE LOADED · TRACKS TIDIED":"SAVE LOADED · "+city.name);autoSave(true)}
+/* Targeted repair for the old canal-bank trace and old terrain profiles.
+   A resumed city retains station IDs, riders, funds and every line. Failed
+   repairs keep the old alignment rather than deleting a player's work. */
+function repairAuthoredInfrastructure(){
+ let fixed=0,remaining=0;
+ if(cityId==='amsterdam'&&snapActive()){
+  for(const s of stations){
+   if(!s.onCorridor||s.name||s.ferryKey||!inWater(s,.03))continue;
+   const p=nearestTrack(s,true);if(!p||p.d>.8)continue;
+   const old={x:s.x,y:s.y},plans=[];s.x=p.x;s.y=p.y;
+   let ok=true;
+   for(const L of lines)for(let i=0;i<segCountOf(L);i++){
+    const a=L.stops[i],b=L.stops[(i+1)%L.stops.length];if(a!==s.id&&b!==s.id)continue;
+    const plan=planSegment(L,a,b);if(!plan.ok){ok=false;break}plans.push({L,a,b,plan});
+   }
+   if(ok){for(const q of plans)storeRoute(q.L,q.a,q.b,q.plan);fixed++;}
+   else{s.x=old.x;s.y=old.y;remaining++;}
+  }
+  for(const L of lines.filter(L=>clsKeyOf(L)==='tram'))for(let i=0;i<segCountOf(L);i++){
+   const a=L.stops[i],b=L.stops[(i+1)%L.stops.length],raw=trackFor(L,a,b),meta=L.routeMeta[edgeKey(a,b)];
+   if(meta?.streetRevision===844)continue;
+   // Only the bank strip which was corrected; a legitimate canal bridge is
+   // much shorter than this wet run and is left alone.
+   const bad=wetIntervals(raw).some(w=>w.len>.7&&w.p.x>40&&w.p.x<49&&w.p.y>25&&w.p.y<33);
+   if(bad){const plan=planSegment(L,a,b);if(plan.ok){storeRoute(L,a,b,plan);fixed++;}else remaining++;}
+   if(L.routeMeta[edgeKey(a,b)])L.routeMeta[edgeKey(a,b)].streetRevision=844;
+  }
+ }
+ if(city.railStructures?.length)for(const L of lines.filter(L=>!isFerry(L)))for(let i=0;i<segCountOf(L);i++){
+  const a=L.stops[i],b=L.stops[(i+1)%L.stops.length],key=edgeKey(a,b),raw=trackFor(L,a,b),meta=L.routeMeta[key]||{};
+  if(meta.structureRevision===844)continue;
+  if(!city.railStructures.some(g=>g.classes.includes(clsKeyOf(L))&&sampleTrack(raw).some(p=>distToPolyline(p,g.pts)<=g.width)))continue;
+  const profile=engineeringProfile(L,raw);
+  if(profile.ok&&!routeBlock(L,raw)){L.routeMeta[key]={...meta,engineering:canonicalEngineering(profile,a>b),structureRevision:844};fixed++;}
+ }
+ return{fixed,remaining};
+}
+
+function loadSave(raw){const d=validateSave(raw);resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();cityId=d.cityId;city=cityId==="istanbul"&&d.cityRevision!==CITIES.istanbul.mapRevision?ISTANBUL_LEGACY:CITIES[cityId];organicCity(city);mode=d.mode;seed=d.seed;rngState=d.rngState;simS=d.simS;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=d.nextEmergeAt;weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;lines=d.lines;walking=d.walking;connectionGrowth=d.connectionGrowth;syncGrowthControl();for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}repairLineColours();computeMetroCap();const authored=repairAuthoredInfrastructure();repairCanalMetroRoutes();smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();const tidied=tidySavedAlignments();selLine=-1;tool=null;undoStack=[];recountPassengers();if(!d.generated)generated=passengers+delivered+lost;buildUrbanLayer();rebuildRouting();restoreTidiedTrains(tidied);fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(authored.remaining?"SAVE LOADED · "+authored.remaining+" OLD ALIGNMENT(S) KEPT":adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":tidied.remaining?"SAVE LOADED · "+tidied.remaining+" OLD ALIGNMENT(S) KEPT":tidied.changed?"SAVE LOADED · TRACKS TIDIED":"SAVE LOADED · "+city.name);autoSave(true)}
 function startGame(){resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=0;speedIdx=1;nextEmergeAt=DAY_SECONDS*.7;pendingOffer=null;fitS0=0;generating=true;try{genStations()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
 $("resumeBtn").onclick=()=>{const o=readAuto();if(!o){toast("NO SAVED GAME");return}try{loadSave(o.g);seenHelp=true}catch(e){toast("COULD NOT READ THE SAVE · ORIGINAL KEPT")}};
 $("mSave").onclick=()=>{$("menuPop").style.display="none";downloadBlob(new Blob([JSON.stringify(snapshotGame())],{type:"application/json"}),"intercity-"+cityId+"-save.json");toast("SAVE EXPORTED")};
@@ -3298,6 +3453,7 @@ $('mGrowth').onclick=()=>{connectionGrowth=!connectionGrowth;syncGrowthControl()
 
 installIcon();syncGrowthControl();buildOverlay();let lastT=performance.now(),lastError=null;
 function frame(now){const dt=clamp((now-lastT)/1000,0,.05);lastT=now;flushPinch();if(running){if(!userCam){const t=frameTarget();view.s+=(t.s-view.s)*.045;view.x+=(t.x-view.x)*.045;view.y+=(t.y-view.y)*.045}const modal=document.querySelector('.modal[aria-hidden="false"]');if(!modal&&!document.hidden&&!isPoster())update(dt);draw();if(now-lastHud>350){lastHud=now;hudTick();autoSave(false)}}requestAnimationFrame(frame)}requestAnimationFrame(frame);
+
 
 
 
