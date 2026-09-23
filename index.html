@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.894. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.897. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -779,7 +779,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.894";
+const VERSION="0.897";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -1914,6 +1914,17 @@ function rosterDraw(){
  rosterDrawInfo={fixed:F.length,authoredKept:chosen.length-added.length,authoredOut:P.length-(chosen.length-added.length),generated:added.length};
 }
 let rosterDrawInfo=null;
+function assignRoleGaps(){
+ const rg=city.roleGaps;if(!rg)return;
+ const modesOf=s=>s.allowedModes?.length?s.allowedModes:classesFor(city).filter(cl=>cl!=='ferry');
+ const pr=s=>(s.inter||s.kind==='hub'?4:0)+(s.emerged?2:0)+(s.name?1:0)+(s.dens??densityAt(s));
+ for(const [cl,gap] of Object.entries(rg)){
+  const cands=stations.filter(s=>!s.dead&&!s.ferryKey&&modesOf(s).includes(cl)).sort((a,b)=>pr(b)-pr(a)),kept=[];
+  for(const s of cands){const m=modesOf(s);
+   if(s.inter||s.kind==='hub'||m.length===1||kept.every(k=>dist(k,s)>=gap)){kept.push(s);continue}
+   s.allowedModes=m.filter(x=>x!==cl);if(s.kind==='rail'&&!s.allowedModes.includes('express'))s.kind='stop'}
+ }
+}
 function balanceGivenStations(){
  const band=city.givenCoverage===false?null:(city.givenCoverage||[.80,.85]);if(!band||!stations.length)return;
  const ext=city.artExtent||city.manualBounds||ATLAS_EXTENTS[cityId]||[0,0,100,100],st=1.5,R2=36,rng=mulberry32(seed^0x51ce);
@@ -2354,6 +2365,7 @@ function genCorridorStations(){
 function corridorStopModes(p){
  const m=corridorStopModesBase(p);
  if(city.metroMinGap&&m.includes('metro')&&stations.some(s=>s!==p&&!s.dead&&s.allowedModes?.includes('metro')&&dist(s,p)<city.metroMinGap))return m.filter(x=>x!=='metro');
+ for(const [cl,gap] of Object.entries(city.roleGaps||{}))if(m.length>1&&m.includes(cl)&&stations.some(s=>s!==p&&!s.dead&&s.allowedModes?.includes(cl)&&dist(s,p)<gap))return m.filter(x=>x!==cl);
  return m;
 }
 function corridorStopModesBase(p){
@@ -3701,7 +3713,7 @@ function segmentInsideBox(a,b,r){
  for(let i=0;i<4;i++){if(Math.abs(pp[i])<1e-9){if(qq[i]<0)return 0;continue}const t=qq[i]/pp[i];if(pp[i]<0)lo=Math.max(lo,t);else hi=Math.min(hi,t);if(lo>=hi)return 0}
  return(hi-lo)*Math.hypot(dx,dy);
 }
-function stationGlyph(s,c=city){if(c.stationGlyphByMode)return s.allowedModes?.includes("express")?"square":"circle";if(c.tramOnlyGlyph&&!s.inter&&!s.ferryKey&&s.allowedModes?.length===1&&s.allowedModes[0]==="tram")return c.tramOnlyGlyph;if(c.openModeClasses)return s.kind==='hill'&&!s.inter?'diamond':'circle';if(c.corridorSeeds&&!s.inter){if(s.kind==="hill"||s.kind==="guideway")return "diamond";if(s.kind==="rail")return "square"}return s.air||s.kind==="air"||s.district==="air"?"plane":"circle"}
+function stationGlyph(s,c=city){if(c.stationGlyphByMode)return s.allowedModes?.includes("express")?"square":"circle";if(c.stationGlyphRule&&!s.inter&&!s.ferryKey){const m=s.allowedModes?.length?s.allowedModes:c.classes;for(const [cl,g] of c.stationGlyphRule)if(m.includes(cl))return g}if(c.tramOnlyGlyph&&!s.inter&&!s.ferryKey&&s.allowedModes?.length===1&&s.allowedModes[0]==="tram")return c.tramOnlyGlyph;if(c.openModeClasses)return s.kind==='hill'&&!s.inter?'diamond':'circle';if(c.corridorSeeds&&!s.inter){if(s.kind==="hill"||s.kind==="guideway")return "diamond";if(s.kind==="rail")return "square"}return s.air||s.kind==="air"||s.district==="air"?"plane":"circle"}
 function stationRadius(s,diag=false){
  if(diag)return pxr((stationGlyph(s)==="plane"?3.7:3.0)*posterScale());
  const ratio=view.s/(fitS0||view.s),zoom=ratio<=1?1+.2*clamp(Math.log2(Math.max(.5,ratio)),-1,0):Math.min(2.6,Math.pow(ratio,.55));
@@ -3979,7 +3991,7 @@ function updateSelection(){
 function refreshUI(){
  if(!city)return;syncMapKey();const cr=$("chipRow");cr.replaceChildren();
  const summary=document.createElement("div");summary.className="clsSum";
- for(const cls of classesFor(city)){const p=document.createElement("button");p.type="button";p.className="pool";p.textContent=(city.regionalScenario&&cls==="metro"?"RAPID RAIL":clsName(cls))+" "+clsCount(cls)+"/"+capOf(cls);p.setAttribute("aria-label",clsName(cls)+" · "+clsCount(cls)+" of "+capOf(cls)+" lines · station legend");p.onclick=()=>showModeStationLegend(cls);summary.append(p)}
+ for(const cls of classesFor(city)){const p=document.createElement("button");p.type="button";p.className="pool";p.textContent=clsName(cls)+" "+clsCount(cls)+"/"+capOf(cls);p.setAttribute("aria-label",clsName(cls)+" · "+clsCount(cls)+" of "+capOf(cls)+" lines · station legend");p.onclick=()=>showModeStationLegend(cls);summary.append(p)}
  const more=document.createElement("button");more.innerHTML=uiIcon("info");more.title="Lines and city rules";more.setAttribute("aria-label",more.title);more.onclick=showClsLegend;summary.append(more);cr.append(summary);
  for(const cls of classesFor(city)){
   const row=document.createElement("div");row.className="clsRow";
@@ -4064,8 +4076,8 @@ function hudTick(){
  $("flowButton").style.display=isOp()?"flex":"none";if(isOp())drawFlow();lineInfo();syncMapKey();
 }
 let helpPage=0;
-function helpCards(){
- const c=city||CITIES[atlasSelected||cityId],esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function helpCards(mapOnly=false,cc=null){
+ const c=cc||city||CITIES[atlasSelected||cityId],esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const line=(d,col='#78bccb',dash=false)=>'<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-linecap="round"'+(dash?' stroke-dasharray="6 7"':'')+'/>';
  const arrow=d=>{let p=[0,0],prev=p;for(const m of d.matchAll(/([MLHVQ])([^MLHVQ]+)/g)){const n=m[2].match(/-?\d+(?:\.\d+)?/g).map(Number);prev=p;p=m[1]==='H'?[n[0],p[1]]:m[1]==='V'?[p[0],n[0]]:n.slice(-2);if(m[1]==='Q')prev=n.slice(0,2)}const [x,y]=p,a=Math.atan2(y-prev[1],x-prev[0]),dx=Math.cos(a),dy=Math.sin(a);return '<path d="'+d+'" fill="none" stroke="#e1b878" stroke-width="2.5"/><path d="M'+x+' '+y+'L'+(x-10*dx+4*dy)+' '+(y-10*dy-4*dx)+'L'+(x-10*dx-4*dy)+' '+(y-10*dy+4*dx)+'Z" fill="#e1b878"/>'};
  const stop=(x,y,kind='circle',ring=false)=>'<g fill="#0b1120" stroke="#d9e9f5" stroke-width="2.5">'+(kind==='square'?'<rect x="'+(x-8)+'" y="'+(y-8)+'" width="16" height="16" rx="2"/>':kind==='diamond'?'<path d="M'+x+' '+(y-10)+'l10 10-10 10-10-10Z"/>':'<circle cx="'+x+'" cy="'+y+'" r="8"/>')+(ring?'<circle cx="'+x+'" cy="'+y+'" r="15"/>':'')+'</g>';
@@ -4085,16 +4097,17 @@ function helpCards(){
  ];
  const differentiated=!!c.corridorSeeds,hill=c.modeGlyphs?.tram==='hill',guideway=c.guidewayStations;
  const nodeSvg=c.name==='STUTTGART'?stop(90,48)+text(90,87,'STADTBAHN')+text(90,112,'+ S-BAHN')+stop(270,48,'diamond')+text(270,87,'STADTBAHN')+text(270,112,'+ RACK RAIL')+stop(75,168,'circle',true)+text(232,160,'RING = HUB')+text(232,188,'TAP TO CHECK MODES'):stop(68,60)+text(68,99,c.openModeClasses?'SHARED STOP':differentiated?'LOCAL':'STOP')+stop(255,60,differentiated?'square':'circle',!differentiated)+text(255,99,differentiated?(guideway?'REGIONAL':'REGIONAL + LOCAL'):'HUB')+stop(68,161,differentiated?'diamond':'circle',!differentiated)+text(68,203,differentiated?(hill?'HILL RAIL':guideway?'ASTRAM':'SPECIAL MODE'):'LINE END')+stop(255,161,'circle',true)+text(255,203,differentiated?'HUB':'TRANSFER');
- cards.splice(5,0,card('READ THE STOPS',nodeSvg,c.name==='STUTTGART'?'A matching symbol permits the mode, not every approach.':'Different modes serve different stops.',c.name==='ROTTERDAM'?'Circles share metro, regional and tram. Ferry landings connect on foot.':c.stationGlyphByMode?'Circles: local modes. Squares also accept regional trains. Rings mark hubs.':c.name==='STUTTGART'?'Steep shortcuts may fail. Try a longer approach.':c.openModeClasses?'Circles: Stadtbahn or S-Bahn. Diamonds: Stadtbahn or rack rail.':differentiated?'Diamonds need their matching mode. Hubs ease transfers.':'Large hubs hold more people and shorten transfers.'));
+ cards.splice(5,0,card('STOPS AND MODES',stop(70,70)+stop(180,70,'square')+stop(290,70,'diamond')+stop(180,150,'circle',true)+text(180,210,'TAP i BESIDE THE CITY NAME'),'Each map has its own modes and stop shapes.','The i panel explains both for this map.'));
  if(classesFor(c).includes('ferry'))cards.splice(cards.length-2,0,card('OPEN A FERRY','<path d="M40 20V205M320 20V205" stroke="#547b9e" stroke-width="3"/>'+line('M57 94Q178 46 303 94','#b7add5',true)+stop(57,94)+stop(303,94)+text(180,34,'TAP TWO SHORE MARKERS')+arrow('M180 112V147')+'<rect x="89" y="160" width="182" height="42" rx="9" fill="none" stroke="#78bccb" stroke-width="2"/>'+text(180,186,'REVIEW COST → OPEN'),'Choose a ferry colour, then two shore markers.','Nearby rail connects to a landing on foot.'));
- if(c.classNames?.metro==='ASTRAM'){
-  cards.splice(1,0,
+ if(c.name==='HIROSHIMA'){
+  const mapCards=[
    card('CHOOSE STREETS · KEEP THE RAIL',line('M32 70H324','#a9c4ba')+stop(32,70,'square')+stop(324,70,'square')+text(180,40,'REGIONAL: MAPPED RAIL')+line('M50 156L130 120L218 185L310 145')+line('M50 156L136 197L215 125L310 145','#cf93ba',true)+stop(50,156)+stop(310,145)+text(180,226,'STREETCAR: YOUR DELTA ROUTE'),'Choose streets and loops; use marked bridges.','New crossings cost more. Hills still limit streetcars.'),
    card('SHORT WALKS JOIN THE MODES',line('M30 62H328','#a9c4ba')+stop(176,62,'square')+line('M33 181H326','#cf93ba')+stop(235,181)+line('M183 79L228 163','#e1b878',true)+arrow('M141 101L207 144')+text(74,133,'WALK')+text(110,221,'UP TO 450 m'),'Nearby stops connect on foot on the same bank.','Tap a stop to see its walks. Express trains can skip local stops.'),
    card('ONE GUIDEWAY · TWO SERVICES',line('M30 66H330','#cf93ba')+stop(30,66,'diamond')+stop(180,66,'diamond',true)+stop(330,66,'diamond')+text(180,36,'THROUGH SERVICE')+arrow('M180 99V131')+line('M30 158H177','#cf93ba')+line('M183 158H330','#78bccb')+stop(30,158,'diamond')+stop(180,158,'diamond',true)+stop(330,158,'diamond')+text(180,201,'OR CHANGE AT OMACHI'),'Run through, split, or add a shorter inner service.','Shorter runs improve frequency; changes add transfer time.')
-  );
+  ];if(mapOnly)return mapCards;
  }
- if(['ROTTERDAM','BARCELONA','STUTTGART'].includes(c.name)){const specific=classesFor(c).map(cl=>{const g=modeGuide(c,cl);return{title:modeNameFor(c,cl),svg:g.svg,caption:g.caption,note:''}});cards.splice(1,0,...specific);}
+ if(mapOnly)return [];
+
  cards.push(card('LOOK CLOSER',line('M40 91H320')+stop(180,91,'circle',true)+arrow('M180 111V145')+text(180,173,'QUEUES + DESTINATIONS')+text(180,212,'MODE ICON → HIDE / SHOW'),'Tap a stop for its passengers and lines.','Tap empty ground to deselect.'));
  return cards;
 }
@@ -4112,7 +4125,7 @@ function barcelonaModeGuide(cl){
  const label=(x,y,t)=>'<text x="'+x+'" y="'+y+'" fill="#dfe7f3" text-anchor="middle" font-size="13" font-family="monospace">'+t+'</text>';
  const arrow=(x,y)=>'<path d="M'+(x-7)+' '+(y-5)+'l7 5-7 5" fill="none" stroke="'+c+'" stroke-width="2"/>';
  if(cl==='express')return{drawing:path('M22 42L68 62L112 40H180L220 62')+path('M22 82L68 62L112 83H180L220 62',c,true)+stop(68,62,true)+arrow(151,40)+arrow(151,83)+label(153,19,'PAIR THE BRANCHES')+path('M22 120H122')+path('M122 120H292',col.metro)+stop(122,120,true)+stop(292,120)+arrow(89,120)+arrow(205,120)+label(124,105,'ESPANYA')+label(260,105,'CENTRE'),caption:'Five regional lines. Rail ends at Espanya: share that stop with metro or tram to reach the centre.'};
- if(cl==='tram')return{drawing:path('M25 65L82 40L142 65H290')+stop(25,65)+stop(82,40)+stop(142,65)+stop(195,65)+stop(240,65,true)+stop(290,65)+path('M240 22V108',col.express)+stop(240,65,true)+arrow(216,65)+label(115,105,'LOCAL STOPS')+label(243,131,'CHANGE HERE'),caption:'Short surface routes connect neighbourhoods and rail hubs. Hills limit where trams can climb.'};
+ if(cl==='tram')return{drawing:path('M25 65L82 40L142 65H290')+stop(25,65)+stop(82,40)+stop(142,65)+stop(195,65)+stop(240,65,true)+stop(290,65)+path('M240 22V108',col.express)+stop(240,65,true)+arrow(216,65)+label(115,105,'EVERY STOP')+label(243,131,'CHANGE HERE'),caption:'Short surface routes connect neighbourhoods and rail hubs. Hills limit where trams can climb.'};
  return{drawing:path('M25 82L90 35L190 82L290 40')+path('M25 82L110 112L190 82L290 40',c,true)+stop(25,82)+stop(90,35)+stop(190,82,true)+stop(290,40)+arrow(245,59)+label(156,17,'CHOOSE YOUR ROUTE')+label(152,139,'SHARE STOPS WITH RAIL'),caption:'Build flexible city routes. Cross rivers and tunnel through hills when the budget allows.'};
 }
 function rotterdamModeGuide(cl){
@@ -4123,7 +4136,7 @@ function rotterdamModeGuide(cl){
  const arrow=(x,y)=>'<path d="M'+(x-7)+' '+(y-5)+'l7 5-7 5" fill="none" stroke="'+c+'" stroke-width="2"/>';
  const river='<path d="M0 55Q120 25 320 55V90Q150 60 0 90Z" fill="#253f57"/>';
  if(cl==='ferry')return{drawing:river+path('M40 51L150 89L285 48')+stop(40,51)+stop(150,89)+stop(285,48)+path('M150 95V118','#dfe7f3',true)+stop(150,123)+label(160,20,'CHOOSE RIVER LINKS')+label(65,134,'WALK TO RAIL'),caption:'Cross or follow the river. Walk to rail.'};
- if(cl==='tram')return{drawing:river+path('M30 35H115L170 109H291')+path('M110 47L152 106','#dfe7f3')+path('M134 43L175 102','#dfe7f3')+stop(30,35)+stop(90,35)+stop(190,109)+stop(245,109)+arrow(215,109)+label(235,28,'USE A BRIDGE')+label(165,140,'LOCAL STOPS ON BOTH BANKS'),caption:'Cheaper local routes. Use bridges across broad water.'};
+ if(cl==='tram')return{drawing:river+path('M30 35H115L170 109H291')+path('M110 47L152 106','#dfe7f3')+path('M134 43L175 102','#dfe7f3')+stop(30,35)+stop(90,35)+stop(190,109)+stop(245,109)+arrow(215,109)+label(235,28,'USE A BRIDGE')+label(165,140,'STOPS ON BOTH BANKS'),caption:'Cheaper local routes. Use bridges across broad water.'};
  if(cl==='express')return{drawing:path('M20 55H300')+stop(20,55)+stop(155,55)+stop(300,55)+path('M85 99H270',col.metro)+stop(85,99)+stop(120,99)+stop(155,99)+stop(190,99)+stop(230,99)+stop(270,99)+path('M155 63V91','#dfe7f3',true)+arrow(235,55)+label(160,22,'LONGER JOURNEYS')+label(160,137,'SAME STOPS · DIFFERENT SERVICE'),caption:'Faster, larger trains. Skip stops or share them.'};
  return{drawing:river+path('M25 30L112 32L191 114H295')+path('M25 30L75 114H295',c,true)+stop(25,30)+stop(112,32)+stop(191,114)+stop(295,114)+label(237,23,'CHOOSE CROSSINGS')+label(160,139,'CONNECT SHARED STOPS'),caption:'Cross the river. Share stops. Choose interchanges.'};
 }
@@ -4164,7 +4177,7 @@ function modeGuide(c,cl){
   const g=barcelonaModeGuide(cl);drawing=g.drawing;caption=g.caption;
  }else if(cl==='ferry'){
   drawing=path('M30 65Q150 5 290 65',colour,'5 6')+path('M30 88Q150 125 290 88','#4b6987')+stop(30,65)+stop(290,65)+label(160,32,'ACROSS THE BAY');caption='Connect islands and waterfronts. Reach inland stops on foot.';
- }else if(c.classNames?.metro==='ASTRAM'&&cl==='metro'){
+ }else if(c.name==='HIROSHIMA'&&cl==='metro'){
   drawing=path('M25 65H300')+stop(25,65)+stop(150,65,true)+stop(300,65)+path('M150 83H300','#d8b26d')+label(60,30,'SUBURBS')+label(270,30,'CENTRE')+label(224,112,'INNER SHUTTLE');caption='Rapid transit on one guideway. A short inner service can reinforce the busy section.';
  }else if(cl==='express'){
   drawing=path('M25 45H300')+stop(25,45,!c.openModeClasses)+stop(160,45,!c.openModeClasses)+stop(300,45,!c.openModeClasses)+path('M95 85H230','#80bdb5')+stop(95,85)+stop(130,85)+stop(160,85,!c.openModeClasses)+stop(195,85)+stop(230,85)+path('M160 53V77','#dfe7f3','3 3')+label(160,20,'LONGER JOURNEYS')+label(160,115,'SHARE STOPS · CONNECT LOCALLY');caption=c.name==='HIROSHIMA'?'Use the coast and Kabe railway. Choose through services and local connections.':'Carry more people further. Share stops with local lines; skip stops when useful.';
@@ -4197,9 +4210,9 @@ function stationLegendSymbol(g){
 }
 function addStationLegend(c,selected=null,open=false){
  const details=document.createElement('details');details.className='stationLegend';details.open=open;
- const summary=document.createElement('summary');summary.textContent='STATIONS · WHICH MODES?';details.append(summary);
- const groups=stationLegendGroups(c).filter(g=>!selected||g.modes.includes(selected));
- for(const g of groups){const row=document.createElement('div');row.className='stationLegendRow';const icon=document.createElement('span');icon.className='stationLegendIcon';icon.innerHTML=stationLegendSymbol(g);const copy=document.createElement('div'),name=document.createElement('strong'),modes=document.createElement('span');name.textContent=({landing:'Ferry landing',ring:'Ringed stop',square:'Square',diamond:'Diamond',plane:'Airport',circle:'Circle'})[g.kind];modes.textContent=g.modes.map(cl=>modeNameFor(c,cl)).join(' · ');copy.append(name,modes);row.append(icon,copy);details.append(row)}
+ const summary=document.createElement('summary');summary.textContent='STOPS · WHAT THE SHAPES MEAN';details.append(summary);
+ const groups=c.stationLegend?c.stationLegend.filter(g=>!selected||g.modes.includes(selected)):stationLegendGroups(c).filter(g=>!selected||g.modes.includes(selected));
+ for(const g of groups){const row=document.createElement('div');row.className='stationLegendRow';const icon=document.createElement('span');icon.className='stationLegendIcon';icon.innerHTML=stationLegendSymbol(g);const copy=document.createElement('div'),name=document.createElement('strong'),modes=document.createElement('span');name.textContent=({landing:'Ferry landing',ring:'Ringed stop',square:'Square',diamond:'Diamond',plane:'Airport',circle:'Circle'})[g.kind];modes.textContent=g.text||g.modes.map(cl=>modeNameFor(c,cl)).join(' · ');if(g.title)name.textContent=g.title;copy.append(name,modes);row.append(icon,copy);details.append(row)}
  const note=document.createElement('p');note.textContent='Tap a station to see its accepted modes. Shared stops allow transfers; corridors and terrain still govern the route.';details.append(note);$('infoBody').append(details);if(!selected)addMapGuide(c,c===city&&lines[selLine]?clsKeyOf(lines[selLine]):classesFor(c)[0]);return details;
 }
 function showModeStationLegend(cl){info(modeNameFor(city,cl),[]);const p=document.createElement('p');p.className='modeCountNote';p.textContent=clsCount(cl)+' of '+capOf(cl)+' lines in use';$('infoBody').append(p);addStationLegend(city,cl,true);addMapGuide(city,cl);addModeDetails(city,cl)}
@@ -4214,7 +4227,8 @@ function addModeDetails(c,only=null){
  }
 }
 function addCitySources(c){if(!c.sources)return;const details=document.createElement("details"),summary=document.createElement("summary");summary.textContent="MAP SOURCES";details.append(summary);const p=document.createElement("p");p.textContent=c.terrainSource;details.append(p);for(const src of c.sources){const p=document.createElement("p"),a=document.createElement("a");a.textContent=src.name;a.href=src.url;a.target="_blank";a.rel="noopener noreferrer";p.append(a);details.append(p)}$("infoBody").append(details)}
-function cityInfo(id){const c=CITIES[id];info(c.name,compactCityGuide(c)?[]:[CITY_COPY[id][2]]);addNetworkStyle(c);addStationLegend(c);addModeDetails(c);addCitySources(c)}
+function cityInfo(id){const c=CITIES[id];info(c.name,compactCityGuide(c)?[]:[CITY_COPY[id][2]]);addNetworkStyle(c);addModeDetails(c);addStationLegend(c,null,true);addMapCards(c);addCitySources(c)}
+function addMapCards(c){const cards=helpCards(true,c);if(!cards.length)return;const details=document.createElement('details');details.className='stationLegend';const summary=document.createElement('summary');summary.textContent='MORE ON THIS MAP';details.append(summary);for(const k of cards){const f=document.createElement('figure');f.className='helpFigure';f.innerHTML=k.svg;const t=document.createElement('p');t.textContent=k.title+' · '+k.caption+(k.note?' '+k.note:'');details.append(f,t)}$('infoBody').append(details)}
 function showClsLegend(){
  if(compactCityGuide(city)){info(city.name,[]);addStationLegend(city);addModeDetails(city);addCitySources(city);return;}
  const text=[],L=lines[selLine];
@@ -4725,7 +4739,7 @@ function suburbanZoomScale(){
 }
 
 
-function startGame(){connectionGrowth=true;showPopulation=showDensity=true;syncGrowthControl();resetServiceWait();resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=growthClockOffset=0;resetDelivery(0);speedIdx=city.startPaused?0:1;nextEmergeAt=DAY_SECONDS*.7*STATION_RELEASE_SCALE;pendingOffer=null;fitS0=0;generating=true;try{genStations();rosterDraw();balanceGivenStations()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
+function startGame(){connectionGrowth=true;showPopulation=showDensity=true;syncGrowthControl();resetServiceWait();resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=growthClockOffset=0;resetDelivery(0);speedIdx=city.startPaused?0:1;nextEmergeAt=DAY_SECONDS*.7*STATION_RELEASE_SCALE;pendingOffer=null;fitS0=0;generating=true;try{genStations();rosterDraw();balanceGivenStations();assignRoleGaps()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
 $("resumeBtn").onclick=()=>{const o=readAuto();if(!o){toast("NO SAVED GAME");return}try{loadSave(o.g);seenHelp=true}catch(e){toast("COULD NOT READ THE SAVE · ORIGINAL KEPT")}};
 $("mSave").onclick=()=>{$("menuPop").style.display="none";downloadBlob(new Blob([JSON.stringify(snapshotGame())],{type:"application/json"}),"intercity-"+cityId+"-save.json");toast("SAVE EXPORTED")};
 $("mLoad").onclick=()=>{$("menuPop").style.display="none";$("fileIn").click()};$("titleLoad").onclick=()=>$("fileIn").click();$("fileIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{loadSave(JSON.parse(await f.text()))}catch(err){toast("COULD NOT READ SAVE · CURRENT CITY KEPT")}};
@@ -4971,7 +4985,7 @@ function rotterdamRegionalGuide(cl){
  const arrow=(x,y)=>path('M'+(x-6)+' '+(y-5)+'l6 5-6 5');
  if(cl==='metro')return{drawing:path('M30 105L72 69L132 74L167 52L240 35')+path('M30 105L78 116L132 74',c,true)+path('M167 52L225 93H295')+[stop(30,105),stop(132,74),stop(167,52),stop(240,35),stop(295,93)].join('')+arrow(100,72)+label(67,141,'ROTTERDAM')+label(239,18,'THE HAGUE')+label(244,123,'ZOETERMEER')+label(96,43,'PIJNACKER'),caption:'Choose city routes. Link them through Pijnacker or Zoetermeer.'};
  if(cl==='express')return{drawing:path('M30 105L132 68L223 31')+path('M223 31L224 82L290 119')+[stop(30,105),stop(132,68),stop(223,31),stop(224,82),stop(290,119)].join('')+path('M223 31L280 26','#d8b26d')+arrow(91,83)+label(60,138,'ROTTERDAM')+label(105,42,'DELFT')+label(237,15,'THE HAGUE')+label(267,68,'VOORBURG')+label(253,145,'ZOETERMEER'),caption:'Mainline corridors. Choose branches, termini and skipped stops.'};
- if(cl==='tram')return{drawing:path('M22 40H110L155 75L105 118H24')+path('M155 75L204 36H296')+path('M204 36L259 111H300')+[stop(22,40),stop(110,40),stop(155,75),stop(105,118),stop(24,118),stop(204,36),stop(296,36),stop(259,111)].join('')+label(72,17,'LOCAL STOPS')+label(221,142,'FEED SHARED HUBS')+arrow(181,54),caption:'Cheaper local coverage in both cities and Delft. Bridge decks across broad water.'};
+ if(cl==='tram')return{drawing:path('M22 40H110L155 75L105 118H24')+path('M155 75L204 36H296')+path('M204 36L259 111H300')+[stop(22,40),stop(110,40),stop(155,75),stop(105,118),stop(24,118),stop(204,36),stop(296,36),stop(259,111)].join('')+label(72,17,'EVERY STOP')+label(221,142,'FEED SHARED HUBS')+arrow(181,54),caption:'Cheaper local coverage in both cities and Delft. Bridge decks across broad water.'};
  return{drawing:'<path d="M0 50Q160 25 320 55V93Q150 66 0 92Z" fill="#253f57"/>'+path('M30 48L130 94L280 53')+stop(30,48)+stop(130,94)+stop(280,53)+path('M130 100V126','#dfe7f3',true)+stop(130,126)+label(160,19,'ROTTERDAM RIVER LINKS')+label(241,138,'WALK TO RAIL'),caption:'Choose cross-river feeders or waterfront services. Rotterdam only.'};
 }
 
@@ -5151,6 +5165,18 @@ CITIES.hiroshima.guideBandDim={express:.65};
 // apart); the rest tram-only, drawn as diamonds. Stops under 0.6 km merge (the opening refills from the nearest
 // stops to the core). Tram: 8 lines of 12 km (was 4 of 20).
 {const c=CITIES.rotterdam,drop=new Set(["BEATRIXKWARTIER", "EENDRACHTSPLEIN", "GROTE MARKT", "KRUISPLEIN", "LEUVEHAVEN", "STADHUIS"]),tram=new Set(["BLIJDORP", "CENTRUM-WEST", "DIJKZIGT", "KATENDRECHT", "MAASHAVEN", "MARCONIPLEIN", "OOSTPLEIN", "ROTTERDAM ZUID", "SPUI", "ZUIDERPARK"]);c.corridorSeeds=c.corridorSeeds.filter(s=>!drop.has(s.name));for(const s of c.corridorSeeds)if(tram.has(s.name))s.allowedModes=s.allowedModes.filter(m=>m!=="metro");for(const g of c.growthSites)if(!(g.allowedModes||[]).includes("express"))g.allowedModes=(g.allowedModes||["metro","tram"]).filter(m=>m!=="metro");{const zero=c.corridorSeeds.filter(s=>!s.stage);if(zero.length<8){const core=c.core;for(const s of c.corridorSeeds.filter(s=>s.stage).sort((a,b)=>Math.hypot(a.x-core.x,a.y-core.y)-Math.hypot(b.x-core.x,b.y-core.y)).slice(0,8-zero.length))s.stage=0}}c.count=c.corridorSeeds.length+c.growthSites.length;c.maxTram=8;c.modeLineKm={...c.modeLineKm,tram:12};c.minStopGap=1.5;c.coreStopGap=1.5;c.metroMinGap=1.3/c.kmScale;c.tramOnlyGlyph="diamond"}
+// Rotterdam-The Hague (0.895), tuned with a player bot that builds as stations appear (qa_prog.js).
+// 0.894 served 53 of 71 open stops by day 40 (The Hague 13 of 24): every line hit its length limit.
+// With 10 tram lines of 24 km and metro lines of 45 km the same player serves 69-70 of 71-72 (three seeds).
+{const c=CITIES.rotterdam;c.maxTram=10;c.modeLineKm={...c.modeLineKm,tram:24,metro:45};delete c.tramOnlyGlyph;c.classNames={...c.classNames,metro:"METRO"};c.stationGlyphRule=[["express","square"],["metro","circle"],["tram","diamond"]];c.stationLegend=[{kind:"ring",shape:"circle",modes:["metro","express","tram"],title:"Ring",text:"Hub: change between modes here"},{kind:"square",shape:"square",modes:["express","tram"],title:"Square",text:"INTERCITY stop (tram too)"},{kind:"circle",shape:"circle",modes:["metro","tram"],title:"Circle",text:"METRO · RANDSTADRAIL and TRAM"},{kind:"diamond",shape:"diamond",modes:["tram"],title:"Diamond",text:"TRAM only"},{kind:"landing",modes:["ferry"],title:"Ferry landing",text:"WATERBUS"}];c.classBlurbs={...c.classBlurbs,metro:"Fast, fewer stops: circles, squares and hubs. Free routes in each city; marked links via Pijnacker and Zoetermeer.",tram:"Cheaper and slower. Every stop, including diamonds. Up to 24 km per line; cross broad rivers on the bridges."}}
+// 0.896: every map names its modes as the city does. Descriptions follow the names.
+{const N=(id,names,blurbs={})=>{const c=CITIES[id];c.classNames={...(c.classNames||{}),...names};c.classBlurbs={...(c.classBlurbs||{}),...blurbs}};N("klang",{metro:"MRT · LRT"});N("rotterdam",{metro:"METRO · RANDSTADRAIL",express:"INTERCITY",ferry:"WATERBUS"});N("barcelona",{express:"RODALIES"});N("stuttgart",{tram:"ZACKE"},{express:"Longer, larger trains. Share city stops or skip them for faster journeys across the region."});N("hiroshima",{tram:"HIRODEN",express:"JR",metro:"ASTRAM LINE"},{tram:"Five Hiroden lines. Choose streets and loops across the low delta; use mapped river bridges. West of the city, follow the marked Miyajima line.",express:"Two JR services on the coast and Kabe line. Choose through-routes at Yokogawa, or leave local stops to Hiroden."});N("genoa",{metro:"METROPOLITANA",express:"REGIONALE",tram:"FUNICOLARE"},{express:"Two Regionale lines. Choose coastal, valley or through services; inland shortcuts can need costly tunnels.",tram:"Four funicular and rack lines. Build short feeders, a linked hillside route or a loop. Slower, smaller cars; steep slopes are allowed, the sea is not."});N("istanbul",{ferry:"VAPUR"});N("chongqing",{metro:"CRT"});N("paris",{metro:"MÉTRO"},{metro:"Métro. Close-spaced routes across the city and to Orly.",express:"RER. Longer cross-city and airport journeys. Shares stations with the Métro."});N("mumbai",{express:"LOCAL"},{metro:"Metro. Island-bound: it never crosses the creek.",express:"The locals. The spine, and the only way over the water. Enormous capacity."});N("newyork",{express:"COMMUTER RAIL"});N("sydney",{metro:"SYDNEY TRAINS"});N("mexicocity",{tram:"CABLEBÚS"});N("seoul",{express:"KORAIL · GTX"});N("rio",{express:"TREM"});N("venice",{express:"REGIONALE",metro:"SUBLAGUNARE"},{express:"Two fast Regionale lines. Choose mainland branches; share the railway causeway to Santa Lucia.",metro:"The Sublagunare: a long-proposed light metro, built here for the game. Three flexible mainland and terminal lines; the road causeway can carry its crossing."});N("lapaz",{tram:"MI TELEFÉRICO",metro:"METRO LIGERO"},{metro:"A proposed light metro, not an existing network. Carry the plateau and valley demand; steep climbs need cable transfers. Feasible tunnels cost more."});N("lisbon",{express:"COMBOIO",tram:"ELÉTRICO",ferry:"BARCO"})}
+// Stuttgart (0.897), audited with the player bots. 71 of 72 stops took both Stadtbahn and S-Bahn at a median
+// spacing of 0.49 km; the progressive player served 63-64 of 71-72 by day 40, blocked mainly by station
+// approach limits between close stops on the basin slopes. Stops at least 0.45 km apart; S-Bahn at hubs and
+// the busier stops at least 1.4 km apart; Stadtbahn gradient 8.5% (the real system's steepest sections);
+// Stadtbahn 7 lines of 26 km (was 5 of 24), chosen by sweep against the progressive player.
+{const c=CITIES.stuttgart;c.minStopGap=1.8;c.coreStopGap=1.8;c.roleGaps={express:1.4/c.kmScale};c.maxMetro=7;c.modeLineKm={...(c.modeLineKm||{}),metro:26,express:42,tram:4};c.terrainModes={...c.terrainModes,metro:{...c.terrainModes.metro,maxGrade:.085}};c.stationGlyphRule=[["express","square"],["tram","diamond"],["metro","circle"]];c.stationLegend=[{kind:"ring",shape:"circle",modes:["metro","express","tram"],title:"Ring",text:"Hub: change between modes here"},{kind:"square",shape:"square",modes:["express","metro"],title:"Square",text:"S-BAHN and STADTBAHN"},{kind:"circle",shape:"circle",modes:["metro"],title:"Circle",text:"STADTBAHN only"},{kind:"diamond",shape:"diamond",modes:["tram","metro"],title:"Diamond",text:"ZACKE (and STADTBAHN)"}]}
 installIcon();syncGrowthControl();buildOverlay();$('networkFilter').onchange=applyNetworkFilter;let lastT=performance.now(),lastError=null,frameRequest=0,lastPaint=-Infinity;
 function scheduleFrame(){if(!frameRequest)frameRequest=requestAnimationFrame(frame)}
 function frame(now){
