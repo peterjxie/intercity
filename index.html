@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.904. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.906. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -690,6 +690,30 @@ function smoothEngineeredAlignment(L,raw){
 }
 /* Follow surveyed rail, easing shared platforms onto its tangent instead of
    attaching a tiny elbow. Stops, bridge permissions and terrain stay exact. */
+function corridorNetworkRoute(L,A,B){
+ const cl=clsKeyOf(L),rules=(city.routeCorridors||[]).filter(r=>r.required&&(r.classes||[]).includes(cl));if(!rules.length)return null;
+ const key=cl,cache=city._corrNet||(city._corrNet={});
+ if(!cache[key]){
+  const nodes=[],adj=[],tracks=rules.map(r=>({w:r.width,ids:r.pts.map(q=>{nodes.push({x:q[0],y:q[1]});adj.push([]);return nodes.length-1})}));
+  const link=(i,j)=>{const d=dist(nodes[i],nodes[j]);adj[i].push([j,d]);adj[j].push([i,d])};
+  for(const t of tracks)for(let k=1;k<t.ids.length;k++)link(t.ids[k-1],t.ids[k]);
+  for(let a=0;a<tracks.length;a++)for(let b=a+1;b<tracks.length;b++){const w=Math.min(tracks[a].w,tracks[b].w);
+   for(const i of tracks[a].ids){let best=-1,bd=w;for(const j of tracks[b].ids){const d=dist(nodes[i],nodes[j]);if(d<bd){bd=d;best=j}}if(best>=0)link(i,best)}}
+  cache[key]={nodes,adj,tracks};
+ }
+ const {nodes,adj,tracks}=cache[key];
+ const entry=s=>{const out=[];tracks.forEach((t,ti)=>{const pts=t.ids.map(i=>nodes[i]),u=projectOnTrack(s,pts);if(u.d<=rules[ti].width){let best=t.ids[0],bd=1e9;for(const i of t.ids){const d=dist(nodes[i],s);if(d<bd){bd=d;best=i}}out.push([best,bd])}});return out};
+ const ea=entry(A),eb=new Map(entry(B).map(([i,d])=>[i,d]));if(!ea.length||!eb.size)return null;
+ const dd=new Array(nodes.length).fill(Infinity),prev=new Array(nodes.length).fill(-1),done=new Array(nodes.length).fill(false);
+ for(const [i,d] of ea){if(d<dd[i]){dd[i]=d}}
+ let goal=-1,gbest=Infinity;
+ for(let it=0;it<nodes.length;it++){let u=-1,ud=Infinity;for(let i=0;i<nodes.length;i++)if(!done[i]&&dd[i]<ud){ud=dd[i];u=i}if(u<0)break;done[u]=true;
+  if(eb.has(u)&&ud+eb.get(u)<gbest){gbest=ud+eb.get(u);goal=u}if(ud>=gbest)break;
+  for(const [v,w] of adj[u])if(ud+w<dd[v]){dd[v]=ud+w;prev[v]=u}}
+ if(goal<0||gbest>dist(A,B)*3+6)return null;
+ const chain=[];for(let v=goal;v>=0;v=prev[v])chain.push(nodes[v]);chain.reverse();
+ return cleanPath(roundedPath([A,...chain,B],.7,city.bendRoundness??.8));
+}
 function chartedAlignment(L,A,B){
  const cl=clsKeyOf(L),rules=city.routeCorridors.filter(r=>r.classes.includes(cl)),candidates=[];
  const source=r=>{
@@ -779,7 +803,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.904";
+const VERSION="0.906";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -2595,14 +2619,14 @@ function shorelineRoute(L,A,B,fine=false){
 function planSegment(L,aId,bId,opts={}){const A=stations[aId],B=stations[bId];if(!A||!B||aId===bId)return{ok:false,msg:"CHOOSE TWO DIFFERENT STATIONS"};const stopBlock=routeStopBlock(L,opts.layout?.stops||[...new Set(L.stops.concat([aId,bId]))]);if(stopBlock)return{ok:false,msg:stopBlock};if(isFerry(L))return ferryRoute(A.ferryKey,B.ferryKey);const endsBlock=corridorBlock(L,[A,A])||corridorBlock(L,[B,B]);if(endsBlock)return{ok:false,msg:endsBlock};if(isHillRail(L)&&!city.hillLoops&&(opts.layout||prospectiveStops(L,aId,bId)).loop)return{ok:false,msg:"HILL RAIL RUNS AS A SHORT SHUTTLE"};const cands=[];let reason=null;
  const finish=()=>{const simple=cands.filter(p=>p.kind==="bend"||p.kind==="crossing"||p.kind==="bridge");
   if(simple.length){const length=Math.min(...simple.map(p=>p.len));for(let i=cands.length-1;i>=0;i--){const p=cands[i];if(["contour","corridor"].includes(p.kind)&&(p.len>length*1.3||routeTurning(p.pts)>Math.PI*.75))cands.splice(i,1);}}
-  if(!cands.length)return{ok:false,msg:reason||"NO LEGAL ROUTE WITHIN REACH"};cands.sort((a,b)=>(opts.layout?0:routeContextScore(L,aId,bId,a.pts)-routeContextScore(L,aId,bId,b.pts))||routePrice(L,a)-routePrice(L,b)||a.len-b.len);return opts.choices?{...cands[0],choices:cands}:cands[0]};
+  if(!cands.length){const cr=(city.routeCorridors||[]).filter(r=>r.required&&(r.classes||[]).includes(clsKeyOf(L)));if(cr.length){const on=s=>cr.map((r,i)=>distToPolyline(s,r.pts)<=r.width?i:-1).filter(i=>i>=0),oa=on(A),ob=on(B);if(oa.length&&ob.length&&!oa.some(k=>ob.includes(k)))reason="SEPARATE RAILWAYS · NO THROUGH ROUTE · CHANGE AT A SHARED STOP"}return{ok:false,msg:reason||"NO LEGAL ROUTE WITHIN REACH"}};cands.sort((a,b)=>(opts.layout?0:routeContextScore(L,aId,bId,a.pts)-routeContextScore(L,aId,bId,b.pts))||routePrice(L,a)-routePrice(L,b)||a.len-b.len);return opts.choices?{...cands[0],choices:cands}:cands[0]};
  const add=(pts,extra={})=>{pts=cleanPath(pts);if(pts.length<2)return;if(routeFoldScore(pts)>0){reason=reason||"TRACK WOULD DOUBLE BACK · TRY ANOTHER APPROACH";return}const msg=routeBlock(L,pts);if(msg){reason=reason||msg;return}if(city.crossings?.length){const gates=[...new Set(wetIntervals(pts).map(r=>crossingForRun(L,r)).filter(Boolean))];if(gates.length){extra={...extra,gate:gates.map(g=>g.name).join(" / "),kind:"crossing",costMult:Math.max(...gates.map(g=>g.costMult||1))}}}if(opts.interactive&&cands.some(p=>!distinctRoute(pts,p.pts)))return;cands.push({ok:true,pts,len:pathLen(pts),engineering:engineeringProfile(L,pts),...extra})};
  if(city.chartedAlignments?.includes(clsKeyOf(L))){
-  const p=chartedAlignment(L,A,B)||(clsKeyOf(L)==='metro'?preferredAlignmentRoute(L,A,B):null);if(p)add(p,{kind:'corridor',chartedRevision:city.alignmentRevision});return finish();
+  const p=chartedAlignment(L,A,B)||(clsKeyOf(L)==='metro'?preferredAlignmentRoute(L,A,B):null);if(p)add(p,{kind:'corridor',chartedRevision:city.alignmentRevision});if(cands.length)return finish();
  }
  if(city.fixedGuideways?.includes(clsKeyOf(L))){
   const p=fixedGuidewayRoute(L,A,B);if(p)add(p,{kind:'corridor'});
-  return finish();
+  if(cands.length)return finish();
  }
  if(isCableLine(L)){
   const layout=opts.layout||prospectiveStops(L,aId,bId),msg=cableLayoutBlock(L,layout.stops,layout.loop);
@@ -2612,6 +2636,7 @@ function planSegment(L,aId,bId,opts={}){const A=stations[aId],B=stations[bId];if
  const flips=opts.exactFlip!=null?[!!opts.exactFlip]:[false,true];
  for(const f of flips){const lo=stations[Math.min(aId,bId)],hi=stations[Math.max(aId,bId)];let p=bendPath(L,lo,hi,f);if(aId>bId)p.reverse();add(p,{flip:f,kind:"bend"})}
  if(city.flexibleLandNetwork&&(!cands.length||opts.interactive)){const p=preferredAlignmentRoute(L,A,B);if(p)add(p,{kind:'corridor'})}
+ if(!cands.length){const p=corridorNetworkRoute(L,A,B);if(p)add(p,{kind:'corridor'})}
  if((!cands.length||opts.interactive)&&city.crossings?.length&&!(city.landlocked||[]).includes(clsKeyOf(L))){const gates=opts.interactive?city.crossings.filter(g=>!g.cls||g.cls.includes(clsKeyOf(L))).sort((a,b)=>dist(A,a)+dist(B,a)-dist(A,b)-dist(B,b)).slice(0,4):city.crossings;for(const gate of gates){if(gate.cls&&!gate.cls.includes(clsKeyOf(L)))continue;for(const rev of[false,true]){let deck=crossingDeck(gate).map(p=>({...p}));if(rev)deck.reverse();if(deck.length<2)continue;for(const f1 of flips)for(const f2 of flips){const p=cleanPath(bendPath(L,A,deck[0],f1).concat(deck, bendPath(L,deck.at(-1),B,f2)));if(pathLen(p)>dist(A,B)*2.8+8)continue;add(p,{gate:gate.name,kind:"crossing",flip:f1,costMult:gate.costMult||1})}}}}
  if(!cands.length&&city.linkedCrossings){const p=linkedCrossingRoute(L,A,B);if(p)add(p,{kind:"crossing"})}
  if(!cands.length&&city.shorelineDetours){const p=shorelineRoute(L,A,B);if(p)add(p,{kind:"shoreline"})}
@@ -3686,7 +3711,7 @@ function drawHints(){
 // Drawing and shared-track packing use the same two-rail footprint. Reserve
 // the selected size when packing, so a selection cannot shift its neighbours.
 function regionalTrackMetrics(L,{selected=false,ghost=false,z=1,diag=false}={}){
- const C=clsOf(L),posterFactor=diag?1.45:isPoster()&&posterTheme==='light'?1.5:1,ghostFactor=ghost?.75:1,fine=isPoster()?1:.98;
+ const C=clsOf(L),posterFactor=diag?1.45:isPoster()&&posterTheme==='light'?1.5:1,ghostFactor=ghost?GHOST.railWidth:1,fine=isPoster()?1:.98;
  let rail=trackPx((selected?1.5:1.15)*z*C.w/2.8)*posterFactor*ghostFactor*fine;
  let gap=trackPx((city.expressRailGap??2)*z)*posterFactor*fine;
  if(!isPoster()){
@@ -3704,15 +3729,16 @@ function regionalTrackMetrics(L,{selected=false,ghost=false,z=1,diag=false}={}){
  if(diag){rail*=.65;gap=Math.max(gap*.50,(rail+trackPx(.8))/2);}
  return{rail,gap};
 }
+const GHOST={colour:"#9aa6b4",alpha:.32,width:.8,railWidth:.9};
 function trackStyle(L,diag=false){
  const C=clsOf(L),selected=L.id===selLine&&!isPoster(),ghost=!isPoster()&&!lineShown(L),light=isPoster()&&posterTheme==="light",z=isPoster()?1:1+.18*clamp(Math.log2(Math.max(.5,(L.express?railZoomRatio():view.s/(fitS0||view.s)))),-1,2.5),fine=isPoster()?1:.98;
- const posterFactor=diag?1.45:light?1.5:1,ghostFactor=ghost?.75:1;
+ const posterFactor=diag?1.45:light?1.5:1,ghostFactor=ghost?GHOST.width:1;
  const width=trackPx((C.w+(selected?.6:0))*z)*posterFactor*ghostFactor*fine*(isPoster()&&clsKeyOf(L)==="tram"?.62:1);
  const R=L.express?regionalTrackMetrics(L,{selected,ghost,z,diag}):{
   rail:trackPx((selected?1.5:1.15)*z*C.w/2.8)*posterFactor*ghostFactor*fine,
   gap:trackPx((city.expressRailGap??2)*z)*posterFactor*fine
  };
- return{selected,ghost,colour:ghost?"#78828e":diagramLineColour(L),alpha:ghost?.18:selected||light?1:C.alpha*(L.express?.96:.9),width,rail:R.rail,gap:R.gap,z};
+ return{selected,ghost,colour:ghost?GHOST.colour:diagramLineColour(L),alpha:ghost?GHOST.alpha:selected||light?1:C.alpha*(L.express?.96:.9),width,rail:R.rail,gap:R.gap,z};
 }
 function lineWidthFor(L){return trackStyle(L,isPoster()&&posterSchematic).width}
 function drawTrack(L,P,p,diag,neighbours={}){
@@ -5252,7 +5278,7 @@ CITIES.hiroshima.guideBandDim={express:.65};
 // the busier stops at least 1.4 km apart; Stadtbahn gradient 8.5% (the real system's steepest sections);
 // Stadtbahn 7 lines of 26 km (was 5 of 24), chosen by sweep against the progressive player.
 {const c=CITIES.stuttgart;c.minStopGap=1.8;c.coreStopGap=1.8;c.roleGaps={express:1.4/c.kmScale};c.maxMetro=7;c.modeLineKm={...(c.modeLineKm||{}),metro:26,express:42,tram:4};c.terrainModes={...c.terrainModes,metro:{...c.terrainModes.metro,maxGrade:.085}};c.stationGlyphRule=[["express","square"],["tram","diamond"],["metro","circle"]];c.stationLegend=[{kind:"ring",shape:"circle",modes:["metro","express","tram"],title:"Ring",text:"Hub: change between modes here"},{kind:"square",shape:"square",modes:["express","metro"],title:"Square",text:"S-BAHN and STADTBAHN"},{kind:"circle",shape:"circle",modes:["metro"],title:"Circle",text:"STADTBAHN only"},{kind:"diamond",shape:"diamond",modes:["tram","metro"],title:"Diamond",text:"ZACKE (and STADTBAHN)"}]}
-// La Paz (0.899). Drawn relief now comes from the terrain grid the game enforces (lapaz-contours-0904.py);
+// La Paz (0.899). Drawn relief now comes from the terrain grid the game enforces (lapaz-contours-0906.py);
 // the old ridge rings spanned up to 740 m of real height along one ring. Balance chosen by sweep against the
 // progressive player: cable 12 lines of 9 km (was 10 of 7.5), cable turn 95 degrees (was 75), Metro Ligero
 // 4 lines of 24 km (was 3 of 22). Served by day 40: 77/77, 77/78, 79/79 (was 75/78, 69/80, 71/77).
