@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.925. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.926. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -808,7 +808,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.925";
+const VERSION="0.926";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -1303,7 +1303,7 @@ function corridorBlock(L,pts){
  // These are legal envelopes; city.corridors remains a demand / visual hint.
  const rules=(city.routeCorridors||[]).filter(c=>c.required&&(!c.classes||c.classes.includes(clsKeyOf(L))));
  if(!rules.length)return null;
- const margin=p=>Math.max(routeAreaMargin(p,clsKeyOf(L)),...rules.map(c=>c.width-distToPolyline(p,c.pts)));
+ const margin=p=>londonRail(L)?londonCorridorMargin(p):Math.max(routeAreaMargin(p,clsKeyOf(L)),...rules.map(c=>c.width-distToPolyline(p,c.pts)));
  const covered=(a,b,depth=0)=>{const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2},r=dist(a,b)/2,d=margin(m);if(d<0||margin(a)<0||margin(b)<0)return false;if(d>=r-1e-9)return true;if(depth>=16||r<1e-6)return d>=r-1e-9;return covered(a,m,depth+1)&&covered(m,b,depth+1)};
  for(let i=1;i<pts.length;i++)if(!covered(pts[i-1],pts[i]))return"FOLLOW THE MARKED CORRIDOR";return null;
 }
@@ -2803,7 +2803,7 @@ function createLine(cl){if(clsCount(cl)>=capOf(cl)||lines.length>=capTotal()){to
 /* Revalidate the exact advertised route. A release must not replace a
    chosen street or surface alignment with the automatic cheapest route. */
 function committedDragPlan(L,a,b,preview){
- if(londonRail(L))return planSegment(L,a,b);
+ if(londonRail(L))return londonCommittedPlan(L,a,b,preview);
  if(!preview||preview._routeCity!==city||preview._routeLine!==L.id||preview._routeClass!==clsKeyOf(L)||!((preview._routeA===a&&preview._routeB===b)||(preview._routeA===b&&preview._routeB===a)))return planSegment(L,a,b);
  if(!preview.ok)return preview;
  const stopBlock=routeStopBlock(L,[...new Set(L.stops.concat([a,b]))]);if(stopBlock)return {ok:false,msg:stopBlock};
@@ -3692,12 +3692,12 @@ function guideLegendRows(c,cl){
  const g=modeGuidance(c,cl),rows=[];
  if(g.required.length||g.streets)rows.push(['required',g.streets?'Fixed streets':'Compulsory corridor']);
  if(g.areas.length)rows.push(['area','Free route area']);
- rows.push(['terrain','Terrain contours'],['station','Dot: accepts this mode']);
+ rows.push(['terrain','Terrain contours'],['station',c.mapFamily==='london'&&cl==='tram'?'Bright dot: reachable while drawing':'Dot: accepts this mode']);
  return rows;
 }
 function appendGuideLegend(parent,c,cl){
  for(const[kind,label]of guideLegendRows(c,cl)){const row=document.createElement('div');row.className='guideLegendRow';const mark=document.createElement('span');mark.className='guideSwatch '+kind;mark.setAttribute('aria-hidden','true');const text=document.createElement('span');text.textContent=label;row.append(mark,text);parent.append(row)}
- const p=document.createElement('p');p.className='guideCaution';p.textContent='Terrain can still block an approach.';parent.append(p);
+ const p=document.createElement('p');p.className='guideCaution';p.textContent=c.mapFamily==='london'&&cl==='tram'?'Shared stations may contain separate railways. Drag existing track onto a passed stop to insert it.':'Terrain can still block an approach.';parent.append(p);
 }
 function syncMapKey(){
  // The map key is now on demand in the information panel only.
@@ -3710,6 +3710,9 @@ function addMapGuide(c,cl){
 function buildFailure(msg){
  const text=String(msg||'');
  for(const[from,title,tip]of[
+  ['SEPARATE RAILWAYS','SEPARATE RAILWAYS','CHANGE TRAINS AT THE SHARED STATION'],
+  ['PASSED STOP','PASSED STOP','DRAG THE TRACK TO INSERT IT'],
+  ['NO FORWARD ROUTE','NO FORWARD ROUTE','TRY THE OTHER END OR A NEW LINE'],
   ['FOLLOW THE MARKED CORRIDOR','CORRIDOR','STAY IN THE HATCHED ZONE'],
   ['FOLLOW THE MARKED TRAM STREETS','CORRIDOR','FOLLOW THE AMBER STREETS'],
   ['GRADIENT TOO STEEP FOR THIS MODE','GRADIENT','TRY A GENTLER APPROACH'],
@@ -3747,7 +3750,7 @@ function drawGuideBands(data,items,dim=1){
  ctx.save();ctx.globalAlpha*=dim;ctx.drawImage(guideBandCanvas,view.x,view.y,W/view.s,H/view.s);ctx.restore();
 }
 function drawRouteGuides(L){
- if(!L||isPoster()||isFerry(L))return;const cl=clsKeyOf(L),g=guideGeometry(city,cl);
+ if(!L||isPoster()||isFerry(L))return;if(londonRail(L)){drawLondonRailGuides(L);return}const cl=clsKeyOf(L),g=guideGeometry(city,cl);
  const visible=b=>b[2]>=view.x&&b[0]<=view.x+W/view.s&&b[3]>=view.y&&b[1]<=view.y+H/view.s;
  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
  drawGuideBands(g,g.items.filter(item=>item.type==='required'&&visible(item.bounds)),city.guideBandDim?.[cl]??1);
@@ -3883,7 +3886,7 @@ function placeNameKey(name){return name.normalize('NFD').replace(/[\u0300-\u036f
 function drawStationNames(names,symbols,screenLegs,D){
  const selected=lines[selLine],selectedStops=new Set(selected?.stops||[]),focus=!isPoster()&&performance.now()<focusUntil?focusStation:null;
  const priority=s=>(D.diag?diagramLabelPriority(s):0)+(s.id===focus?100:0)+(selectedStops.has(s.id)?20:0)+(s.inter?8:0)+(s.air?7:0)+(s.ferryKey?0:3)+(service.at[s.id]?.length?2:0);
- const layoutKey=city.cacheStationNames&&!isPoster()?JSON.stringify([cityId,geomVersion,W,H,DPR,view.x,view.y,view.s,fitS0,selLine,focus,hiddenCls,labelBoxes,names.map(n=>[n.s.id,n.p.x,n.p.y,n.r,n.s.name,n.s.inter])]):null;
+ const layoutKey=city.cacheStationNames&&!isPoster()?JSON.stringify([cityId,geomVersion,W,H,DPR,view.x,view.y,view.s,fitS0,selLine,focus,hiddenCls,city.mapFamily==="london"?[dragMode,dragFrom,isOp()?Math.floor(budget):0]:null,labelBoxes,names.map(n=>[n.s.id,n.p.x,n.p.y,n.r,n.s.name,n.s.inter])]):null;
  if(layoutKey&&stationNameLayoutCache?.key===layoutKey){for(const n of stationNameLayoutCache.labels)mapText(n.name,n.p,n.options);return stationNameLayoutCache.placed}
  const renderedNames=[];
  names.sort((a,b)=>priority(b.s)-priority(a.s)||a.s.id-b.s.id);
@@ -3907,7 +3910,7 @@ function drawStationNames(names,symbols,screenLegs,D){
    if(!focused&&!s.inter&&!relevant&&!(D.diag&&diagramLabelPriority(s))&&crossed>18)continue;
    const score=i*.08+crossed;if(score<best){best=score;chosen={dx,dy};}
   }
-  if(chosen){const options={size:f,...chosen,colour:isPoster()?(posterTheme==='light'?'#4b5962':'#a3b3c2'):focused?'#d6e1ee':relevant?'#b7c9d8':'#8195a6',avoid:true};if(mapText(displayName,p,options)){placed.push({key,x:sp.x,y:sp.y});renderedNames.push({name:s.name,p:{...p},options})}}
+  if(chosen){const options={size:f,...chosen,colour:londonNameColour(s,isPoster()?(posterTheme==='light'?'#4b5962':'#a3b3c2'):focused?'#d6e1ee':relevant?'#b7c9d8':'#8195a6'),avoid:true};if(mapText(displayName,p,options)){placed.push({key,x:sp.x,y:sp.y});renderedNames.push({name:s.name,p:{...p},options})}}
  }
  if(layoutKey)stationNameLayoutCache={key:layoutKey,labels:renderedNames,placed};
  return placed;
@@ -3915,7 +3918,7 @@ function drawStationNames(names,symbols,screenLegs,D){
 
 function drawStations(D){
  drawDiagramCityNames(D);
- const guideLine=isPoster()?null:lines[selLine];
+ const guideLine=isPoster()?null:lines[selLine],connectionGuide=londonConnectionGuide(guideLine);
  const names=[],symbols=[],screenLegs=[],labelShown=stationLabelVisibility(),posterStops=isPoster()?new Set(lines.flatMap(L=>L.stops)):null,posterVisibleStops=isPoster()?new Set(lines.filter(lineShown).flatMap(L=>L.stops)):null;
  for(const L of lines){if(!lineShown(L))continue;for(const P of L.paths){const p=D.paths.get(P);for(let i=1;i<p.length;i++)screenLegs.push([w2s(p[i-1]),w2s(p[i])])}}
  for(const s of stations){
@@ -3927,8 +3930,8 @@ function drawStations(D){
    shapePath(ctx,p.x,p.y,r,stationGlyph(s));ctx.stroke();ctx.beginPath();
    if(!D.diag){ctx.moveTo(p.x-r*.65,p.y+r*1.65);ctx.lineTo(p.x+r*.65,p.y+r*1.65);ctx.stroke()}ctx.restore();continue;
   }
-  const q=queueCount(s),age=simS-s.emergeAt,faded=posterStops&&!posterVisibleStops.has(s.id),fadedColour=posterTheme==="light"?"#aeb5b8":"#64717d";ctx.save();
-  if(!isPoster()&&freshStation(s)){const ph=(performance.now()/1400)%1;ctx.strokeStyle="#ffd27a";ctx.lineWidth=pxr(1.6);ctx.globalAlpha=.9*(1-ph);ctx.beginPath();ctx.arc(p.x,p.y,r+pxr(3+ph*18),0,TAU);ctx.stroke();ctx.globalAlpha=.85;ctx.lineWidth=pxr(1.3);ctx.beginPath();ctx.arc(p.x,p.y,r+pxr(2.6),0,TAU);ctx.stroke();ctx.globalAlpha=1}
+  const connection=londonStationState(guideLine,s.id,connectionGuide),q=queueCount(s),age=simS-s.emergeAt,faded=posterStops&&!posterVisibleStops.has(s.id),fadedColour=posterTheme==="light"?"#aeb5b8":"#64717d";ctx.save();
+  if(!isPoster()&&freshStation(s)&&connection?.kind!=="blocked"){const ph=(performance.now()/1400)%1;ctx.strokeStyle="#ffd27a";ctx.lineWidth=pxr(1.6);ctx.globalAlpha=.9*(1-ph);ctx.beginPath();ctx.arc(p.x,p.y,r+pxr(3+ph*18),0,TAU);ctx.stroke();ctx.globalAlpha=.85;ctx.lineWidth=pxr(1.3);ctx.beginPath();ctx.arc(p.x,p.y,r+pxr(2.6),0,TAU);ctx.stroke();ctx.globalAlpha=1}
   if(!isPoster()&&q>(s.inter?STRAIN_INTER:STRAIN_AT)){ctx.strokeStyle="#ef8c87";ctx.globalAlpha=.24+.2*(.5+.5*Math.sin(simS*2.5));ctx.lineWidth=pxr(.8);ctx.beginPath();ctx.arc(p.x,p.y,r+pxr(2.2),0,Math.PI*1.4);ctx.stroke();ctx.globalAlpha=1}
   const interchange=s.inter||(D.diag&&lines.filter(L=>lineShown(L)&&L.stops.includes(s.id)).length>1);
   // A fine transfer link joins the separated lanes. No capsule masks the rails.
@@ -3939,12 +3942,12 @@ function drawStations(D){
   ctx.globalAlpha=1;
   if(D.diag&&s.inter&&diagramDetail()>.6){const outer=r+pxr(1.7*posterScale());ctx.fillStyle=TH().bg;ctx.strokeStyle=faded?fadedColour:TH().ink;ctx.globalAlpha=faded?.82:.95;ctx.lineWidth=pxr(1.05*posterScale());ctx.beginPath();ctx.arc(p.x,p.y,outer,0,TAU);ctx.fill();ctx.stroke()}
   ctx.globalAlpha=1;ctx.fillStyle=faded?TH().bg:TH().stn;shapePath(ctx,p.x,p.y,r,stationGlyph(s));ctx.fill();
-  ctx.strokeStyle=faded?fadedColour:TH().ink;ctx.globalAlpha=faded?.82:guideLine?(displayStationAcceptsMode(city,s,clsKeyOf(guideLine),guideLine.express)?.94:.32):walkingDestination(s)?.5:interchange?.95:.74;
+  ctx.strokeStyle=connection?.kind==="limited"?"#c6a773":faded?fadedColour:TH().ink;ctx.globalAlpha=connection?connection.alpha:faded?.82:guideLine?(displayStationAcceptsMode(city,s,clsKeyOf(guideLine),guideLine.express)?.94:.32):walkingDestination(s)?.5:interchange?.95:.74;
   ctx.lineWidth=pxr((D.diag?(interchange?1.5:1)*diagramSymbolScale():city.stationStroke??1)*posterScale());ctx.stroke();if(D.diag&&diagramDetail()>.6&&interchange&&!s.inter&&!faded){ctx.fillStyle=TH().ink;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(p.x,p.y,Math.min(r*.3,pxr(.8*posterScale())),0,TAU);ctx.fill()}
   if(s.inter&&!D.diag){ctx.lineWidth=pxr(1.6*posterScale());ctx.beginPath();ctx.arc(p.x,p.y,r*1.8*(city.interScale??1),0,TAU);ctx.stroke()}
   if(s.icOnly&&!D.diag){ctx.lineWidth=pxr(.8*posterScale());ctx.beginPath();ctx.arc(p.x,p.y,r*1.7,0,TAU);ctx.stroke()}
   ctx.globalAlpha=1;
-  if(guideLine&&displayStationAcceptsMode(city,s,clsKeyOf(guideLine),guideLine.express)){ctx.fillStyle='#9edbe0';ctx.beginPath();ctx.arc(p.x,p.y,Math.min(r*.36,pxr(1.45)),0,TAU);ctx.fill()}
+  if(guideLine&&(connection?connection.kind==='ready':displayStationAcceptsMode(city,s,clsKeyOf(guideLine),guideLine.express))){ctx.fillStyle='#9edbe0';ctx.beginPath();ctx.arc(p.x,p.y,Math.min(r*.36,pxr(1.45)),0,TAU);ctx.fill()}
   if(s.ferryKey&&!D.diag){ctx.strokeStyle=TH().dim;ctx.lineWidth=pxr(.9);ctx.beginPath();ctx.moveTo(p.x-r*.65,p.y+r*1.65);ctx.lineTo(p.x+r*.65,p.y+r*1.65);ctx.stroke()}
   if(s.metroIsland&&!isPoster()&&clsKeyOf(lines[selLine]||{cls:"metro"})==="tram")mapText("M",p,{size:10,colour:"#b3d5f2",dx:r*view.s+5,dy:-5});
   if(s.name&&(!walkingDestination(s)||view.s>(fitS0||view.s)*1.35||focusStation===s.id)&&labelShown(s)&&(!isPoster()||posterLabels)&&!(ferryPlanning&&s.ferryKey))names.push({s,p,r});symbols.push({p:w2s(p),r:r*view.s*(s.inter&&!D.diag?2:1.5)});
@@ -3958,8 +3961,8 @@ function pullTrack(L,id){const i=L.stops.indexOf(id),n=L.stops.length;if(i<0)ret
 function pulledPath(pts,anchor,target,factor){return pts.map(p=>{const k=Math.exp(-Math.pow(dist(p,anchor)/Math.max(pxr(40),2),2))*factor;return{x:p.x+(target.x-anchor.x)*k,y:p.y+(target.y-anchor.y)*k}})}
 function drawGhost(){
  if(!dragMode||!dragW||dragFrom==null)return;const L=lines[selLine];if(!L)return;ctx.save();ctx.lineWidth=trackPx(1.8);ctx.setLineDash([pxr(4),pxr(3)]);ctx.globalAlpha=.85;
- if(dragMode==="connect"){const T=snapSt!=null?stations[snapSt]:dragW,plan=dragPlan;ctx.strokeStyle=plan&&!plan.ok?"#ef9790":"#b9e6cd";pathStroke(ctx,plan?.ok?plan.pts:bendPath(L,stations[dragFrom],T));if(snapSt!=null){ctx.setLineDash([]);ctx.beginPath();ctx.arc(T.x,T.y,pxr(10),0,TAU);ctx.stroke();if(city.terrainSource&&plan?.ok){const sp=w2s(T),anchor=s2w({x:clamp(sp.x,95,W-95),y:clamp(sp.y-20,120,H-210)}),e=plan.engineering,price=routePrice(L,plan)+(L.stops.length?0:trainPrice(L)*openingFleet(L));mapText((isOp()?moneyText(price)+" · ":"")+(e.tunnel?kms(e.tunnelLength).toFixed(1)+" KM TUNNEL":"SURFACE"),anchor,{size:11,align:"center",colour:TH().ink})}}}
- else if(dragMode==="splice"){const P=L.paths[dragFrom];if(P){const T=snapSt!=null?stations[snapSt]:dragW;ctx.strokeStyle=L.color;if(dragPlan?.ok){for(const p of dragPlan.parts)pathStroke(ctx,p.pts)}else{ctx.strokeStyle=dragPlan&&!dragPlan.ok?"#ef9790":L.color;pathStroke(ctx,[stations[P.aId],T,stations[P.bId]])}}}
+ if(dragMode==="connect"){const T=snapSt!=null?stations[snapSt]:dragW,plan=dragPlan;ctx.strokeStyle=londonStationState(L,snapSt)?.kind==="limited"?"#d4b47d":plan&&!plan.ok?"#ef9790":"#b9e6cd";pathStroke(ctx,plan?.ok?plan.pts:bendPath(L,stations[dragFrom],T));if(snapSt!=null){ctx.setLineDash([]);ctx.beginPath();ctx.arc(T.x,T.y,pxr(10),0,TAU);ctx.stroke();if(city.terrainSource&&plan?.ok){const sp=w2s(T),anchor=s2w({x:clamp(sp.x,95,W-95),y:clamp(sp.y-20,120,H-210)}),e=plan.engineering,price=routePrice(L,plan)+(L.stops.length?0:trainPrice(L)*openingFleet(L));mapText((isOp()?moneyText(price)+" · ":"")+(e.tunnel?kms(e.tunnelLength).toFixed(1)+" KM TUNNEL":"SURFACE"),anchor,{size:11,align:"center",colour:TH().ink})}}}
+ else if(dragMode==="splice"){const P=L.paths[dragFrom];if(P){const T=snapSt!=null?stations[snapSt]:dragW;ctx.strokeStyle=L.color;if(dragPlan?.ok){if(londonStationState(L,snapSt)?.kind==="limited")ctx.strokeStyle="#d4b47d";for(const p of dragPlan.parts)pathStroke(ctx,p.pts)}else{ctx.strokeStyle=dragPlan&&!dragPlan.ok?"#ef9790":L.color;pathStroke(ctx,[stations[P.aId],T,stations[P.bId]])}}}
  else if(dragMode==="pull"){
   const anchor=stations[dragFrom],pts=pullTrack(L,dragFrom),ready=dist(anchor,dragW)>pxr(26);
   ctx.strokeStyle=L.color;ctx.lineWidth=lineWidthFor(L)+trackPx(1);ctx.globalAlpha=ready?.95:.45;pathStroke(ctx,pulledPath(pts,anchor,dragW,1));
@@ -4194,9 +4197,10 @@ function refreshUI(){
 function lineInfo(){
  const e=$("lineInfo");if(focusStation!=null&&performance.now()>focusUntil)clearDemandFocus();
  if(tool||ferryPlanning||isPoster()){e.hidden=true;return}
+ if(londonBuildHint(e))return;
  if(focusStation!=null){const s=stations[focusStation],d=stationDemand.get(focusStation);e.hidden=false;
   const message=d?.unrouted?" · NO ROUTE "+scaleRiders(d.unrouted):d?.wait>20?" · LONG WAITS":"";
-  const walks=city.localWalkKm?(walkLinks.get(s.id)||[]).filter(e=>!stations[e.id].ferryKey).length:0;const text=(s.name||"STATION")+" · ACCEPTS "+(acceptedStationModes(city,s).map(cl=>modeNameFor(city,cl)).join(" / ")||"WALKING ONLY")+" · "+scaleRiders(queueCount(s))+" WAITING"+message+(walks?" · "+walks+" WALK LINK"+(walks===1?"":"S"):"");if(e.dataset.value!==text){e.textContent=text;e.dataset.value=text}return;
+  const walks=city.localWalkKm?(walkLinks.get(s.id)||[]).filter(e=>!stations[e.id].ferryKey).length:0;const text=(s.name||"STATION")+" · ACCEPTS "+(acceptedStationModes(city,s).map(cl=>modeNameFor(city,cl)).join(" / ")||"WALKING ONLY")+" · "+scaleRiders(queueCount(s))+" WAITING"+message+(walks?" · "+walks+" WALK LINK"+(walks===1?"":"S"):"")+londonStationHint(s);if(e.dataset.value!==text){e.textContent=text;e.dataset.value=text}return;
  }
  const L=lines[selLine];if(!L?.paths.length||!L.trains.length){e.hidden=true;return}
  e.hidden=false;const load=Math.round(peakSectionLoad(L)*100),behind=simS-(leftBehind.get(L.id)??-Infinity)<20,key=L.id+":"+load+":"+behind+":"+londonCapacityHint(L);if(e.dataset.value===key)return;e.dataset.value=key;e.replaceChildren();
@@ -5896,18 +5900,17 @@ function londonShortest(from,to,avoidFirst=null,avoidLast=null){
  if(!d.has(to))return null;const out=[];for(let k=to;k!=null;k=prev.get(k))out.push(k);return out.reverse();
 }
 function londonPlanSegment(L,a,b,opts={}){
- const layout=opts.layout||prospectiveStops(L,a,b),g=londonGraph(),from=londonPorts(L,a,b,layout),to=londonPorts(L,b,a,layout),choices=[];
+ const layout=opts.layout||prospectiveStops(L,a,b),g=londonGraph(),from=londonPorts(L,a,b,layout),to=londonPorts(L,b,a,layout),choices=[],errors=[];
  const neighbour=(id,other)=>{const i=layout.stops.indexOf(id);for(const k of [i-1,i+1]){const n=layout.stops[(k+layout.stops.length)%layout.stops.length];if(!layout.loop&&(k<0||k>=layout.stops.length)||n===other)continue;const p=londonSavedNodes(L,id,n);if(p)return p[1]}return null};
  for(const start of from)for(const end of to){
-  const railNodes=londonShortest(start,end,neighbour(a,b),neighbour(b,a));if(!railNodes||railNodes.length<2)continue;
+  const railNodes=londonShortest(start,end,neighbour(a,b),neighbour(b,a));if(!railNodes||railNodes.length<2){if(londonShortest(start,end))errors.push('NO FORWARD ROUTE · TRY THE OTHER END OR A NEW LINE');continue;}
   // Do not pass another selected stop and return to it later on the same line.
   const others=new Set(layout.stops.filter(id=>id!==a&&id!==b).map(id=>stations[id].name));
-  if(railNodes.slice(1,-1).some(k=>others.has(g.nodes[k].name)))continue;
-  const raw=railNodes.map(k=>({...g.nodes[k]})),pts=smoothEngineeredAlignment(L,raw)||raw;
-  if(routeFoldScore(pts)||routeBlock(L,pts))continue;
-  choices.push({ok:true,pts,len:pathLen(pts),kind:'corridor',railNodes,engineering:engineeringProfile(L,pts)});
+  if(railNodes.slice(1,-1).some(k=>others.has(g.nodes[k].name))){errors.push('NO FORWARD ROUTE · TRY THE OTHER END OR A NEW LINE');continue;}
+  const geometry=londonRailGeometry(L,railNodes);if(!geometry.ok){errors.push(geometry.msg);continue;}
+  choices.push({...geometry,railNodes});
  }
- choices.sort((a,b)=>a.len-b.len);if(!choices.length)return{ok:false,msg:'SEPARATE RAILWAYS · CHANGE TRAINS AT A SHARED STATION'};
+ choices.sort((a,b)=>a.len-b.len);if(!choices.length)return{ok:false,msg:londonPassedStop(L,a)||londonPassedStop(L,b)?'PASSED STOP · DRAG THE TRACK TO INSERT IT':errors[0]||'SEPARATE RAILWAYS · CHANGE TRAINS AT A SHARED STATION'};
  return opts.choices?{...choices[0],choices}:choices[0];
 }
 function londonJoinNodes(L,a,id,b){if(!londonRail(L)||a==null||b==null)return null;const p=londonSavedNodes(L,a,id),q=londonSavedNodes(L,id,b);return p&&q&&p.at(-1)===q[0]?[...p,...q.slice(1)]:null}
@@ -5980,7 +5983,7 @@ function drawLondonDiagramNames(D){
  }
 }
 function londonModeGuide(cl){
- return{drawing:'',caption:cl==='metro'?'Design local and cross-city routes, up to 30 km. Urban rapid can connect any catchment, including railway hubs. River and park crossings cost more. DLR and Croydon tram roles are included.':'Choose termini, through routes or orbital services on existing railway corridors, up to 70 km. Interchange diamonds join passengers, not unrelated tracks. Through services save transfers; orbital routes can avoid central interchanges. Trains and carriages provide ordinary passenger capacity.'};
+ return{drawing:'',caption:cl==='metro'?'Design local and cross-city routes, up to 30 km. Urban rapid can connect any catchment, including railway hubs. River and park crossings cost more. DLR and Croydon tram roles are included.':'Choose termini, through routes or orbital services on existing railway corridors, up to 70 km. While dragging, bright stops and corridors show where this service can continue; dim stops cannot connect from that end. A shared station may contain separate railways. To add a passed stop, drag the existing track onto it. Through services save transfers; orbital routes can avoid central interchanges. Trains and carriages provide ordinary passenger capacity.'};
 }
 
 /* 0.925. Neighbourhood supply and service evidence. No new transport mode. */
@@ -6177,6 +6180,83 @@ function showServiceInfo(){
  add('p','Completed follows the same departure groups after at least one full game day. Giving up remains a failure. Old saves start collecting new history; historical totals remain intact.','',explain);
  add('p','Riders is the cumulative number of completed journeys, not the number of distinct people. Game minutes are simulation units, not real timetable estimates.','',explain);
  add('p','Recent '+flow.hours+' game hours: '+scaleRiders(flow.asked)+' new journeys, '+scaleRiders(flow.arrived)+' arrivals, '+scaleRiders(flow.lost)+' gave up. Arrivals may exceed new journeys when older queues are cleared; this is flow, not a completion percentage.','',explain);
+}
+
+/* Exact spatial index for the existing corridor envelope. The margin is
+   unchanged; far-away segments cannot contain this point. */
+const londonEnvelopeCache=new WeakMap();
+const londonGeometryCache=new WeakMap();
+function londonRailGeometry(L,nodes){
+ let cache=londonGeometryCache.get(city);if(!cache)londonGeometryCache.set(city,cache=new Map());
+ const key=nodes.join('|');if(cache.has(key))return cache.get(key);
+ const raw=nodes.map(k=>({...londonGraph().nodes[k]})),pts=smoothEngineeredAlignment(L,raw)||raw,block=routeBlock(L,pts);
+ const result=routeFoldScore(pts)||block?{ok:false,msg:block||'NO FORWARD ROUTE · TRY THE OTHER END OR A NEW LINE'}:{ok:true,pts,len:pathLen(pts),kind:'corridor',engineering:engineeringProfile(L,pts)};
+ if(cache.size>=384)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
+}
+function londonCorridorMargin(p){
+ let grid=londonEnvelopeCache.get(city);const size=3;
+ if(!grid){grid=new Map();for(const c of city.routeCorridors||[]){if(!c.required||c.classes&&!c.classes.includes('tram'))continue;
+  for(let i=1;i<c.pts.length;i++){const a=c.pts[i-1],b=c.pts[i],w=c.width;
+   for(let x=Math.floor((Math.min(a[0],b[0])-w)/size);x<=Math.floor((Math.max(a[0],b[0])+w)/size);x++)for(let y=Math.floor((Math.min(a[1],b[1])-w)/size);y<=Math.floor((Math.max(a[1],b[1])+w)/size);y++){const key=x+':'+y;if(!grid.has(key))grid.set(key,[]);grid.get(key).push({a,b,w})}
+  }
+ }londonEnvelopeCache.set(city,grid)}
+ let margin=routeAreaMargin(p,'tram');for(const e of grid.get(Math.floor(p.x/size)+':'+Math.floor(p.y/size))||[])margin=Math.max(margin,e.w-distToSeg(p,e.a,e.b));return margin;
+}
+function londonCommittedPlan(L,a,b,preview){
+ const p=planSegment(L,a,b,{choices:true});if(!p.ok)return p;
+ if(!preview||preview._routeCity!==city||preview._routeLine!==L.id||preview._routeClass!=='tram'||!((preview._routeA===a&&preview._routeB===b)||(preview._routeA===b&&preview._routeB===a)))return p;
+ if(!preview.ok)return preview;
+ const nodes=preview._routeA===a?preview.railNodes:preview.railNodes?.slice().reverse();
+ const selected=p.choices.find(q=>JSON.stringify(q.railNodes)===JSON.stringify(nodes));
+ return selected||{ok:false,msg:'RAILWAY ROUTE CHANGED · DRAG AGAIN'};
+}
+function londonPassedStop(L,id){return Object.values(L.routeMeta||{}).some(m=>m.railNodes?.slice(1,-1).some(k=>city.railNodes[k]?.name===stations[id]?.name))}
+const londonConnectionCache=new WeakMap();
+function londonConnectionGuide(L){
+ if(!L||!londonRail(L)||isPoster()||tool||dragMode==='pull')return null;
+ const action=dragMode==='splice'?'splice':dragMode==='connect'?'connect':'ends';
+ const origins=action==='connect'?[dragFrom]:action==='ends'&&L.stops.length&&!L.loop?[L.stops[0],L.stops.at(-1)]:[];
+ if(action!=='splice'&&!origins.length)return null;
+ const key=[geomVersion,action,action==='splice'?dragFrom:origins.join(','),lineMaxKm(L),L.loop,stations.filter(s=>s.emerged&&!s.dead).map(s=>s.id).join(',')].join('/');
+ const old=londonConnectionCache.get(L);if(old?.key===key)return old;
+ const rows=new Map(),edges=new Set();const guide={key,action,origins,rows,edges};
+ for(const s of stations){if(!s.emerged||s.dead)continue;
+  if(L.stops.includes(s.id)&&!(action==='connect'&&s.id!==dragFrom&&isEndOf(L,s.id)&&L.stops.length>=3)){rows.set(s.id,{kind:'on-line',alpha:.95,msg:'ON THIS LINE'});continue}
+  const plans=[],errors=[];
+  if(!canServe(L,s.id)){rows.set(s.id,{kind:'blocked',alpha:.2,msg:'URBAN RAPID ONLY'});continue}
+  if(action==='splice'){
+   const p=planSplice(L,dragFrom,s.id);if(p.ok){const old=L.paths[dragFrom],len=lineLength(L)-old.len+p.parts.reduce((n,p)=>n+p.len,0),cost=Math.max(0,p.parts.reduce((n,p)=>n+routePrice(L,p),0)-routePrice(L,{pts:old.pts,len:old.len}));plans.push({len,cost,parts:p.parts})}else errors.push(p.msg);
+  }else for(const a of origins){if(a==null||a===s.id)continue;const p=planSegment(L,a,s.id,{choices:true});if(!p.ok){errors.push(p.msg);continue}for(const q of p.choices||[p])plans.push({len:lineLength(L)+q.len,cost:routePrice(L,q)+(L.stops.length?0:trainPrice(L)*openingFleet(L)),parts:[q]})}
+  const within=plans.filter(p=>kms(p.len)<=lineMaxKm(L));
+  if(!within.length){rows.set(s.id,{kind:plans.length?'limited':'blocked',alpha:plans.length?.55:.2,msg:plans.length?'LINE AT MAX LENGTH · USE A NEW LINE':londonPassedStop(L,s.id)?'PASSED STOP · DRAG THE TRACK TO INSERT IT':errors[0]||'NO FORWARD ROUTE · TRY THE OTHER END'});continue}
+  rows.set(s.id,{kind:'ready',alpha:.98,msg:'CAN CONNECT',cost:Math.min(...within.map(p=>p.cost))});
+  for(const p of within)for(const part of p.parts){const ns=part.railNodes||[];for(let i=1;i<ns.length;i++)edges.add([ns[i-1],ns[i]].sort().join('|'))}
+ }
+ londonConnectionCache.set(L,guide);return guide;
+}
+function londonStationState(L,id,guide=londonConnectionGuide(L)){
+ if(!guide)return null;const r=guide.rows.get(id);if(!r)return null;
+ if(r.kind==='ready'&&isOp()&&budget+1e-8<r.cost)return{...r,kind:'limited',alpha:.55,msg:'NEED '+moneyText(r.cost)};
+ return r;
+}
+function londonStationHint(s){
+ const r=londonStationState(lines[selLine],s.id);if(!r||r.kind==='on-line')return '';
+ return ' · '+(r.kind==='ready'?'THIS LINE CAN CONNECT FROM AN END':r.msg);
+}
+function londonNameColour(s,colour){const r=londonStationState(lines[selLine],s.id);return r?.kind==='blocked'?'#47515e':r?.kind==='limited'?'#b39a73':colour}
+function drawLondonRailGuides(L){
+ const guide=londonConnectionGuide(L),g=londonGraph();ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash([pxr(3),pxr(3)]);
+ for(const e of city.railEdges){const active=guide?.edges.has([e.a,e.b].sort().join('|'));ctx.strokeStyle=active?'#9edbe0':'#c9b594';ctx.globalAlpha=guide?(active?.58:.10):.34;ctx.lineWidth=pxr(active?1.15:.8);pathStroke(ctx,[g.nodes[e.a],g.nodes[e.b]])}ctx.restore();
+}
+function londonBuildHint(e){
+ const L=lines[selLine];if(!L||!londonRail(L)||tool||isPoster()||focusStation!=null)return false;
+ let text=null;
+ if(dragMode==='connect'||dragMode==='splice'){
+  const r=snapSt==null?null:londonStationState(L,snapSt);
+  if(r){text=(stations[snapSt].name||'STATION')+' · '+r.msg;if(r.kind==='ready')text+=' · '+(isOp()?moneyText(r.cost)+' · ':'')+'RELEASE TO CONNECT'}
+  else text=(dragMode==='splice'?'INSERT STOP':'FROM '+(stations[dragFrom]?.name||'LINE END'))+' · BRIGHT STOPS CAN CONNECT';
+ }else if(!L.stops.length)text='DRAG FROM A RAIL STOP · REACHABLE STOPS WILL LIGHT UP';
+ if(!text)return false;e.hidden=false;if(e.dataset.value!==text){e.replaceChildren();e.textContent=text;e.dataset.value=text}return true;
 }
 
 installIcon();syncGrowthControl();buildOverlay();$('networkFilter').onchange=applyNetworkFilter;let lastT=performance.now(),lastError=null,frameRequest=0,lastPaint=-Infinity;
