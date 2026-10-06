@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.940. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.941. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -839,7 +839,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.940";
+const VERSION="0.941";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -856,7 +856,7 @@ CITIES.klang={"name":"GREATER KUALA LUMPUR","mapRevision":"greater-kl-0892","blu
 const SHAPES=["circle","triangle","square","diamond","star","plane"];
 const DAY_SECONDS=75,GM_PER_S=1440/DAY_SECONDS,TRAIN_SPEED=9,IC_KM=250;
 const COST={line:60,track:1.1,tunnel:18,train:32,car:14,station:45,inter:22};
-const FARE=3,OPC=2,SUBSIDY_DAY=12,UPK={train:1.1,car:.45,km:.16};
+const FARE=3*25/1000000,OPC=.9*25/1000000,SUBSIDY_DAY=12,UPK={train:1.1,car:.45,km:.16};
 const SPAWN_K=.042,STRAIN_AT=12,STRAIN_INTER=18;
 const CLASSES={metro:{vmax:8,acc:7,br:12,corner:5,trainCost:32,trackMult:1,carCap:6,maxCars:2,spacing:12,w:2.4,alpha:.72},tram:{vmax:5.5,acc:6,br:10,corner:4.5,trainCost:18,trackMult:.6,carCap:4,maxCars:1,maxTrains:7,spacing:9,w:1.5,alpha:.55},express:{vmax:19,acc:5.5,br:9,corner:6.5,trainCost:58,trackMult:2.2,carCap:6,maxCars:2,spacing:22,w:2.8,alpha:1}};
 const $=id=>document.getElementById(id),clone=o=>JSON.parse(JSON.stringify(o));
@@ -913,7 +913,7 @@ function capOf(k){return k==="ferry"?(city?.maxFerry||0):k==="metro"?capM():k===
 function clsCount(k){return lines.filter(L=>clsKeyOf(L)===k).length}
 function kms(u){return u*(city?.kmScale||1)}
 function lineMaxKm(L){return city.modeLineKm?.[clsKeyOf(L)]??(isFerry(L)?FERRY.maxKm:L.express?IC_KM:clsKeyOf(L)==="tram"?(city.tramMaxKm||10):metroCapKm)}
-function trainPrice(L){return Math.round(clsOf(L).trainCost*(city?.trainCostMult||1))}
+function trainPrice(L){return investmentFor(L).train*(city?.trainCostMult||1)}
 function exf(L){return clsOf(L).trackMult*(L.express?(city.expressCostMult||1):1)}
 function isOp(){return mode==="operator"}
 function pay(c){if(!isOp())return true;if(budget+1e-8<c){toast("NEED "+moneyText(c));return false}budget-=c;dashboardMoney("purchases",c);return true}
@@ -2757,7 +2757,8 @@ function planSegment(L,aId,bId,opts={}){const A=stations[aId],B=stations[bId];if
  if(city.routeCorridors?.length&&(!cands.length||cands.every(p=>p.engineering.tunnel))){const p=mappedCorridorRoute(L,A,B);if(p)add(p,{kind:"corridor"})}
  if(!((city.flexibleLandNetwork||city.linkedCrossings)&&cands.some(p=>p.gate))&&(!cands.length||cands.every(p=>pathCrossesWater(p.pts)||p.engineering.tunnel))){const p=contourRoute(L,A,B);if(p)add(p,{kind:"contour"})}
  return finish()}
-function routePrice(L,p){if(isFerry(L))return 0;const e=p.engineering||engineeringProfile(L,p.pts);return(londonTrackPremium(L,p.pts)+rhineRuhrTrackPremium(L,p.pts)+randstadTrackPremium(L,p.pts)+(city.waterTrackExtra?.[clsKeyOf(L)]?wetIntervals(p.pts).reduce((s,r)=>s+r.len,0)*city.waterTrackExtra[clsKeyOf(L)]*COST.track:0)+pathLen(p.pts)*COST.track*(city.trackCostMult||1)+(e.earthworkLength||0)*COST.track*2+(pathCrossesWater(p.pts)&&!isCableLine(L)?COST.tunnel:0)+(e.tunnel?(COST.tunnel+e.tunnelLength*COST.track*2.5)*(city.terrainTunnelMult||1):0))*exf(L)*londonPriceMultiplier(L,p)}
+function routePrice(L,p){return investmentRoutePrice(L,p)}
+function legacyRoutePrice(L,p){if(isFerry(L))return 0;const e=p.engineering||engineeringProfile(L,p.pts);return(londonTrackPremium(L,p.pts)+rhineRuhrTrackPremium(L,p.pts)+randstadTrackPremium(L,p.pts)+(city.waterTrackExtra?.[clsKeyOf(L)]?wetIntervals(p.pts).reduce((s,r)=>s+r.len,0)*city.waterTrackExtra[clsKeyOf(L)]*COST.track:0)+pathLen(p.pts)*COST.track*(city.trackCostMult||1)+(e.earthworkLength||0)*COST.track*2+(pathCrossesWater(p.pts)&&!isCableLine(L)?COST.tunnel:0)+(e.tunnel?(COST.tunnel+e.tunnelLength*COST.track*2.5)*(city.terrainTunnelMult||1):0))*exf(L)*londonPriceMultiplier(L,p)}
 function rebuildGeometry(){lastGeomS=view.s;for(const L of lines){L.paths=[];for(let i=0;i<segCountOf(L);i++){const a=L.stops[i],b=L.stops[(i+1)%L.stops.length],pts=trackFor(L,a,b),meta=L.routeMeta[edgeKey(a,b)]||{};L.paths.push({pts,len:pathLen(pts),chord:dist(stations[a],stations[b]),aId:a,bId:b,lineId:L.id,ferry:isFerry(L),wet:isFerry(L)?[]:wetIntervals(pts),bridge:!!meta.gate&&!/TUNNEL|TUBE/i.test(meta.gate)||meta.kind==="bridge",cornerS:null,dynamics:isFerry(L)?ferryDynamics(pts):trackDynamics(L,pts,readEngineering(meta.engineering,a>b,pts))})}}geomVersion++;schematicCache=null;computeCrossings()}
 function computeCrossings(){crossings=[];const legs=[];for(const L of lines.filter(L=>!isFerry(L)))for(const P of L.paths)for(let i=1;i<P.pts.length;i++)if(dist(P.pts[i-1],P.pts[i])>.3)legs.push({a:P.pts[i-1],b:P.pts[i],L,P});for(let i=0;i<legs.length;i++)for(let j=i+1;j<legs.length;j++){const a=legs[i],b=legs[j];if(a.L===b.L||[a.P.aId,a.P.bId].some(id=>id===b.P.aId||id===b.P.bId))continue;const p=segIntersect(a.a,a.b,b.a,b.b);if(p){const over=a.L.id===selLine||b.L.id!==selLine&&a.L.id>b.L.id?a:b,dx=over.b.x-over.a.x,dy=over.b.y-over.a.y,m=Math.hypot(dx,dy)||1;crossings.push({...p,li:over.L.id,other:(over===a?b:a).L.id,dx:dx/m,dy:dy/m,metroClash:!a.L.express&&!b.L.express})}}}
 function lineLength(L){return L.paths.reduce((s,p)=>s+p.len,0)}
@@ -2895,7 +2896,7 @@ function trainSlot(L){
  return{seg:leg.seg,f:leg.dir>0?progress:1-progress,dir:leg.dir};
 }
 function addTrain(free=false,target=null){if(journeyView)return false;const L=target||lines[selLine];if(!L?.paths.length){toast("SELECT A LINE WITH TRACK");return false}if(L.trains.length>=maxTrainsFor(L)){const cap=clsOf(L).maxTrains||6;toast(maxTrainsFor(L)>=cap?clsName(clsKeyOf(L))+" LIMIT · "+cap+(isFerry(L)?" VESSELS":" TRAINS")+" PER LINE":"EXTEND THE LINE TO FIT MORE TRAINS");return false}const c=free?0:trainPrice(L);if(!pay(c))return false;if(!free)remember(L,c,"added train");const sl=trainSlot(L),dir=sl.dir;L.trains.push(newTrain(L,sl.seg,sl.f,dir));rebuildRouting();refreshUI();return true}
-function addCar(){if(journeyView)return false;const L=lines[selLine];if(!L?.trains.length){toast("NO TRAIN ON THIS LINE");return}const t=L.trains.reduce((a,b)=>a.cars<b.cars?a:b);if(t.cars>=clsOf(L).maxCars){toast("TRAIN AT MAX LENGTH");return}if(!pay(COST.car))return;remember(L,COST.car,"added carriage");t.cars++;refreshUI()}
+function addCar(){if(journeyView)return false;const L=lines[selLine];if(!L?.trains.length){toast("NO TRAIN ON THIS LINE");return}const t=L.trains.reduce((a,b)=>a.cars<b.cars?a:b);if(t.cars>=clsOf(L).maxCars){toast("TRAIN AT MAX LENGTH");return}if(!pay(carPrice(L)))return;remember(L,carPrice(L),"added carriage");t.cars++;refreshUI()}
 function manualStopsUsed(){return stations.filter(s=>s.infill&&!s.dead).length}
 function manualStopsCap(){return city.manualStops??3}
 function placeStation(p){if(journeyView)return false;
@@ -2927,7 +2928,7 @@ function queueRemoveOne(s){
  const r=s.q.pop();if(!r)return false;if(isWatchedRider(r)){finishWatchedJourney(r,true);return false;}recordJourneyOutcome(r,1,true);recordServiceWait(r);return true;
 }
 function recountPassengers(){passengers=walking.reduce((n,w)=>n+w.count,0)+stations.reduce((n,s)=>n+queueCount(s),0)+lines.reduce((n,L)=>n+L.trains.reduce((s,t)=>s+t.riders.length,0),0);if(journeyView&&["waiting","riding","walking"].includes(journeyView.phase))passengers=Math.max(0,passengers-1);return passengers}
-function stepSpawns(dt){const tod=minOfDay();for(const s of stations){if(!s.emerged)continue;const served=(adj.get(s.id)||[]).length>0;s.acc+=dt*SPAWN_K*(city.spawnMult??1)*(.3+1.7*effectiveDensity(s))*produceF(s.district,tod)*(served?1:.25);while(s.acc>=1){s.acc--;const dest=pickTarget(s);if(dest==null)continue;queueAdd(s,{dest,spawn:simS,cohort:recordJourneyRequest(),...dashboardNewRider(),waitSince:simS,tf:0,ox:s.x,oy:s.y,lastLi:null});generated++;passengers++;if(served)s.useN=(s.useN||0)+1}}}
+function stepSpawns(dt){const tod=minOfDay();for(const s of stations){if(!s.emerged)continue;const served=(adj.get(s.id)||[]).length>0;s.acc+=dt*SPAWN_K*(city.spawnMult??1)*demandCalibrationFactor()*(.3+1.7*effectiveDensity(s))*produceF(s.district,tod)*(served?1:.25);while(s.acc>=1){s.acc--;const dest=pickTarget(s);if(dest==null)continue;queueAdd(s,{dest,spawn:simS,cohort:recordJourneyRequest(),...dashboardNewRider(),waitSince:simS,tf:0,ox:s.x,oy:s.y,lastLi:null});generated++;passengers++;if(served)s.useN=(s.useN||0)+1}}}
 function stepStrain(dt){for(const s of stations){if(!s.emerged)continue;if(!(adj.get(s.id)||[]).length){s.strainT=0;continue}if(queueCount(s)>(s.inter?STRAIN_INTER:STRAIN_AT)){s.strainT+=dt;while(s.strainT>7){s.strainT-=7;if(queueRemoveOne(s)){lost++;passengers--}}}else s.strainT=0}}
 /* Every player-selected stop is a scheduled call. Express running comes from chosen stop spacing, not quietly changing calls with the platform queue. */
 function willSkipNext(t,L){return false}
@@ -2935,7 +2936,7 @@ function shouldBoard(r,L,i,dir){if((r.readyAt||0)>simS+1e-8)return false;const v
 function completeJourney(r,count=1){if(finishWatchedJourney(r))return;recordJourneyOutcome(r,count,false);delivered+=count;const arrivedAt=stations[r.dest];if(arrivedAt)arrivedAt.useN=(arrivedAt.useN||0)+count;journeySum+=count*Math.max(0,simS-r.spawn)*journeyMinutesPerSecond();transferSum+=count*r.tf;if(isOp()&&r.lastLi!=null){const fare=FARE*(city.fareMult||1);budget+=(fare-OPC)*count;ecoInc+=fare*count;ecoCost+=OPC*count;dashboardMoney("income",fare*count);dashboardMoney("operating",OPC*count)}}
 function exchange(t,L,i){dashboardCall(t,L);journeyOnCall(t);const s=stations[L.stops[i]],dir=outgoingDir(L,i,t.dir);let moved=0;const keep=[];for(const r of t.riders){if(r.dest===s.id){completeJourney(r);moved++}else if(!isFinite(rideOption(L,i,dir,r.dest))||rideOption(L,i,dir,r.dest)>transferDelay(s.id)+platformCost(s.id,r.dest)+.05){r.waitSince=simS;r.readyAt=simS+transferDelay(s.id);queueAdd(s,r);moved++}else keep.push(r)}t.riders=keep;
  fillQueue(s);const cap=(1+t.cars)*effCarCap(L);let loops=0;while(t.riders.length<cap&&loops++<cap+1){const j=s.q.findIndex(r=>shouldBoard(r,L,i,dir));let r;if(j>=0)r=s.q.splice(j,1)[0];else{const k=(s.overflow||[]).findIndex(g=>shouldBoard(g,L,i,dir));if(k<0)break;const g=s.overflow[k];r={...g};delete r.count;delete r.key;if(--g.count===0)s.overflow.splice(k,1);}recordServiceWait(r);dashboardBoard(t,r,L,s);if(r.lastLi!=null&&r.lastLi!==L.id)r.tf++;r.lastLi=L.id;t.riders.push(r);journeyOnBoard(t,r);moved++;fillQueue(s)}
- journeyCheckFullTrain(s,L,t);const st=service.index.get(stateKey(L.id,i,dir));if(st){L.sectionLoads??=new Map();L.sectionLoads.set(st.seg+":"+dir,{load:t.riders.length/cap,time:simS});}
+ journeyCheckFullTrain(s,L,t);const st=service.index.get(stateKey(L.id,i,dir));if(st){recordSectionLoad(L,st.seg+":"+dir,t.riders.filter(r=>!isWatchedRider(r)).length/cap);}
  if(t.riders.length>=cap&&s.q.concat(s.overflow||[]).some(r=>shouldBoard(r,L,i,dir)))leftBehind.set(L.id,simS);
  return moved}
 function headwayFactor(t,L){if(L.trains.length<2)return 1;const lens=L.paths.map(p=>p.len),tot=lens.reduce((n,l)=>n+l,0);if(!tot)return 1;const arc=q=>lens.slice(0,q.seg).reduce((n,l)=>n+l,0)+clamp(q.f,0,1)*(lens[q.seg]||0),ring=L.loop?tot:tot*2,pos=q=>L.loop||q.dir>0?arc(q):(tot*2-arc(q))%ring,own=L.trains.filter(q=>!L.loop||q.dir===t.dir),ideal=ring/own.length,me=pos(t);if(own.length<2)return 1;let gap=Infinity;for(const q of own){if(q===t)continue;let g=pos(q)-me;if(L.loop&&t.dir<0)g=-g;g=(g%ring+ring)%ring;if(g<gap)gap=g}if(!isFinite(gap))return 1;return clamp(.2+.8*gap/(ideal*1.05),.2,1)}
@@ -3040,7 +3041,7 @@ function drawDemandFlows(D){if(journeyView)return;
  }
  ctx.strokeStyle="#c9e0ec";ctx.lineWidth=pxr(1);ctx.beginPath();ctx.arc(A.x,A.y,stationRadius(s)+pxr(4),0,TAU);ctx.stroke();ctx.restore();
 }
-function peakSectionLoad(L){let peak=0;for(const q of L.sectionLoads?.values()||[])if(simS-q.time<Math.max(30,(L.circuit||30)*2))peak=Math.max(peak,q.load);for(const t of L.trains)peak=Math.max(peak,t.riders.length/((1+t.cars)*effCarCap(L)));return clamp(peak,0,1)}
+function peakSectionLoad(L){return recentPeakSectionLoad(L)}
 
 /* Recent platform waits, including people still waiting and those left behind.
    Time buckets keep this bounded and cheap; no individual trip log is retained. */
@@ -3136,7 +3137,7 @@ function validateWaitHistory(raw,at){
 function resetServiceWait(){waitHistory=[];serviceWait=null;waitUpdated=-Infinity}
 
 function meanWait(){let n=0,sum=0;for(const s of stations){for(const r of s.q){n++;sum+=Math.max(0,simS-(r.waitSince??r.spawn))}for(const r of s.overflow||[]){n+=r.count;sum+=r.count*Math.max(0,simS-(r.waitSince??r.spawn))}}return n?sum/n*journeyMinutesPerSecond():0}
-function update(dtReal){const dt=dtReal*SPEEDS[speedIdx];if(dt<=0)return;const beforeTrips=[generated,delivered,lost];simS+=dt;if(emergePtr<stations.length&&simS>=nextEmergeAt){emergeStation(true);const gg=emergePtr/stations.length;nextEmergeAt=simS+STATION_RELEASE_SCALE*(isOp()?.6:.5)*DAY_SECONDS*(.7+simRandom()*.6)*(1+1.7*gg)}if(isOp()){const week=Math.floor(simS/(DAY_SECONDS*7));awardGrants(week);let tr=0,cars=0,u=0;for(const L of lines){tr+=L.trains.length;for(const t of L.trains)cars+=t.cars;for(const P of L.paths)u+=P.chord}const up=ferryUpkeep(),sub=SUBSIDY_DAY*(city.subsidyMult||1)+kms(u)*(city.subsidyKm||0),day=dt/DAY_SECONDS;budget+=(sub-up)*day;ecoInc+=sub*day;ecoCost+=up*day;dashboardMoney("income",sub*day);dashboardMoney("operating",up*day);ecoT+=day;if(ecoT>=.5){const ri=ecoInc/ecoT,rc=ecoCost/ecoT,p=ecoSeries.at(-1);ecoSeries.push(p?[p[0]*.55+ri*.45,p[1]*.55+rc*.45]:[ri,rc]);if(ecoSeries.length>120)ecoSeries.shift();ecoInc=ecoCost=ecoT=0}}if(Math.abs(growthG()-lastUrbanG)>.03)buildUrbanLayer();if(simS-lastDemT>2)rebuildDemand();stepConnectionGrowth(dt);stepSpawns(dt);stepWalking(dt);for(const L of lines)for(const t of L.trains)stepTrain(t,dt);stepStrain(dt);recountPassengers();recordDelivery(beforeTrips);dashboardTick()}
+function update(dtReal){const dt=dtReal*SPEEDS[speedIdx];if(dt<=0)return;const beforeTrips=[generated,delivered,lost];simS+=dt;if(emergePtr<stations.length&&simS>=nextEmergeAt){emergeStation(true);const gg=emergePtr/stations.length;nextEmergeAt=simS+STATION_RELEASE_SCALE*(isOp()?.6:.5)*DAY_SECONDS*(.7+simRandom()*.6)*(1+1.7*gg)}if(isOp()){const week=Math.floor(simS/(DAY_SECONDS*7));awardGrants(week);let tr=0,cars=0,u=0;for(const L of lines){tr+=L.trains.length;for(const t of L.trains)cars+=t.cars;for(const P of L.paths)u+=P.chord}const up=ferryUpkeep(),sub=SUBSIDY_DAY*(city.subsidyMult||1)+kms(u)*(city.subsidyKm||0),day=dt/DAY_SECONDS;budget+=(sub-up)*day;ecoInc+=sub*day;ecoCost+=up*day;dashboardMoney("grants",sub*day);dashboardMoney("operating",up*day);ecoT+=day;if(ecoT>=.5){const ri=ecoInc/ecoT,rc=ecoCost/ecoT,p=ecoSeries.at(-1);ecoSeries.push(p?[p[0]*.55+ri*.45,p[1]*.55+rc*.45]:[ri,rc]);if(ecoSeries.length>120)ecoSeries.shift();ecoInc=ecoCost=ecoT=0}}if(Math.abs(growthG()-lastUrbanG)>.03)buildUrbanLayer();if(simS-lastDemT>2)rebuildDemand();stepConnectionGrowth(dt);stepSpawns(dt);stepWalking(dt);for(const L of lines)for(const t of L.trains)stepTrain(t,dt);stepStrain(dt);recountPassengers();recordDelivery(beforeTrips);dashboardTick()}
 
 /* The preview owns a separate layout. Simulation, saved alignments and station
    coordinates are never changed by diagram construction. */
@@ -4085,7 +4086,7 @@ function drawPosterStats(){
  if(!isPoster()||!posterStats)return;
  const k=posterScale(),b=posterTitleBox();ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);
  ctx.textAlign="left";ctx.textBaseline="top";ctx.font=(11*k)+"px "+CANVAS_MONO;ctx.fillStyle=TH().dim;
- const rows=["DAY "+(Math.floor(simS/DAY_SECONDS)+1),"RIDERS "+scaleRiders(delivered)+" · "+Math.round(kms(lines.reduce((s,L)=>s+lineLength(L),0)))+" KM","AVG TRIP "+dashboardHudTrip()+" · WAITING "+dashboardHudWaiting()];
+ const rows=["DAY "+(Math.floor(simS/DAY_SECONDS)+1),"RIDERS "+scaleRiders(delivered)+" · "+Math.round(kms(lines.reduce((s,L)=>s+lineLength(L),0)))+" KM","AVG TRIP "+dashboardHudTrip()+" · WAITING ≈"+scaleRiders(dashboardHudWaiting())];
  rows.forEach((text,i)=>ctx.fillText(text,b.margin,b.statsY+i*17*k,W-2*b.margin));ctx.restore();
 }
 function paintCityIcon(cnv,cid){const c=CITIES[cid];organicCity(c);const g=cnv.getContext("2d"),w=cnv.width,h=cnv.height,pts=c.blobs.filter(b=>b.w>=.5),b=boundsOf(pts.length?pts:[c.core]);b.bw=Math.max(40,b.bw+24);b.bh=Math.max(40,b.bh+26);if(c.cardBounds)Object.assign(b,c.cardBounds);const k=Math.min(w/b.bw,h/b.bh)*1.2,x=b.cx-w/k/2,y=b.cy-h/k/2;g.fillStyle="#152a37";g.fillRect(0,0,w,h);g.save();g.scale(k,k);g.translate(-x,-y);g.fillStyle="#274653";const cardWater=c.overviewGeography?.seas||c.cardRenderWater&&c.renderGeography?.seas||c.waterPolys;for(const p of cardWater){polyPath(g,p);g.fill()}g.strokeStyle="#759cac66";g.lineWidth=.5/k;for(const p of cardWater){polyPath(g,p);g.stroke()}g.fillStyle="#152a37";for(const p of c.overviewGeography?.islands||c.islands){polyPath(g,p);g.fill()}for(const p of c.inlandWater||[]){polyPath(g,p);g.fillStyle="#274653";g.fill();g.strokeStyle="#759cac66";g.stroke()}if(c.nobuildDraw!==false&&!c.nobuildHigh&&!c.quietBoundaries){g.strokeStyle="#acc7bf22";for(const p of c.nobuild){polyPath(g,p);g.stroke()}}if(c.elevationGrid||c.nobuildHigh)paintMountains(g,c,k,"#b7cfc2");g.lineJoin="round";g.lineCap="round";const all=c.corridors,chosen=c.cardCorridors||all.filter((q,i)=>i<4||i%4===0);for(let i=0;i<chosen.length;i++){const co=chosen[i],raw=co.pts.map(q=>({x:q[0],y:q[1]}));const colour=(c.palette||LINE_COLORS)[i%(c.palette||LINE_COLORS).length];g.strokeStyle="rgb("+[1,3,5].map(j=>Math.round(parseInt(colour.slice(j,j+2),16)*.7+255*.3)).join(",")+")";g.globalAlpha=i<3?.9:.35;g.lineWidth=(i<3?2.4:1.1)/k;pathStroke(g,roundedPath(raw,1));if(i<3){g.fillStyle="#e1eadf";for(let j=0;j<raw.length;j+=2){g.beginPath();g.arc(raw[j].x,raw[j].y,2.2/k,0,TAU);g.fill()}}}g.globalAlpha=1;g.strokeStyle="#e1eadf";g.lineWidth=.9/k;g.beginPath();g.arc(c.core.x,c.core.y,3/k,0,TAU);g.stroke();g.restore();const fade=g.createLinearGradient(0,h*.5,0,h);fade.addColorStop(0,"#101b2700");fade.addColorStop(1,"#101b2777");g.fillStyle=fade;g.fillRect(0,0,w,h)}
@@ -4239,7 +4240,7 @@ function refreshUI(){
   b.onclick=fn;tr.append(b);
  }
  mk(isFerry(L)?"vessel":"train",isFerry(L)?"Add vessel":"Add train",()=>addTrain(),!L?.paths.length,L?cost(trainPrice(L))+(L.paths.length?"\n"+L.trains.length+"/"+maxTrainsFor(L):""):cost(32));
- mk("car","Add carriage",addCar,!L?.trains.length||!clsOf(L).maxCars,cost(COST.car));
+ mk("car","Add carriage",addCar,!L?.trains.length||!clsOf(L).maxCars,cost(carPrice(L)));
  mk("undo","Undo",undoStop,!L?.stops.length&&!undoStack.some(h=>h.li===selLine));
  mk("detach","Detach stop",()=>toggleBuildTool("detach"),false,"",tool==="detach");
  mk("clear","Clear line",deleteLine,!L?.stops.length,"",false,true);
@@ -4258,22 +4259,13 @@ function lineInfo(){
  }
  const L=lines[selLine];if(!L?.paths.length||!L.trains.length){e.hidden=true;return}
  e.hidden=false;const load=Math.round(peakSectionLoad(L)*100),behind=simS-(leftBehind.get(L.id)??-Infinity)<20,key=L.id+":"+load+":"+behind+":"+londonCapacityHint(L);if(e.dataset.value===key)return;e.dataset.value=key;e.replaceChildren();
- const meter=document.createElement("meter");meter.min=0;meter.max=100;meter.value=load;meter.setAttribute("aria-label","Busiest section load, "+load+" percent");
- const label=document.createElement("span");label.textContent="BUSIEST SECTION "+load+"%";e.append(meter,label);const impact=document.createElement("button");impact.type="button";impact.className="journeyImpactButton";impact.textContent="JOURNEYS";impact.setAttribute("aria-label","Check this line’s journey impact");impact.onclick=()=>showJourneyImpact(L.id);e.append(impact);
+ const meter=document.createElement("meter");meter.min=0;meter.max=100;meter.value=load;meter.setAttribute("aria-label","Peak load in the last 30 journey minutes, "+load+" percent");
+ const label=document.createElement("span");label.textContent="PEAK LOAD · 30 MIN "+load+"%";e.append(meter,label);const impact=document.createElement("button");impact.type="button";impact.className="journeyImpactButton";impact.textContent="JOURNEYS";impact.setAttribute("aria-label","Check this line’s journey impact");impact.onclick=()=>showJourneyImpact(L.id);e.append(impact);
  const railHint=londonCapacityHint(L);if(railHint){const hint=document.createElement("span");hint.textContent=railHint;hint.style.fontSize="10px";hint.style.color="#adbdc9";e.append(hint)}
  if(behind){const hint=document.createElement("span");hint.textContent="LEFT BEHIND";hint.style.color="#e9b691";e.append(hint)}
 }
-/* Display units only. Keep the multiplier fixed for a city's lifetime so
-   revealing stations, changing service and resuming never rewrite past trips.
-   Each abstract passenger represents 250 journeys per million scenario residents.
-   Money uses the same multiplier: fare revenue per displayed journey therefore
-   retains the existing common-dollar fare, including city fare multipliers.
-   Never use these helpers in accounting, routing, capacity or save data. */
-function cityDisplayScale(c=city||CITIES[cityId]){
- const pop=Number.isFinite(c?.pop)&&c.pop>0?c.pop:1;
- const unit=c?.popUnit==='K'?1e3:c?.popUnit==='B'?1e9:1e6;
- return Math.max(1,pop*unit/4000);
-}
+/* Passenger estimates use a fixed group size. Money has a separate, fixed USD unit. Internal trip counts are unchanged by display scaling. */
+function cityDisplayScale(){return PASSENGERS_PER_AGENT}
 function compactQuantity(n){
  if(!Number.isFinite(n))return '0';
  const sign=n<0?'−':'',a=Math.abs(n);
@@ -4285,9 +4277,9 @@ function compactQuantity(n){
 }
 function moneyText(n,signed=false){
  const sign=n<0?'−':signed?'+':'';
- return sign+'$'+compactQuantity(Math.abs(n)*cityDisplayScale());
+ return sign+'$'+compactQuantity(Math.abs(n)*USD_PER_CREDIT);
 }
-function scaleRiders(n){return compactQuantity(n*cityDisplayScale())}
+function scaleRiders(n){return compactQuantity(passengerCount(n))}
 function waitText(n){return n>=60?(n/60).toFixed(1)+"H":Math.round(n)+"M"}
 function flowRates(){
  if(ecoSeries.length)return{income:ecoSeries.at(-1)[0],cost:ecoSeries.at(-1)[1],sampled:true};
@@ -4298,7 +4290,7 @@ function drawFlow(){const r=flowRates(),max=Math.max(1,r.income,r.cost),net=r.in
 function hudTick(){
  if(!city)return;const gm=Math.floor(simS*GM_PER_S),day=Math.floor(gm/1440)+1,h=String(Math.floor(gm%1440/60)).padStart(2,"0"),m=String(gm%60).padStart(2,"0");
  $("hCity").textContent=city.name;$("hCity").classList.remove("twoCity");$("hClock").textContent="DAY "+day+" · "+h+":"+m;$("metrics").replaceChildren();
- const texts=[...(isOp()?["FUNDS "+moneyText(budget)]:[]),"RIDERS "+scaleRiders(delivered),"STATIONS "+stations.filter(s=>s.emerged&&!s.dead&&!s.ferryKey&&!s.infill).length+"/"+stations.filter(s=>!s.dead&&!s.ferryKey&&!s.infill).length,"AVG TRIP "+dashboardHudTrip(),"WAITING "+dashboardHudWaiting()];
+ const texts=[...(isOp()?["FUNDS "+moneyText(budget)]:[]),"RIDERS "+scaleRiders(delivered),"STATIONS "+stations.filter(s=>s.emerged&&!s.dead&&!s.ferryKey&&!s.infill).length+"/"+stations.filter(s=>!s.dead&&!s.ferryKey&&!s.infill).length,"AVG TRIP "+dashboardHudTrip(),"WAITING ≈"+scaleRiders(dashboardHudWaiting())];
  texts.forEach((t,i)=>{if(i)$("metrics").append(document.createElement("br"));$("metrics").append(document.createTextNode(t))});
  $("flowButton").style.display=isOp()?"flex":"none";if(isOp())drawFlow();lineInfo();syncMapKey();
 }
@@ -4476,7 +4468,7 @@ function addMapCards(c){const cards=helpCards(true,c);if(!cards.length)return;co
 function showClsLegend(){
  if(compactCityGuide(city)){info(city.name,[]);addStationLegend(city);addModeDetails(city);addCitySources(city);return;}
  const text=[],L=lines[selLine];
- if(L?.paths.length)text.push("Busiest section is the highest recent departure occupancy in either direction, including current trains. It is not a whole-line average.");
+ if(L?.paths.length)text.push("Peak load is the highest departure occupancy in the last 30 journey minutes, including trains currently on board. It is not a whole-line average.");
  if(L)text.push(clsName(clsKeyOf(L))+" "+(L.id+1)+" · "+L.stops.length+" stops · "+L.trains.length+" trains · "+Math.round(kms(lineLength(L)))+" km"+(L.traffic?". Shared street traffic reduces capacity by one per car.":"."));
  text.push(CITY_COPY[cityId][2]);if(city.nobuildClasses?.length)text.push(city.nobuildMsg);
  if(city.crossings?.length&&!city.quietCrossings)for(const cl of classesFor(city)){const gates=city.crossings.filter(g=>(!g.cls||g.cls.includes(cl))&&!(city.landlocked||[]).includes(cl));if(gates.length)text.push(clsName(cl)+": "+gates.map(g=>g.name).join(", ")+".")}
@@ -4487,7 +4479,7 @@ function showClsLegend(){
  const p=document.createElement("p");p.textContent="Metro and intercity trains can both serve transport junctions. Terrain and regional rules still apply.";$("infoBody").append(p);
 }
 $("metricInfo").onclick=showArrivalInfo;
-$("flowButton").onclick=()=>{const r=flowRates();info("FINANCES",["INCOME "+moneyText(r.income)+" / DAY · COSTS "+moneyText(r.cost)+" / DAY",r.sampled?"Green is income from fares and subsidy; red is operating costs. These are recent daily rates.":"Green is subsidy; red is upkeep. Fare income appears after the first operating sample.","Funds are the remaining budget, not total revenue. Construction and rolling-stock purchases come directly from it.","Amounts use a common game dollar. The typical fare is $"+(FARE*(city.fareMult||1)).toFixed(2)+" per completed transit journey."])};
+$("flowButton").onclick=()=>{const r=flowRates();info("FINANCES",["INCOME "+moneyText(r.income)+" / DAY · COSTS "+moneyText(r.cost)+" / DAY",r.sampled?"Green is income from fares and subsidy; red is operating costs. These are recent daily rates.":"Green is subsidy; red is upkeep. Fare income appears after the first operating sample.","Funds are the remaining budget, not total revenue. Construction and rolling-stock purchases come directly from it.","All amounts are USD. The typical fare is $"+(FARE*USD_PER_CREDIT/PASSENGERS_PER_AGENT*(city.fareMult||1)).toFixed(2)+" per estimated passenger journey. Capital grants fund construction; a game day is an accelerated planning period."])};
 $("infoClose").onclick=()=>closeModal("infoCard");$("bHelp").onclick=()=>{renderHelp();showModal("helpCard")};$("helpOk").onclick=()=>closeModal("helpCard");
 $("modeInfo").onclick=()=>info("MODE",["OPERATOR · Budgets, fares and rush hours. The city grows. No sudden death.","ATELIER · The same living network, with unlimited construction."]);
 $("cardOp").onclick=()=>{mode="operator";updateSelection()};$("cardAt").onclick=()=>{mode="atelier";updateSelection()};$("bSeed").onclick=()=>{seed=(Math.random()*1e9)|0;updateSelection()};
@@ -4955,7 +4947,7 @@ function migratedReleaseTime(d,raw){
 function migratedGrowthOffset(d,raw){
  return String(raw.version)==='8.62'?d.simS*1.5:d.growthClockOffset;
 }
-function loadSave(raw){closeDashboard();trackTapCycle=null;const d=validateSave(raw);exitJourneyView({quiet:true,restore:false});journeyPin=null;resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};cityId=d.cityId;city=savedCityFor(d);calibrateTransport(city,d.cityId);organicCity(city);rebaseJourneyClock(d,raw);mode=d.mode;seed=d.seed;rngState=d.rngState;simS=d.simS;resetServiceWait();waitHistory=d.waitHistory;deliveryLog=d.deliveryLog;journeyOutcomes=d.journeyOutcomes;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=migratedReleaseTime(d,raw);growthClockOffset=migratedGrowthOffset(d,raw);weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;lines=d.lines;walking=d.walking;connectionGrowth=d.connectionGrowth;showPopulation=d.showPopulation;showDensity=d.showDensity;showStations=d.showStations;showUnconnected=d.showUnconnected;loadDashboard(d.dashboard);syncGrowthControl();for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}repairLineColours();computeMetroCap();const authored=repairAuthoredInfrastructure();repairCanalMetroRoutes();smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();const tidied=tidySavedAlignments();repairChartedAlignments();refreshSavedEngineering();selLine=-1;tool=null;undoStack=[];recountPassengers();restoreScheduledStations(raw);const supplied=updateServiceRoster(d);if(!d.generated)generated=passengers+delivered+lost;buildUrbanLayer();rebuildRouting();restoreTidiedTrains(tidied);const randstadUpdate=updateRandstadSave();const barcelonaUpdate=updateBarcelonaSave();fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(authored.remaining?"SAVE LOADED · "+authored.remaining+" OLD ALIGNMENT(S) KEPT":adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":tidied.remaining?"SAVE LOADED · "+tidied.remaining+" OLD ALIGNMENT(S) KEPT":tidied.changed?"SAVE LOADED · TRACKS TIDIED":"SAVE LOADED · "+city.name);if(supplied)toast("MAP UPDATED · "+supplied+" MORE NEIGHBOURHOODS WILL OPEN");if(barcelonaUpdate)toast("BARCELONA UPDATED · "+barcelonaUpdate.retired+" DUPLICATE STOPS MERGED · "+barcelonaUpdate.shuttles+" TOWN SHUTTLES REFUNDED");if(randstadUpdate)toast(randstadUpdate.ferries?"RANDSTAD UPDATED · FERRIES REFUNDED":"RANDSTAD UPDATED · COMPACT TOWN CATCHMENTS");autoSave(true)}
+function loadSave(raw){closeDashboard();trackTapCycle=null;const d=validateSave(raw);exitJourneyView({quiet:true,restore:false});journeyPin=null;resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};cityId=d.cityId;city=savedCityFor(d);calibrateTransport(city,d.cityId);calibrateEconomy(city,d.cityId);migrateEconomy(d,raw);organicCity(city);rebaseJourneyClock(d,raw);mode=d.mode;seed=d.seed;rngState=d.rngState;simS=d.simS;resetServiceWait();waitHistory=d.waitHistory;deliveryLog=d.deliveryLog;journeyOutcomes=d.journeyOutcomes;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=migratedReleaseTime(d,raw);growthClockOffset=migratedGrowthOffset(d,raw);weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;lines=d.lines;walking=d.walking;connectionGrowth=d.connectionGrowth;showPopulation=d.showPopulation;showDensity=d.showDensity;showStations=d.showStations;showUnconnected=d.showUnconnected;loadDashboard(d.dashboard);syncGrowthControl();for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}repairLineColours();computeMetroCap();const authored=repairAuthoredInfrastructure();repairCanalMetroRoutes();smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();const tidied=tidySavedAlignments();repairChartedAlignments();refreshSavedEngineering();selLine=-1;tool=null;undoStack=[];recountPassengers();restoreScheduledStations(raw);const supplied=updateServiceRoster(d);if(!d.generated)generated=passengers+delivered+lost;buildUrbanLayer();rebuildRouting();restoreTidiedTrains(tidied);const randstadUpdate=updateRandstadSave();const barcelonaUpdate=updateBarcelonaSave();fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(authored.remaining?"SAVE LOADED · "+authored.remaining+" OLD ALIGNMENT(S) KEPT":adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":tidied.remaining?"SAVE LOADED · "+tidied.remaining+" OLD ALIGNMENT(S) KEPT":tidied.changed?"SAVE LOADED · TRACKS TIDIED":"SAVE LOADED · "+city.name);if(supplied)toast("MAP UPDATED · "+supplied+" MORE NEIGHBOURHOODS WILL OPEN");if(barcelonaUpdate)toast("BARCELONA UPDATED · "+barcelonaUpdate.retired+" DUPLICATE STOPS MERGED · "+barcelonaUpdate.shuttles+" TOWN SHUTTLES REFUNDED");if(randstadUpdate)toast(randstadUpdate.ferries?"RANDSTAD UPDATED · FERRIES REFUNDED":"RANDSTAD UPDATED · COMPACT TOWN CATCHMENTS");autoSave(true)}
 // New-game roster budgets. Saved station lists are not regenerated on load.
 // Named destinations are additional to count in the legacy generator.
 for(const id of ['gba','berlin','mumbai','newyork','sydney','mexicocity','seoul','bangkok','rio','lisbon']){
@@ -4994,7 +4986,7 @@ function suburbanZoomScale(){
 }
 
 
-function startGame(){closeDashboard();exitJourneyView({quiet:true,restore:false});trackTapCycle=null;journeyPin=null;connectionGrowth=true;showPopulation=showDensity=showStations=true;showUnconnected=false;syncGrowthControl();resetServiceWait();resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=growthClockOffset=0;resetDelivery(0);resetJourneyOutcomes(0);resetDashboard(0);speedIdx=city.startPaused?0:1;nextEmergeAt=DAY_SECONDS*.7*STATION_RELEASE_SCALE;pendingOffer=null;fitS0=0;generating=true;try{genStations();rosterDraw();balanceGivenStations();assignRoleGaps();compactRoster();updateServiceRoster()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
+function startGame(){economyAdoptedAt=null;closeDashboard();exitJourneyView({quiet:true,restore:false});trackTapCycle=null;journeyPin=null;connectionGrowth=true;showPopulation=showDensity=showStations=true;showUnconnected=false;syncGrowthControl();resetServiceWait();resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=growthClockOffset=0;resetDelivery(0);resetJourneyOutcomes(0);resetDashboard(0);speedIdx=city.startPaused?0:1;nextEmergeAt=DAY_SECONDS*.7*STATION_RELEASE_SCALE;pendingOffer=null;fitS0=0;generating=true;try{genStations();rosterDraw();balanceGivenStations();assignRoleGaps();compactRoster();updateServiceRoster()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
 $("resumeBtn").onclick=()=>{const o=readAuto();if(!o){toast("NO SAVED GAME");return}try{loadSave(o.g);seenHelp=true}catch(e){toast("COULD NOT READ THE SAVE · ORIGINAL KEPT")}};
 $("mSave").onclick=()=>{$("menuPop").style.display="none";downloadBlob(new Blob([JSON.stringify(snapshotGame())],{type:"application/json"}),"intercity-"+cityId+"-save.json");toast("SAVE EXPORTED")};
 $("mLoad").onclick=()=>{$("menuPop").style.display="none";$("fileIn").click()};$("titleLoad").onclick=()=>$("fileIn").click();$("fileIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{loadSave(JSON.parse(await f.text()))}catch(err){toast("COULD NOT READ SAVE · CURRENT CITY KEPT")}};
@@ -5199,7 +5191,7 @@ function drawFerryVessel(p,L,t){
  ctx.beginPath();ctx.moveTo(6.4*u,0);ctx.lineTo(2.8*u,-2.8*u);ctx.lineTo(-5.2*u,-2.8*u);ctx.lineTo(-5.8*u,0);ctx.lineTo(-5.2*u,2.8*u);ctx.lineTo(2.8*u,2.8*u);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.beginPath();ctx.roundRect(-2.6*u,-1.3*u,5.2*u,2.6*u,.6*u);ctx.stroke();ctx.restore();
 }
-function ferryUpkeep(){let cost=0;for(const L of lines){cost+=L.trains.length*(isFerry(L)?1.6:UPK.train)*(city.modeUpkeep?.[clsKeyOf(L)]??1);for(const t of L.trains)cost+=t.cars*UPK.car*(city.modeUpkeep?.[clsKeyOf(L)]??1);if(!isFerry(L))cost+=kms(lineLength(L))*UPK.km}cost+=stations.filter(s=>s.ferryKey).length*.25;return cost}
+function ferryUpkeep(){return operatingUpkeep()}
 function resetFerries(){walking=[];walkClock=0;walkLinks=new Map();shoreAccessMemo.clear();ferryAccessRoster='';ferryPlanning=null;growthClock=0;lastPopulationKey='';populationVersion++;renderFerryPanel()}
 function demandPoint(s){const f=s.ferryKey&&ferrySite(s.ferryKey);return f?{x:f.land[0],y:f.land[1]}:s}
 
@@ -5900,7 +5892,7 @@ function updateRandstadSave(){
  for(const s of docks){const shore=ferrySite(s.ferryKey)?.land,target=nearest(shore?{x:shore[0],y:shore[1]}:s);if(target)move.set(s.id,target.id)}
  if(!oldRevision&&!boats.length&&!move.size)return null;
  // Refund current replacement value. Previously paid line slots stay owned.
- const refund=boats.reduce((n,L)=>n+L.paths.reduce((v,p)=>v+routePrice(L,p),0)+L.trains.reduce((v,t)=>v+trainPrice(L)+t.cars*COST.car,0),0)+docks.length*FERRY.landingCost;
+ const refund=boats.reduce((n,L)=>n+L.paths.reduce((v,p)=>v+routePrice(L,p),0)+L.trains.reduce((v,t)=>v+trainPrice(L)+t.cars*carPrice(L),0),0)+docks.length*FERRY.landingCost;
  const lineIds=new Map(kept.map((L,i)=>[L.id,i]));
  const retarget=r=>{r.dest=move.get(r.dest)??r.dest;if(r.lastLi!=null&&r.lastLi>=0)r.lastLi=lineIds.get(r.lastLi)??-1;if(r.key!=null)r.key=r.dest+':'+(r.lastLi??-1);return r};
  // All passenger containers must move together. Never renumber stations:
@@ -6780,7 +6772,7 @@ function journeyTrackStyle(L,S){
  return {...S,selected:false,ghost:true,doubleRail:false,colour:light?'#818b90':'#788b9c',alpha:light?.34:.32,width:pxr(L.express?1.6:1.2),rail:pxr(1)};
 }
 function snapshotGame(){
- const d=snapshotGameCore();d.journeyClock=928;d.journeyMinutesPerSecond=journeyMinutesPerSecond();
+ const d=snapshotGameCore();d.economyRevision=941;d.economyAdoptedAt=economyAdoptedAt;d.journeyClock=928;d.journeyMinutesPerSecond=journeyMinutesPerSecond();
  d.walking=d.walking.filter(w=>!isWatchedRider(w.r));
  for(const s of d.stations){s.q=s.q.filter(r=>!isWatchedRider(r));s.overflow=s.overflow.filter(r=>!isWatchedRider(r));}
  for(const L of d.lines)for(const t of L.trains)t.riders=t.riders.filter(r=>!isWatchedRider(r));
@@ -6821,7 +6813,7 @@ function updateBarcelonaSave(){
  for(const L of lines){if(L.stops.length<2||!L.stops.some(id=>aliases.has(id)))continue;const hubs=new Set(L.stops.map(id=>aliases.get(id)??id));if(hubs.size===1)candidates.set(L.id,[...hubs][0])}
  const removed=lines.filter(L=>candidates.has(L.id)&&lines.some(K=>!candidates.has(K.id)&&K.paths.length&&K.trains.length&&K.stops.includes(candidates.get(L.id))));
  const removedIds=new Set(removed.map(L=>L.id)),kept=lines.filter(L=>!removedIds.has(L.id)),used=new Set(kept.flatMap(L=>L.stops)),move=new Map([...aliases].filter(([id])=>!used.has(id)));
- const refund=[...move.keys()].filter(id=>stations[id].inter).length*COST.inter+removed.reduce((n,L)=>n+L.paths.reduce((v,P)=>v+routePrice(L,P),0)+L.trains.reduce((v,t)=>v+trainPrice(L)+t.cars*COST.car,0),0);
+ const refund=[...move.keys()].filter(id=>stations[id].inter).length*COST.inter+removed.reduce((n,L)=>n+L.paths.reduce((v,P)=>v+routePrice(L,P),0)+L.trains.reduce((v,t)=>v+trainPrice(L)+t.cars*carPrice(L),0),0);
  if(move.size||removed.length){
   const lineIds=new Map(kept.map((L,i)=>[L.id,i]));
   const retarget=r=>{r.dest=move.get(r.dest)??r.dest;if(r.lastLi!=null&&r.lastLi>=0)r.lastLi=lineIds.get(r.lastLi)??-1;if(r.key!=null)r.key=journeyQueueKey(r);return r};
@@ -7061,7 +7053,7 @@ function dashboardDelta(value,unit='min'){return value==null?'No earlier sample'
 function dashboardChart(rows,series,label){
  const W=640,H=160,pad=42,values=rows.flatMap(b=>series.map(s=>s.value(b))).filter(Number.isFinite),max=Math.max(1,...values),min=Math.min(0,...values),first=rows[0]?.day??0,last=rows.at(-1)?.day??first;
  const x=b=>pad+(b.day-first)/Math.max(1,last-first)*(W-pad-12),y=v=>H-20-(v-min)/(max-min)*(H-36);
- let body='';for(const tick of [min,(min+max)/2,max]){const yy=y(tick).toFixed(1);body+='<path d="M42 '+yy+'H628" stroke="#2b3b49" fill="none"/><text x="34" y="'+(Number(yy)+4)+'" text-anchor="end" fill="#a9bdcb" font-size="11">'+dashboardNumber(tick,max>=100?0:1)+'</text>'}
+ let body='';for(const tick of [min,(min+max)/2,max]){const yy=y(tick).toFixed(1);body+='<path d="M42 '+yy+'H628" stroke="#2b3b49" fill="none"/><text x="34" y="'+(Number(yy)+4)+'" text-anchor="end" fill="#a9bdcb" font-size="11">'+(Math.abs(tick)>=1000?(tick<0?'−':'')+compactQuantity(Math.abs(tick)):dashboardNumber(tick,max>=100?0:1))+'</text>'}
 
  for(const s of series){let previous=null;for(const b of rows){const v=s.value(b);if(!Number.isFinite(v)){previous=null;continue}const p={x:x(b),y:y(v),day:b.day};if(previous&&p.day===previous.day+1)body+='<path d="M'+previous.x.toFixed(2)+' '+previous.y.toFixed(2)+'L'+p.x.toFixed(2)+' '+p.y.toFixed(2)+'" stroke="'+s.colour+'" stroke-width="2.5" fill="none"/>';body+='<circle cx="'+p.x.toFixed(2)+'" cy="'+p.y.toFixed(2)+'" r="2.6" fill="'+s.colour+'"/>';previous=p;}}
  return '<svg role="img" aria-label="'+label+'" viewBox="0 0 '+W+' '+H+'">'+body+'</svg>';
@@ -7073,23 +7065,23 @@ function renderDashboard(){
  const section=(title,note)=>{const e=add(body,'section',null,'dashSection');add(e,'h2',title);if(note)add(e,'p',note,'dashNote');return e};
  const cards=(parent,rows)=>{const grid=add(parent,'div',null,'dashCards');for(const[label,value,unit,note]of rows){const card=add(grid,'div',null,'dashCard');add(card,'span',label,'dashLabel');add(card,'strong',value);add(card,'span',unit,'dashUnit');if(note)add(card,'small',note)}return grid};
  const chart=(parent,rows,series,label)=>{if(!rows.some(b=>series.some(s=>Number.isFinite(s.value(b))))){add(parent,'p','Collecting daily observations.','dashEmpty');return}const div=add(parent,'div',null,'dashChart');div.innerHTML=dashboardChart(rows,series,label);const legend=add(parent,'div',null,'dashChartLegend');for(const s of series){const key=add(legend,'span',s.label);key.style.color=s.colour}add(parent,'small','Day '+(rows[0].day+1)+' to '+(rows.at(-1).day+1)+'. Gaps mean no observations.','dashNote')};
- const experience=section('Journey experience',s.completed?dashboardNumber(s.completed,0)+' completed trips with full detail. Each simulated passenger has equal weight.':'New journeys will build this report. Existing lifetime totals are retained; past ride and distance detail is unavailable.');
+ const experience=section('Journey experience',s.completed?dashboardNumber(passengerCount(s.completed),0)+' estimated completed trips. Each model group represents 25 passengers; times and loads come from the simulation.':'New journeys will build this report. Existing lifetime totals are retained; past ride and distance detail is unavailable.');
  cards(experience,[['Average journey',dashboardNumber(m.elapsed),'minutes',dashboardDelta(m.elapsedDelta)],['On board',dashboardNumber(m.ride),'minutes','Includes station and signal dwell'],['Waiting',dashboardNumber(m.wait),'minutes',dashboardDelta(m.waitDelta)],['Walking',dashboardNumber(m.walk),'minutes','Only walks in the passenger network'],['Distance travelled',dashboardNumber(m.km),'km per journey','Train, ferry and walking distance'],['Transfers',dashboardNumber(m.transfers),'per journey','Changes between services'],['90% within',m.p90==null?'—':m.p90>1440?'1440+':dashboardNumber(m.p90,0),'minutes','Approximate histogram upper bound'],['Journey burden',dashboardNumber(m.pain),'weighted minutes',dashboardDelta(m.painDelta)]]);
  const formula=add(experience,'details',null,'dashDetails');add(formula,'summary','Burden and comparisons');add(formula,'p','Burden = on-board minutes + 2 × waiting + 2 × walking + 5 × transfers. This is a game-design indicator, not a satisfaction survey. Lower means less time and interchange effort.');add(formula,'p','Comparisons use the preceding period of the same length in this save. They are not a score against another city or a target timetable. Trip lengths and demand can change as the city grows. Travel averages include completed trips only, so inspect pending and abandoned trips too.');
  chart(experience,report.rows,[{label:'Journey minutes',colour:'#97d9dd',value:b=>b.completed?b.elapsed/b.completed:null},{label:'Waiting minutes',colour:'#e0b982',value:b=>b.completed?b.wait/b.completed:null}], 'Daily average journey and waiting minutes');
  const efficiency=section('Distance and burden');cards(efficiency,[['On-board speed',dashboardNumber(m.rideKmh),'km/h','Includes dwell; weighted by riding time'],['End-to-end speed',dashboardNumber(m.endToEndKmh),'km/h','Includes waiting and walking'],['Distance / direct',dashboardNumber(m.detour,2),'× straight-line distance','Geography can require detours']]);chart(efficiency,report.rows,[{label:'Weighted minutes',colour:'#d5b1e8',value:b=>b.completed?b.pain/b.completed:null}], 'Daily average weighted journey burden');
  const demand=section('Demand and outcomes','Departure groups below exclude today, allowing at least one game day to finish. Pending trips are shown separately, never treated as completed.');
- cards(demand,[['Departures',dashboardNumber(c.asked,0),'tracked trips'],['Completed',c.asked?dashboardNumber(c.departureDone/c.asked*100,1)+'%':'—',dashboardNumber(c.departureDone,0)+' trips'],['Still travelling / waiting',dashboardNumber(Math.max(0,c.asked-c.departureDone-c.departureLost),0),'from those departures'],['Abandoned',dashboardNumber(c.departureLost,0),'from those departures']]);
- chart(demand,report.rows.filter(b=>b.day<report.end-1),[{label:'Completed %',colour:'#92cdaa',value:b=>b.asked?100*b.departureDone/b.asked:null},{label:'Abandoned %',colour:'#e29a9d',value:b=>b.asked?100*b.departureLost/b.asked:null}],'Daily departure cohort outcomes');add(demand,'p','Current period flows: '+dashboardNumber(s.asked,0)+' new requests · '+dashboardNumber(s.arrivals,0)+' arrivals · '+dashboardNumber(s.lost,0)+' abandoned. Arrivals can include older departures.','dashNote');
- const queues=section('Queues and interchange pressure');cards(queues,[['Waiting now',dashboardNumber(n.queued,0),'passengers'],['Current queue age',dashboardNumber(n.meanQueueWait),'minutes on average'],['Stops linked',n.linked+' / '+n.stops,'supplied catchments'],['Journeys routable',dashboardNumber(n.reachable,0)+'%','current demand estimate']]);
- chart(queues,report.rows,[{label:'Waiting at sample',colour:'#e0b982',value:b=>b.network?.queued??null},{label:'Trains / vessels',colour:'#97d9dd',value:b=>b.network?.trains??null}],'Daily queues and fleet counts');
+ cards(demand,[['Departures',dashboardNumber(passengerCount(c.asked),0),'tracked trips'],['Completed',c.asked?dashboardNumber(c.departureDone/c.asked*100,1)+'%':'—',dashboardNumber(passengerCount(c.departureDone),0)+' trips'],['Still travelling / waiting',dashboardNumber(passengerCount(Math.max(0,c.asked-c.departureDone-c.departureLost)),0),'from those departures'],['Abandoned',dashboardNumber(passengerCount(c.departureLost),0),'from those departures']]);
+ chart(demand,report.rows.filter(b=>b.day<report.end-1),[{label:'Completed %',colour:'#92cdaa',value:b=>b.asked?100*b.departureDone/b.asked:null},{label:'Abandoned %',colour:'#e29a9d',value:b=>b.asked?100*b.departureLost/b.asked:null}],'Daily departure cohort outcomes');add(demand,'p','Current period flows: '+dashboardNumber(passengerCount(s.asked),0)+' new requests · '+dashboardNumber(passengerCount(s.arrivals),0)+' arrivals · '+dashboardNumber(passengerCount(s.lost),0)+' abandoned. Arrivals can include older departures.','dashNote');
+ const queues=section('Queues and interchange pressure');cards(queues,[['Waiting now',dashboardNumber(passengerCount(n.queued),0),'passengers'],['Current queue age',dashboardNumber(n.meanQueueWait),'minutes on average'],['Stops linked',n.linked+' / '+n.stops,'supplied catchments'],['Journeys routable',dashboardNumber(n.reachable,0)+'%','current demand estimate']]);
+ chart(queues,report.rows,[{label:'Waiting at sample',colour:'#e0b982',value:b=>b.network?passengerCount(b.network.queued):null},{label:'Trains / vessels',colour:'#97d9dd',value:b=>b.network?.trains??null}],'Daily queues and fleet counts');
  const place=(parent,id,label)=>{const b=add(parent,'button',label+' ↗','dashPlace');b.type='button';b.onclick=()=>{closeDashboard();focusServicePlace(stations[id])}};
- add(queues,'h3','Largest queues now');if(!n.queues.length)add(queues,'p','No waiting passengers.','dashNote');for(const q of n.queues.slice(0,6))place(queues,q.id,journeyLabel(q.id)+' · '+dashboardNumber(q.count,0)+(q.routed?' waiting':' without a running service'));
- add(queues,'h3','Busiest transfer stops');const hubs=Object.entries(s.hubs).sort((a,b)=>b[1]-a[1]),hubTotal=hubs.reduce((v,h)=>v+h[1],0);if(!hubs.length)add(queues,'p','No recorded service changes in this period.','dashNote');for(const[id,count]of hubs.slice(0,6))if(stations[id])place(queues,Number(id),journeyLabel(Number(id))+' · '+dashboardNumber(count,0)+' changes · '+dashboardNumber(100*count/hubTotal,0)+'%');
+ add(queues,'h3','Largest queues now');if(!n.queues.length)add(queues,'p','No waiting passengers.','dashNote');for(const q of n.queues.slice(0,6))place(queues,q.id,journeyLabel(q.id)+' · '+dashboardNumber(passengerCount(q.count),0)+(q.routed?' waiting':' without a running service'));
+ add(queues,'h3','Busiest transfer stops');const hubs=Object.entries(s.hubs).sort((a,b)=>b[1]-a[1]),hubTotal=hubs.reduce((v,h)=>v+h[1],0);if(!hubs.length)add(queues,'p','No recorded service changes in this period.','dashNote');for(const[id,count]of hubs.slice(0,6))if(stations[id])place(queues,Number(id),journeyLabel(Number(id))+' · '+dashboardNumber(passengerCount(count),0)+' changes · '+dashboardNumber(100*count/hubTotal,0)+'%');
  const supply=section('Network and modes','Lengths count service alignments, including shared track. Activity counts observed boardings and passenger-kilometres during this period.');
- for(const mode of n.modes){const a=s.modes[mode.cl]||{boardings:0,pkm:0},card=add(supply,'article',null,'dashMode'),heading=add(card,'h3',null),glyph=add(heading,'span',null,'dashGlyph');glyph.innerHTML=chipGlyph(mode.cl);add(heading,'span',clsName(mode.cl));add(card,'p',transportSpeedDescription(mode.cl),'dashNote');cards(card,[['Lines',mode.lines+' / '+mode.allowance,'in use'],['Service length',dashboardNumber(mode.km),'km'],['Vehicles',dashboardNumber(mode.trains,0),'deployed'],['Boardings',dashboardNumber(a.boardings,0),'this period'],['Passenger-distance',dashboardNumber(a.pkm,0),'passenger-km']]);}
- const services=add(supply,'details',null,'dashDetails');add(services,'summary','Every service: length, fleet and load');for(const L of lines.filter(L=>L.stops.length)){const row=add(services,'div',null,'dashService'),label=add(row,'b',clsName(clsKeyOf(L))+' '+(L.id+1));label.style.color=diagramLineColour(L);const cycle=service.circuits?.[L.id],interval=Number.isFinite(cycle)&&L.trains.length?cycle/L.trains.length*journeyMinutesPerSecond():null;add(row,'span',L.stops.length+' stops · '+dashboardNumber(kms(lineLength(L)))+' / '+dashboardNumber(lineMaxKm(L),0)+' km · '+L.trains.length+' vehicles');add(row,'small','Busiest recent section '+Math.round(peakSectionLoad(L)*100)+'% · ideal mean interval '+dashboardNumber(interval)+' min');}add(services,'p','Intervals assume evenly spaced vehicles over the full cycle. Signals, crowding and bunching can make actual waits longer.','dashNote');
- if(isOp()){const money=section('Finances','Game credits. Gross purchases include track, stations, vehicles and upgrades. Refunds appear in the balance rather than reducing this purchase total.');cards(money,[['Funds now',moneyText(n.budget),'credits'],['Operating income',moneyText(s.income),'this period'],['Operating cost',moneyText(s.operating),'this period'],['Grants',moneyText(s.grants),'this period'],['Gross purchases',moneyText(s.purchases),'this period']]);chart(money,report.rows,[{label:'Funds at sample',colour:'#92cdaa',value:b=>b.network?.budget??null}],'Daily available funds');}
+ for(const mode of n.modes){const a=s.modes[mode.cl]||{boardings:0,pkm:0},card=add(supply,'article',null,'dashMode'),heading=add(card,'h3',null),glyph=add(heading,'span',null,'dashGlyph');glyph.innerHTML=chipGlyph(mode.cl);add(heading,'span',clsName(mode.cl));add(card,'p',transportSpeedDescription(mode.cl),'dashNote');cards(card,[['Lines',mode.lines+' / '+mode.allowance,'in use'],['Service length',dashboardNumber(mode.km),'km'],['Vehicles',dashboardNumber(mode.trains,0),'deployed'],['Boardings',dashboardNumber(passengerCount(a.boardings),0),'this period'],['Passenger-distance',dashboardNumber(passengerCount(a.pkm),0),'passenger-km']]);}
+ const services=add(supply,'details',null,'dashDetails');add(services,'summary','Every service: length, fleet and load');for(const L of lines.filter(L=>L.stops.length)){const row=add(services,'div',null,'dashService'),label=add(row,'b',clsName(clsKeyOf(L))+' '+(L.id+1));label.style.color=diagramLineColour(L);const cycle=service.circuits?.[L.id],interval=Number.isFinite(cycle)&&L.trains.length?cycle/L.trains.length*journeyMinutesPerSecond():null;add(row,'span',L.stops.length+' stops · '+dashboardNumber(kms(lineLength(L)))+' / '+dashboardNumber(lineMaxKm(L),0)+' km · '+L.trains.length+' vehicles');add(row,'small','Peak load (last 30 min) '+Math.round(peakSectionLoad(L)*100)+'% · on board now '+Math.round(averageFleetLoad(L)*100)+'% · ideal mean interval '+dashboardNumber(interval)+' min');}add(services,'p','Intervals assume evenly spaced vehicles over the full cycle. Signals, crowding and bunching can make actual waits longer.','dashNote');
+ if(isOp()){const money=section('Finances','USD. Regional track prices cover activating existing railway corridors; urban track prices cover simplified new infrastructure. Capital grants fund expansion. Gross purchases exclude refunds. Finance history before this calibration is omitted.');cards(money,[['Funds now',moneyText(n.budget),'USD'],['Operating income',moneyText(s.income),'this period'],['Operating cost',moneyText(s.operating),'this period'],['Grants',moneyText(s.grants),'this period'],['Gross purchases',moneyText(s.purchases),'this period']]);chart(money,report.rows,[{label:'Funds at sample',colour:'#92cdaa',value:b=>b.network?b.network.budget*USD_PER_CREDIT:null}],'Daily available funds in USD');}
  const methods=section('About this report');add(methods,'p','Retains up to 90 game days. Journey minutes use the same transport clock as the passenger simulation; a game day is the growth calendar. Queue cohorts preserve weighted averages when compacted, so distribution and percentile figures are indicative. The simulated traveller is excluded from statistics.');add(methods,'p','The game is paused while this page is open. Close it to resume at the same speed. No routes are recalculated for charts, and new journeys supply the missing detail in older saves.');
 }
 function installDashboard(){
@@ -7141,6 +7133,59 @@ function transportDynamicsLimit(P,s,dir,br){
  else{while(lo<hi){const mid=(lo+hi)>>1;if(spans[mid].s0<=s)lo=mid+1;else hi=mid}for(let i=lo-1;i>=0;i--){const q=spans[i],ahead=s-q.s1;if(ahead>horizon)break;limit=Math.min(limit,Math.sqrt(q.reverse*q.reverse+2*br*Math.max(0,ahead)))}}
  return limit;
 }
+
+/* 0.941: representative passenger groups and one USD ledger. The planning
+   calendar is deliberately accelerated. These are scenario investment prices,
+   not quotations for complete civil-engineering projects. */
+const PASSENGERS_PER_AGENT=25,USD_PER_CREDIT=1000000;
+const DEMAND_FACTORS={tokyo:3,gba:8,rotterdam:8,rhineruhr:5,london:4,barcelonaregion:8,mumbairegion:8,newyork:1.5};
+const INVESTMENT={metro:{track:25,train:12,car:6,upkeep:.006},suburban:{track:3,train:18,car:9,upkeep:.008},bullet:{track:12,train:40,car:20,upkeep:.015},tram:{track:12,train:4,car:2,upkeep:.003},monorail:{track:30,train:10,car:5,upkeep:.005},ferry:{track:0,train:9,car:0,upkeep:.004},cable:{track:19,train:.6,car:.3,upkeep:.0005},hill:{track:25,train:3,car:1.5,upkeep:.002}};
+let economyAdoptedAt=null;
+function passengerCount(n){return Math.max(0,n)*PASSENGERS_PER_AGENT}
+function investmentFor(L,c=city){return INVESTMENT[modeKind(clsKeyOf(L),c)]||INVESTMENT.suburban}
+function carPrice(L){return L?investmentFor(L).car:INVESTMENT.metro.car}
+function calibrateEconomy(c,id){if(c.economyCalibration===941)return;c.economyCalibration=941;c.economyProfileId=id;c.startBudget=(c.startBudget||800)*3;c.subsidyMult=(c.subsidyMult||1)*4;c.cashDrop=(c.cashDrop||50)*4}
+function demandCalibrationFactor(){
+ const target=DEMAND_FACTORS[city.economyProfileId||cityId]||1;
+ const total=stations.filter(s=>!s.dead&&!s.ferryKey).length,active=stations.filter(s=>s.emerged&&!s.dead&&!s.ferryKey).length;
+ const maturity=clamp((active-12)/Math.max(40,total-12),0,1),adoption=economyAdoptedAt==null?1:clamp((simS-economyAdoptedAt)/(6*DAY_SECONDS),0,1);
+ return 1+(target-1)*maturity*adoption;
+}
+function investmentRoutePrice(L,p){
+ if(isFerry(L))return 0;const length=pathLen(p.pts);if(!length)return 0;
+ const rate=investmentFor(L).track,e=p.engineering||engineeringProfile(L,p.pts);
+ const base=kms(length)*rate*(city.trackCostMult||1),earth=kms(e.earthworkLength||0)*rate*2;
+ const wet=city.waterTrackExtra?.[clsKeyOf(L)]?kms(wetIntervals(p.pts).reduce((n,r)=>n+r.len,0))*city.waterTrackExtra[clsKeyOf(L)]*rate:0;
+ const crossing=pathCrossesWater(p.pts)&&!isCableLine(L)?COST.tunnel:0;
+ const tunnel=e.tunnel?(COST.tunnel+kms(e.tunnelLength)*rate*2.5)*(city.terrainTunnelMult||1):0;
+ const local=(londonTrackPremium(L,p.pts)+rhineRuhrTrackPremium(L,p.pts)+randstadTrackPremium(L,p.pts))*exf(L);
+ // Fixed portal/crossing charges are already USD millions. Never multiply
+ // them by the ratio between physical kilometres and drawing coordinates.
+ return(base+earth+wet+crossing+tunnel+local)*londonPriceMultiplier(L,p);
+}
+
+function operatingUpkeep(){let cost=0;for(const L of lines){const p=investmentFor(L);for(const t of L.trains)cost+=p.upkeep*(1+.55*t.cars);if(!isFerry(L))cost+=kms(lineLength(L))*.00015}return cost+stations.filter(s=>s.ferryKey).length*.0003}
+function migrateEconomy(d,raw){
+ economyAdoptedAt=Number.isFinite(raw.economyAdoptedAt)?Math.min(d.simS,Math.max(0,raw.economyAdoptedAt)):null;
+ if(raw.economyRevision===941)return;
+ d.budget*=3;d.ecoInc=d.ecoCost=d.ecoT=0;d.ecoSeries=[];economyAdoptedAt=d.simS;
+ // Old finance totals mixed population multipliers and game credits. Preserve
+ // measured journeys, but do not pretend those old accounts are USD history.
+ if(d.dashboard)for(const b of d.dashboard.bins){for(const k of ['income','operating','grants','purchases'])b[k]=0;if(b.network)b.network.budget*=3}
+ if(d.pendingOffer)for(const o of d.pendingOffer)if(o.k==='cash'&&o.amt)o.amt*=4;
+}
+function recordSectionLoad(L,key,load){
+ const width=5/journeyMinutesPerSecond(),bucket=Math.floor(simS/width);L.sectionLoads??=new Map();
+ let q=L.sectionLoads.get(key);if(!q||!Array.isArray(q.bins))q={bins:[]};q.bins=q.bins.filter(b=>b.bucket>=bucket-5);let b=q.bins.find(b=>b.bucket===bucket);if(!b){b={bucket,load:0};q.bins.push(b)}b.load=Math.max(b.load,load);q.time=simS;q.load=load;L.sectionLoads.set(key,q);
+}
+function recentPeakSectionLoad(L){
+ const bucket=Math.floor(simS/(5/journeyMinutesPerSecond()));let peak=0;
+ for(const q of L.sectionLoads?.values()||[])for(const b of q.bins||[])if(b.bucket>=bucket-5)peak=Math.max(peak,b.load);
+ for(const t of L.trains)peak=Math.max(peak,t.riders.filter(r=>!isWatchedRider(r)).length/((1+t.cars)*effCarCap(L)));
+ return clamp(peak,0,1);
+}
+function averageFleetLoad(L){let riders=0,capacity=0;for(const t of L.trains){riders+=t.riders.filter(r=>!isWatchedRider(r)).length;capacity+=(1+t.cars)*effCarCap(L)}return capacity?riders/capacity:0}
+for(const[id,c]of Object.entries(CITIES))calibrateEconomy(c,id);
 
 installDashboard();installJourneyControls();installIcon();syncGrowthControl();buildOverlay();installAtlasNavigation();$('networkFilter').onchange=applyNetworkFilter;let lastT=performance.now(),lastError=null,frameRequest=0,lastPaint=-Infinity;
 function scheduleFrame(){if(!frameRequest)frameRequest=requestAnimationFrame(frame)}
