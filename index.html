@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.941. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.942. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -839,7 +839,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.941";
+const VERSION="0.942";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -6772,7 +6772,7 @@ function journeyTrackStyle(L,S){
  return {...S,selected:false,ghost:true,doubleRail:false,colour:light?'#818b90':'#788b9c',alpha:light?.34:.32,width:pxr(L.express?1.6:1.2),rail:pxr(1)};
 }
 function snapshotGame(){
- const d=snapshotGameCore();d.economyRevision=941;d.economyAdoptedAt=economyAdoptedAt;d.journeyClock=928;d.journeyMinutesPerSecond=journeyMinutesPerSecond();
+ const d=snapshotGameCore();d.economyRevision=941;d.economyAdoptedAt=economyAdoptedAt;if(cityId==='lisbon')d.lisbonBalanceRevision=942;d.journeyClock=928;d.journeyMinutesPerSecond=journeyMinutesPerSecond();
  d.walking=d.walking.filter(w=>!isWatchedRider(w.r));
  for(const s of d.stations){s.q=s.q.filter(r=>!isWatchedRider(r));s.overflow=s.overflow.filter(r=>!isWatchedRider(r));}
  for(const L of d.lines)for(const t of L.trains)t.riders=t.riders.filter(r=>!isWatchedRider(r));
@@ -7167,7 +7167,7 @@ function investmentRoutePrice(L,p){
 function operatingUpkeep(){let cost=0;for(const L of lines){const p=investmentFor(L);for(const t of L.trains)cost+=p.upkeep*(1+.55*t.cars);if(!isFerry(L))cost+=kms(lineLength(L))*.00015}return cost+stations.filter(s=>s.ferryKey).length*.0003}
 function migrateEconomy(d,raw){
  economyAdoptedAt=Number.isFinite(raw.economyAdoptedAt)?Math.min(d.simS,Math.max(0,raw.economyAdoptedAt)):null;
- if(raw.economyRevision===941)return;
+ if(raw.economyRevision===941){if(d.cityId==='lisbon'&&raw.lisbonBalanceRevision!==942)economyAdoptedAt=d.simS;return;}
  d.budget*=3;d.ecoInc=d.ecoCost=d.ecoT=0;d.ecoSeries=[];economyAdoptedAt=d.simS;
  // Old finance totals mixed population multipliers and game credits. Preserve
  // measured journeys, but do not pretend those old accounts are USD history.
@@ -7187,6 +7187,28 @@ function recentPeakSectionLoad(L){
 function averageFleetLoad(L){let riders=0,capacity=0;for(const t of L.trains){riders+=t.riders.filter(r=>!isWatchedRider(r)).length;capacity+=(1+t.cars)*effCarCap(L)}return capacity?riders/capacity:0}
 for(const[id,c]of Object.entries(CITIES))calibrateEconomy(c,id);
 
+/* Lisbon 0.942: retain geography, stations and saved alignments.
+    The Tagus is crossed by mainline rail on the mapped bridge or by boat.
+    Metro tunnels may cross other rail lines on land. Street envelopes are
+    gameplay abstractions, not a requirement to reproduce Carris services. */
+Object.assign(CITIES.lisbon,{
+ modeGlyphs:{...CITIES.lisbon.modeGlyphs,express:'suburban'},
+ guideBandDim:{...CITIES.lisbon.guideBandDim,tram:.28},
+ // Both banks develop independently. The generic nearest-six connection
+ // probe can miss the viable bridge approach and freeze all further release.
+ connectedRelease:false,
+ openingFleet:{...CITIES.lisbon.openingFleet,metro:2,express:2},
+ classOverrides:{...CITIES.lisbon.classOverrides,
+  metro:{...CITIES.lisbon.classOverrides.metro,spacing:5,maxTrains:12},
+  express:{...CITIES.lisbon.classOverrides.express,spacing:10,maxTrains:14}},
+ classBlurbs:{...CITIES.lisbon.classBlurbs,
+  metro:'Choose underground routes on either bank. Metro lines can cross on land, but cannot cross the Tagus. Use Comboio at the bridge or a ferry.',
+  express:'Urban and regional trains. Choose through-routes and shared hubs on land. Across the Tagus, follow the 25 de Abril railway bridge.',
+  tram:'Local street trams and south-bank light rail. The muted street bands show the permitted areas. Choose services within them; hills and the river still matter.'}
+});
+// Existing games adopt this demand over six game days. This changes demand
+// and purchasable frequency, never the physical speed or displayed clock.
+DEMAND_FACTORS.lisbon=3;
 installDashboard();installJourneyControls();installIcon();syncGrowthControl();buildOverlay();installAtlasNavigation();$('networkFilter').onchange=applyNetworkFilter;let lastT=performance.now(),lastError=null,frameRequest=0,lastPaint=-Infinity;
 function scheduleFrame(){if(!frameRequest)frameRequest=requestAnimationFrame(frame)}
 function frame(now){
