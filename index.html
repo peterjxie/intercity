@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.942. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.943. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -839,7 +839,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.942";
+const VERSION="0.943";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -1941,6 +1941,7 @@ function districtOpeningDay(p){
 }
 function stationGrowthEligible(s){const day=(simS+growthClockOffset)/DAY_SECONDS/STATION_RELEASE_SCALE;if(city.corridorSeeds||city.phasedStations)return day>=(s.stage||0)*(city.releaseStageScale??1);return !city.urbanGrowth||day>=city.urbanGrowth.frontier.at(-1)[0]||dist(s,city.core)<=growthValue(city.urbanGrowth.frontier,day)+1e-7}
 function savedCityFor(d){
+ if(d.cityId==='istanbul'&&d.cityRevision==='istanbul-855')return ISTANBUL_0942;
  if(d.cityId==="barcelonaregion"&&d.cityRevision==="barcelona-region-0934")return BARCELONA_REGION_PREVIOUS;
  if(d.cityId==="newyork"&&["newyork-876","newyork-0925"].includes(d.cityRevision))return CITIES.newyork;
  if(d.cityId==="rotterdam"&&d.cityRevision==="randstad-0918")return RANDSTAD_0920;
@@ -4986,7 +4987,7 @@ function suburbanZoomScale(){
 }
 
 
-function startGame(){economyAdoptedAt=null;closeDashboard();exitJourneyView({quiet:true,restore:false});trackTapCycle=null;journeyPin=null;connectionGrowth=true;showPopulation=showDensity=showStations=true;showUnconnected=false;syncGrowthControl();resetServiceWait();resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=growthClockOffset=0;resetDelivery(0);resetJourneyOutcomes(0);resetDashboard(0);speedIdx=city.startPaused?0:1;nextEmergeAt=DAY_SECONDS*.7*STATION_RELEASE_SCALE;pendingOffer=null;fitS0=0;generating=true;try{genStations();rosterDraw();balanceGivenStations();assignRoleGaps();compactRoster();updateServiceRoster()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
+function startGame(){economyAdoptedAt=null;closeDashboard();exitJourneyView({quiet:true,restore:false});trackTapCycle=null;journeyPin=null;connectionGrowth=true;showPopulation=showDensity=showStations=true;showUnconnected=false;syncGrowthControl();resetServiceWait();resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};city=CITIES[cityId];organicCity(city);lines=[];stations=[];selLine=-1;lineSlots=3;tool=null;hiddenCls={};undoStack=[];rngState=seed;budget=city.startBudget||800;delivered=lost=generated=journeySum=transferSum=passengers=0;ecoInc=ecoCost=ecoT=0;ecoSeries=[];simS=weekPaid=growthClockOffset=0;resetDelivery(0);resetJourneyOutcomes(0);resetDashboard(0);speedIdx=city.startPaused?0:1;nextEmergeAt=DAY_SECONDS*.7*STATION_RELEASE_SCALE;pendingOffer=null;fitS0=0;generating=true;try{genStations();rosterDraw();balanceGivenStations();assignRoleGaps();compactRoster();updateServiceRoster();prepareIstanbulStations()}finally{generating=false}for(const s of stations)s.overflow=[];computeMetroCap();lines.push(newLineObj(0,city.startClass||"metro"));selLine=0;buildUrbanLayer();rebuildRouting();fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];$("overlay").style.display="none";document.body.classList.add("playing");running=true;startFerryPlanning(lines[0]);fitView();renderOffer();hudTick();autoSave(true)}
 $("resumeBtn").onclick=()=>{const o=readAuto();if(!o){toast("NO SAVED GAME");return}try{loadSave(o.g);seenHelp=true}catch(e){toast("COULD NOT READ THE SAVE · ORIGINAL KEPT")}};
 $("mSave").onclick=()=>{$("menuPop").style.display="none";downloadBlob(new Blob([JSON.stringify(snapshotGame())],{type:"application/json"}),"intercity-"+cityId+"-save.json");toast("SAVE EXPORTED")};
 $("mLoad").onclick=()=>{$("menuPop").style.display="none";$("fileIn").click()};$("titleLoad").onclick=()=>$("fileIn").click();$("fileIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{loadSave(JSON.parse(await f.text()))}catch(err){toast("COULD NOT READ SAVE · CURRENT CITY KEPT")}};
@@ -6772,7 +6773,7 @@ function journeyTrackStyle(L,S){
  return {...S,selected:false,ghost:true,doubleRail:false,colour:light?'#818b90':'#788b9c',alpha:light?.34:.32,width:pxr(L.express?1.6:1.2),rail:pxr(1)};
 }
 function snapshotGame(){
- const d=snapshotGameCore();d.economyRevision=941;d.economyAdoptedAt=economyAdoptedAt;if(cityId==='lisbon')d.lisbonBalanceRevision=942;d.journeyClock=928;d.journeyMinutesPerSecond=journeyMinutesPerSecond();
+ const d=snapshotGameCore();d.economyRevision=941;d.economyAdoptedAt=economyAdoptedAt;if(cityId==='lisbon')d.lisbonBalanceRevision=942;if(cityId==='istanbul')d.istanbulBalanceRevision=943;d.journeyClock=928;d.journeyMinutesPerSecond=journeyMinutesPerSecond();
  d.walking=d.walking.filter(w=>!isWatchedRider(w.r));
  for(const s of d.stations){s.q=s.q.filter(r=>!isWatchedRider(r));s.overflow=s.overflow.filter(r=>!isWatchedRider(r));}
  for(const L of d.lines)for(const t of L.trains)t.riders=t.riders.filter(r=>!isWatchedRider(r));
@@ -7167,7 +7168,7 @@ function investmentRoutePrice(L,p){
 function operatingUpkeep(){let cost=0;for(const L of lines){const p=investmentFor(L);for(const t of L.trains)cost+=p.upkeep*(1+.55*t.cars);if(!isFerry(L))cost+=kms(lineLength(L))*.00015}return cost+stations.filter(s=>s.ferryKey).length*.0003}
 function migrateEconomy(d,raw){
  economyAdoptedAt=Number.isFinite(raw.economyAdoptedAt)?Math.min(d.simS,Math.max(0,raw.economyAdoptedAt)):null;
- if(raw.economyRevision===941){if(d.cityId==='lisbon'&&raw.lisbonBalanceRevision!==942)economyAdoptedAt=d.simS;return;}
+ if(raw.economyRevision===941){if(d.cityId==='lisbon'&&raw.lisbonBalanceRevision!==942)economyAdoptedAt=d.simS;if(d.cityId==='istanbul'&&raw.istanbulBalanceRevision!==943)economyAdoptedAt=d.simS;return;}
  d.budget*=3;d.ecoInc=d.ecoCost=d.ecoT=0;d.ecoSeries=[];economyAdoptedAt=d.simS;
  // Old finance totals mixed population multipliers and game credits. Preserve
  // measured journeys, but do not pretend those old accounts are USD history.
@@ -7209,6 +7210,66 @@ Object.assign(CITIES.lisbon,{
 // Existing games adopt this demand over six game days. This changes demand
 // and purchasable frequency, never the physical speed or displayed clock.
 DEMAND_FACTORS.lisbon=3;
+/* Istanbul retains its real coastline, terrain and charted ferry navigation.
+   One urban-rail class abstracts metro and Marmaray-style through services.
+   New tunnel alignments are player proposals, not existing Turkish railways. */
+const istanbulBalance={
+ // The previous 48m/day grant cannot fund this 90-catchment, two-shore
+ // urban-rail field as it grows. This is normal scenario capital funding.
+ subsidyMult:10,
+ openingFleet:{metro:2,ferry:2},
+ classNames:{metro:'METRO · URBAN RAIL',ferry:'VAPUR'},
+ classOverrides:{...CITIES.istanbul.classOverrides,
+  metro:{...CITIES.istanbul.classOverrides.metro,spacing:3,maxTrains:14},
+  ferry:{...CITIES.istanbul.classOverrides.ferry,spacing:3,maxTrains:6}},
+ waterTrackExtra:{metro:4},
+ classBlurbs:{
+  metro:'Build local networks or through routes across the city. Underwater track is expensive; a direct train can avoid ferry transfers. This class also represents Marmaray-style urban rail.',
+  ferry:'Connect waterfront hubs without buying track. Short crossings can link independent local networks. Longer routes need more vessels; walking access and interchange placement matter.'},
+ hintAlpha:.035,waterHatching:false,playTerrainDim:.35
+};
+// Older saves retain their roster, coordinates, growth schedule and length
+// ceiling. Only prospective prices and purchasable service frequency change.
+const ISTANBUL_0942={...CITIES.istanbul,...istanbulBalance};
+Object.assign(CITIES.istanbul,istanbulBalance,{
+ mapRevision:'istanbul-0943',blurb:'Two shores. Choose how they meet.',
+ phasedStations:true,releaseStageScale:6,connectedRelease:false,
+ modeLineKm:{metro:55},
+ urbanGrowth:{...CITIES.istanbul.urbanGrowth,padding:1.5,minSpan:8}
+});
+DEMAND_FACTORS.istanbul=3;
+
+function prepareIstanbulStations(){
+ if(cityId!=='istanbul'||city.mapRevision!=='istanbul-0943')return;
+ const live=stations.filter(s=>!s.dead&&!s.ferryKey);
+ // Reuse catchments near real landing locations rather than append isolated
+ // compulsory feeder stations. Only new games run this preparation.
+ for(const key of ['eminonu','karakoy','kabatas','besiktas','cengelkoy','bostanci','bebek','balat']){
+  const f=ferrySite(key);if(!f)continue;
+  const p=fixedPoint({x:f.land[0],y:f.land[1]}),near=live.filter(s=>!s.name).sort((a,b)=>dist(a,p)-dist(b,p));
+  const s=near[0];if(!s)continue;
+  if(live.every(t=>t===s||dist(t,p)>=1.05)){s.x=p.x;s.y=p.y}
+  // Naming a broad catchment is approximate; never attach a distant name.
+  if(dist(s,p)<=2.8){s.name=f.name;s.inter=true;s.kind='hub';s.district=f.district||'cbd';s.dens=Math.max(s.dens,.7)}
+ }
+ const byName=n=>live.find(s=>s.name===n),anchors=['SULTANAHMET','TAKSİM','ÜSKÜDAR','KADIKÖY'].map(byName).filter(Boolean);
+ const opening=new Set(['SULTANAHMET','TAKSİM','EMINÖNÜ','KARAKÖY','KABATAŞ','ÜSKÜDAR','KADIKÖY'].map(byName).filter(Boolean));
+ for(const name of ['ÜSKÜDAR','KADIKÖY']){
+  const a=byName(name),want=name==='ÜSKÜDAR'?2:1;
+  for(const s of live.filter(s=>!opening.has(s)&&s.x>=54.8&&!s.air).sort((a1,b)=>dist(a1,a)-dist(b,a)).slice(0,want))opening.add(s);
+ }
+ for(const s of live.filter(s=>!opening.has(s)&&s.x<53&&!s.air).sort((a,b)=>dist(a,city.core)-dist(b,city.core))){if(opening.size>=12)break;opening.add(s)}
+ for(const s of live){
+  const d=Math.min(...anchors.map(a=>dist(a,s)));
+  // Existing saves use stages in [0,20]. One stage is three planning days
+  // here, keeping the full growth schedule intact through save validation.
+  s.stage=(opening.has(s)?0:s.air?52:Math.min(50,Math.max(1,Math.round(d<7?2+d*1.5:12+(d-7)*2.1))))/3;
+  s.emerged=opening.has(s);s.emergeAt=0;
+ }
+ stations.sort((a,b)=>Number(!a.emerged)-Number(!b.emerged)||(a.stage||0)-(b.stage||0)||dist(a,city.core)-dist(b,city.core));
+ stations.forEach((s,i)=>s.id=i);emergePtr=opening.size;
+}
+
 installDashboard();installJourneyControls();installIcon();syncGrowthControl();buildOverlay();installAtlasNavigation();$('networkFilter').onchange=applyNetworkFilter;let lastT=performance.now(),lastError=null,frameRequest=0,lastPaint=-Infinity;
 function scheduleFrame(){if(!frameRequest)frameRequest=requestAnimationFrame(frame)}
 function frame(now){
