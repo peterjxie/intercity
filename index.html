@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- INTERCITY 0.957. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
+<!-- INTERCITY 0.958. Offline game. Optional same-folder Safari icon: intercity-icon-833.png. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#06080d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="INTERCITY"><title>INTERCITY</title>
 <style>
 :root{--bg:#06080d;--panel:#101622;--ink:#dfe7f3;--dim:#9aaabe;--edge:#2d3b50;--accent:#7fd4ff;--mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono','DejaVu Sans Mono',monospace;color-scheme:dark}
@@ -840,7 +840,7 @@ function preferredAlignmentRoute(L,A,B){
  for(const g of CITIES.mumbai.crossings)g.cls=['express'];
 }
 
-const VERSION="0.957";
+const VERSION="0.958";
 const STATION_RELEASE_SCALE=.5; // 0.889: twice the 0.878 pace on every map.
 const LINE_COLORS=["#29c5e6","#e04a7f","#e5c24d","#55d377","#a878e8","#e8853f","#2fd3ad","#e05555","#6a8ce0","#e08ad2"];
 /* La Paz: offline, sourced geography; freely designed cable / proposed rail network. */
@@ -1942,6 +1942,7 @@ function districtOpeningDay(p){
 }
 function stationGrowthEligible(s){if(!beijingReleaseReady957(s))return false;if(city.laGrowth)return losAngelesGrowthEligible(s);const day=(simS+growthClockOffset)/DAY_SECONDS/STATION_RELEASE_SCALE;if(city.corridorSeeds||city.phasedStations)return day>=(s.stage||0)*(city.releaseStageScale??1);return !city.urbanGrowth||day>=city.urbanGrowth.frontier.at(-1)[0]||dist(s,city.core)<=growthValue(city.urbanGrowth.frontier,day)+1e-7}
 function savedCityFor(d){
+ if(d.cityId==='berlin'&&d.cityRevision==='berlin-874')return BERLIN_PREVIOUS_0958;
  if(d.cityId==='beijing')return savedBeijingCity957(d);
  if(d.cityId==='gba'&&d.cityRevision==='pearl-0944')return PEARL_0944;
  if(d.cityId==='tokyo'&&d.cityRevision==='tokyo-0911')return TOKYO_0944;
@@ -1997,7 +1998,7 @@ function genUrbanStations(){
 function rosterDraw(){
  if(city.rosterDraw===false||city.stationAreas||!stations.length)return;
  const rng=mulberry32(seed^0x0d7a);
- const fixed=s=>s.emerged||s.inter||s.kind==='hub'||s.landmark||s.ferryKey||s.air||['air','ic','landing','guideway'].includes(s.kind)||(s.allowedModes?.length===1&&s.allowedModes[0]==='express')||walkingDestination(s);
+ const fixed=s=>s.emerged||s.inter||(city.preserveNamedRegional&&s.name)||s.kind==='hub'||s.landmark||s.ferryKey||s.air||['air','ic','landing','guideway'].includes(s.kind)||(s.allowedModes?.length===1&&s.allowedModes[0]==='express')||walkingDestination(s);
  const live=stations.filter(s=>!s.dead),F=live.filter(fixed),P=live.filter(s=>!fixed(s)),K=live.length-F.length;if(K<=0)return;
  const gap=Math.max(city.minStopGap??2,1.2),ext=city.artExtent||city.manualBounds||ATLAS_EXTENTS[cityId]||[0,0,100,100],st=1.5;
  const pts=[];for(let x=ext[0];x<=ext[2];x+=st)for(let y=ext[1];y<=ext[3];y+=st){const q={x,y};if(inWater(q))continue;const w=densityAt(q);if(w>.05)pts.push({x,y,w})}
@@ -2026,7 +2027,7 @@ function compactRoster(){
  const Rc=P.coreKm??Math.min(5,R50),Rout=P.outerKm??Math.max(Rc+3,Math.min(P.maxOuterKm??(R90>15?12:10),R90));
  const core=live.filter(s=>dist(s,primary)*km<=Rc),nn=core.map(s=>Math.min(...core.filter(t=>t!==s).map(t=>dist(s,t)))*km).sort((a,b)=>a-b),g0=P.coreGapKm??(nn[nn.length>>1]||1);
  const gEdge=P.edgeGapKm??clamp(3*g0,2,3.2),secR=P.secondaryRadius??3,secG=P.secondaryGap??1.5;
- const fixed=s=>s.emerged||s.inter||s.kind==='hub'||s.landmark||s.air||['air','ic','landing'].includes(s.kind)||walkingDestination(s);
+ const fixed=s=>s.emerged||s.inter||(city.preserveNamedRegional&&s.name)||s.kind==='hub'||s.landmark||s.air||['air','ic','landing'].includes(s.kind)||walkingDestination(s);
  const pr=s=>(fixed(s)?10:0)+(s.name?1:0)+(s.dens??densityAt(s));
  const order=live.slice().sort((a,b)=>pr(b)-pr(a));
  // 0.908: no hard edge. Spacing keeps widening past the edge, so far suburbs get single well-spaced stops, never
@@ -2540,6 +2541,7 @@ function lineColourCandidates(cls,i){
  return [...new Set([preferred,...(mp||[]),...(city.metroPalette||[]),...pal,...LINE_COLORS,...lineColourCandidates.wide].map(readableLineColour).filter(Boolean))];
 }
 function nextLineColour(cls,i,used=lines.map(L=>L.color),same=lines.filter(L=>clsKeyOf(L)===cls).map(L=>L.color)){
+ if(city?.mapRevision==="berlin-0958"&&city.modePalettes?.[cls])return berlinNextColour958(cls,used);
  const taken=new Set(used.map(readableLineColour).filter(Boolean)),within=same.map(readableLineColour).filter(Boolean),candidates=lineColourCandidates(cls,i);
  const hues=within.map(v=>{const q=lineColourProfile949(v)[0];return Math.atan2(q[2],q[1])});
  let best=null,score=-Infinity;
@@ -4992,7 +4994,7 @@ function migratedReleaseTime(d,raw){
 function migratedGrowthOffset(d,raw){
  return String(raw.version)==='8.62'?d.simS*1.5:d.growthClockOffset;
 }
-function loadSave(raw){closeDashboard();trackTapCycle=null;const d=validateSave(raw);exitJourneyView({quiet:true,restore:false});journeyPin=null;resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};cityId=d.cityId;city=savedCityFor(d);if(d.cityId==="berlin")balanceBerlin0948(city);calibrateTransport(city,d.cityId);calibrateEconomy(city,d.cityId);migrateEconomy(d,raw);organicCity(city);rebaseJourneyClock(d,raw);mode=d.mode;autoCapacity=d.autoCapacity;syncAutoCapacity949();seed=d.seed;rngState=d.rngState;simS=d.simS;resetServiceWait();waitHistory=d.waitHistory;deliveryLog=d.deliveryLog;journeyOutcomes=d.journeyOutcomes;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=city.laGrowth?d.nextEmergeAt:migratedReleaseTime(d,raw);growthClockOffset=migratedGrowthOffset(d,raw);weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;restoreLosAngelesRules(raw);lines=d.lines;walking=d.walking;connectionGrowth=d.connectionGrowth;showPopulation=d.showPopulation;showDensity=d.showDensity;showStations=d.showStations;showUnconnected=d.showUnconnected;loadDashboard(d.dashboard);syncGrowthControl();for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}repairLineColours(raw.lineColourRevision!==949);computeMetroCap();const authored=repairAuthoredInfrastructure();repairCanalMetroRoutes();smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();const tidied=tidySavedAlignments();repairChartedAlignments();refreshSavedEngineering();selLine=-1;tool=null;undoStack=[];recountPassengers();restoreScheduledStations(raw);const supplied=updateServiceRoster(d);if(!d.generated)generated=passengers+delivered+lost;buildUrbanLayer();rebuildRouting();restoreTidiedTrains(tidied);const randstadUpdate=updateRandstadSave();const barcelonaUpdate=updateBarcelonaSave();fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(authored.remaining?"SAVE LOADED · "+authored.remaining+" OLD ALIGNMENT(S) KEPT":adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":tidied.remaining?"SAVE LOADED · "+tidied.remaining+" OLD ALIGNMENT(S) KEPT":tidied.changed?"SAVE LOADED · TRACKS TIDIED":"SAVE LOADED · "+city.name);if(supplied)toast("MAP UPDATED · "+supplied+" MORE NEIGHBOURHOODS WILL OPEN");if(barcelonaUpdate)toast("BARCELONA UPDATED · "+barcelonaUpdate.retired+" DUPLICATE STOPS MERGED · "+barcelonaUpdate.shuttles+" TOWN SHUTTLES REFUNDED");if(randstadUpdate)toast(randstadUpdate.ferries?"RANDSTAD UPDATED · FERRIES REFUNDED":"RANDSTAD UPDATED · COMPACT TOWN CATCHMENTS");autoSave(true)}
+function loadSave(raw){closeDashboard();trackTapCycle=null;const d=validateSave(raw);exitJourneyView({quiet:true,restore:false});journeyPin=null;resetDemand();resetFerries();editFeedback=null;cancelGesture();exitPoster();posterHiddenCls={};cityId=d.cityId;city=savedCityFor(d);if(d.cityId==="berlin"&&d.cityRevision!=="berlin-0958")balanceBerlin0948(city);calibrateTransport(city,d.cityId);calibrateEconomy(city,d.cityId);migrateEconomy(d,raw);organicCity(city);rebaseJourneyClock(d,raw);mode=d.mode;autoCapacity=d.autoCapacity;syncAutoCapacity949();seed=d.seed;rngState=d.rngState;simS=d.simS;resetServiceWait();waitHistory=d.waitHistory;deliveryLog=d.deliveryLog;journeyOutcomes=d.journeyOutcomes;budget=d.budget;delivered=d.delivered;lost=d.lost;generated=d.generated;journeySum=d.journeySum;transferSum=d.transferSum;emergePtr=d.emergePtr;nextEmergeAt=city.laGrowth?d.nextEmergeAt:migratedReleaseTime(d,raw);growthClockOffset=migratedGrowthOffset(d,raw);weekPaid=d.weekPaid;lineSlots=d.lineSlots;speedIdx=d.speedIdx;hiddenCls=d.hiddenCls;ecoInc=d.ecoInc;ecoCost=d.ecoCost;ecoT=d.ecoT;ecoSeries=d.ecoSeries;pendingOffer=d.pendingOffer;stations=d.stations;restoreLosAngelesRules(raw);lines=d.lines;walking=d.walking;connectionGrowth=d.connectionGrowth;showPopulation=d.showPopulation;showDensity=d.showDensity;showStations=d.showStations;showUnconnected=d.showUnconnected;loadDashboard(d.dashboard);syncGrowthControl();for(const s of stations){s.region=regionFor(s);if(s.q.length>LIVE_QUEUE){const extra=s.q.splice(LIVE_QUEUE);for(const r of extra)queueAdd(s,r)}fillQueue(s)}const counts={};for(const L of lines){const k=clsKeyOf(L),n=counts[k]||0;counts[k]=n+1;L.color=L.color||(k==="metro"&&city.metroPalette?city.metroPalette[n%city.metroPalette.length]:k==="express"&&city.expressColor?city.expressColor:(city.palette||LINE_COLORS)[L.id%(city.palette||LINE_COLORS).length]);L.homeRegion=!L.express&&L.stops.length?stations[L.stops[0]].region:null;if(L.stops.length<2){for(const t of L.trains)returnRiders(t,stations[L.stops[0]]||city.core);L.trains=[]}else for(const t of L.trains)t.seg=clamp(t.seg,0,segCountOf(L)-1)}repairLineColours(raw.lineColourRevision!==949);computeMetroCap();const authored=repairAuthoredInfrastructure();repairCanalMetroRoutes();smoothSavedTramRoutes();settleLegacyOffer();const adjusted=realignSavedCrossings();const tidied=tidySavedAlignments();repairChartedAlignments();refreshSavedEngineering();selLine=-1;tool=null;undoStack=[];recountPassengers();restoreScheduledStations(raw);const supplied=updateServiceRoster(d);if(!d.generated)generated=passengers+delivered+lost;buildUrbanLayer();rebuildRouting();restoreTidiedTrains(tidied);const randstadUpdate=updateRandstadSave();const barcelonaUpdate=updateBarcelonaSave();fitS0=0;userCam=false;fitView();refreshUI();$("bSpeed").textContent=SPEEDLBL[speedIdx];renderOffer();$("overlay").style.display="none";document.body.classList.add("playing");running=true;hudTick();toast(authored.remaining?"SAVE LOADED · "+authored.remaining+" OLD ALIGNMENT(S) KEPT":adjusted.remaining?"SAVE LOADED · "+adjusted.remaining+" CROSSING(S) NEED EDITING":adjusted.fixed?"SAVE LOADED · CROSSINGS REALIGNED":tidied.remaining?"SAVE LOADED · "+tidied.remaining+" OLD ALIGNMENT(S) KEPT":tidied.changed?"SAVE LOADED · TRACKS TIDIED":"SAVE LOADED · "+city.name);if(supplied)toast("MAP UPDATED · "+supplied+" MORE NEIGHBOURHOODS WILL OPEN");if(barcelonaUpdate)toast("BARCELONA UPDATED · "+barcelonaUpdate.retired+" DUPLICATE STOPS MERGED · "+barcelonaUpdate.shuttles+" TOWN SHUTTLES REFUNDED");if(randstadUpdate)toast(randstadUpdate.ferries?"RANDSTAD UPDATED · FERRIES REFUNDED":"RANDSTAD UPDATED · COMPACT TOWN CATCHMENTS");autoSave(true)}
 // New-game roster budgets. Saved station lists are not regenerated on load.
 // Named destinations are additional to count in the legacy generator.
 for(const id of ['gba','berlin','mumbai','newyork','sydney','mexicocity','seoul','bangkok','rio','lisbon']){
@@ -7821,6 +7823,52 @@ function savedBeijingCity957(d){
   express:rapid+' Rapid Metro lines retained for this save. Up to 70 km per line. New games allow four lines.'}};
 }
 
+const BERLIN_PREVIOUS_0958=clone(CITIES.berlin);
+// Berlin 0.958: a few named outer S-Bahn destinations, retaining the open
+// two-mode construction game. The positions use the map's OSM projection.
+function berlinUpgrade958(c){
+ c.mapRevision='berlin-0958';
+ c.balanceRevision='berlin-0958';
+ c.maxExpress=9;
+ c.blurb='Spree, lakes and a wider S-Bahn fringe.';
+ c.modePalettes={
+  // U1–U8 inspired, lightened where their actual map shades disappear on the
+  // dark game background. U9 orange remains a spare if the allowance changes.
+  metro:['#77b843','#fc675e','#45c3a7','#eccc43','#bb8c60','#ae80d5','#58b9e9','#7299ff','#f49a50'],
+  // S1, S2, S3, S5, S7, S8, S9, Ringbahn and an S75-like blue respectively.
+  // The two greens retain separate hues and the Ring brown stays legible.
+  express:['#ef68c9','#4acb57','#5b92e7','#f4a34a','#aa8cfa','#4bb7a5','#ec6572','#bd937b','#55d1e8']
+ };
+ const outskirts=[
+  ['POTSDAM HBF',13.0673,52.3917],
+  ['GRIEBNITZSEE',13.1280,52.3950],
+  ['HEILIGENSEE',13.2300,52.6150],
+  ['HENNIGSDORF',13.2020,52.6380],
+  ['ZEPERNICK',13.5340,52.6590],
+  ['BERNAU',13.5921,52.6764],
+  ['FRIEDRICHSHAGEN',13.6250,52.4570],
+  ['RAHNSDORF',13.7007,52.4380],
+  ['ERKNER',13.7498,52.4210]
+ ];
+ const [lon0,lat0]=c.projection.origin,latRef=c.projection.referenceLatitude;
+ for(const [name,lon,lat]of outskirts){
+  const x=(lon-lon0)*111.32*Math.cos(latRef*Math.PI/180)/c.kmScale;
+  const y=(lat0-lat)*111.32/c.kmScale;
+  c.specials.push({x:+x.toFixed(5),y:+y.toFixed(5),name,kind:'stop',when:.92});
+ }
+ c.preserveNamedRegional=true;
+ c.classBlurbs={...c.classBlurbs,
+  metro:'U-Bahn. Eight local lines for the city and close suburbs. Shared stations allow transfers to S-Bahn. Colours follow the U1–U8 map family, brightened for legibility.',
+  express:'S-Bahn. Nine lines for the ring and regional radials, including Potsdam, Hennigsdorf, Bernau and Erkner. The ninth line can serve the southern fringe separately.'};
+ CITY_COPY.berlin=['Germany','Spree, lakes and a wider S-Bahn fringe.','Build local U-Bahn connections and S-Bahn rings or radials through a shared station roster. Regional destinations now reach Potsdam, Hennigsdorf, Bernau and Erkner. Eight U-Bahn and nine S-Bahn lines are available.'];
+ return c;
+}
+function berlinNextColour958(cls,used){
+ const palette=city.modePalettes[cls];
+ return palette.find(c=>!used.includes(c))||lineColourCandidates(cls,lines.length).find(c=>!used.includes(c))||'#dfb6e7';
+}
+
+berlinUpgrade958(CITIES.berlin);
 installIcon();syncGrowthControl();buildOverlay();installAtlasNavigation();$('networkFilter').onchange=applyNetworkFilter;let lastT=performance.now(),lastError=null,frameRequest=0,lastPaint=-Infinity;
 function scheduleFrame(){if(!frameRequest)frameRequest=requestAnimationFrame(frame)}
 function frame(now){
